@@ -1,0 +1,3345 @@
+import "Dominion Island/std_constants.zh"
+import "Dominion Island/std_functions.zh"
+import "string.zh"
+import "Dominion Island/ffcscript.zh"
+import "Dominion Island/ghost.zh"
+import "laser.zh"
+
+const int AutoWarpACombo = 3632;
+const int AutoWarpBCombo = 3633;
+const int AutoWarpCCombo = 3634;
+const int AutoWarpDCombo = 3635;
+
+int MooshPit[16];
+const int MP_LASTX = 0;
+const int MP_LASTY = 1;
+const int MP_LASTDMAP = 2;
+const int MP_LASTSCREEN = 3;
+const int MP_ENTRYX = 4;
+const int MP_ENTRYY = 5;
+const int MP_ENTRYDMAP = 6;
+const int MP_ENTRYSCREEN = 7;
+const int MP_FALLX = 8;
+const int MP_FALLY = 9;
+const int MP_FALLTIMER = 10;
+const int MP_FALLSTATE = 11;
+const int MP_DAMAGETYPE = 12;
+const int MP_SLIDETIMER = 13;
+
+const int CT_HOLELAVA = 128; //Combo type for pits (No Ground Enemies by default)
+const int CF_LAVA = 98; //Combo flag marking pits as lava (Script 1 by default)
+
+const int SPR_FALLHOLE = 229; //Sprite for Link falling in a hole
+const int SPR_FALLLAVA = 228; //Sprite for Link falling in lava
+
+const int SFX_FALLHOLE = 38; //Sound for falling in a hole
+const int SFX_FALLLAVA = 55; //Sound for falling in lava
+
+const int DAMAGE_FALLHOLE = 8; //How much damage pits deal (1/2 heart default)
+const int DAMAGE_FALLLAVA = 8; //How much damage lava deals (1 heart default)
+
+const int FFC_MOOSHPIT_AUTOWARPA = 32; //FFC that turns into an auto side warp combo when you fall in a pit
+const int CMB_MOOSHPIT_AUTOWARPA = 3632; //Combo number of an invisible Auto Side Warp A combo
+const int SF_MISC_MOOSHPITWARP = 2; //Number of the screen flag under the Misc. section that makes pits warp (Script 1 by default)
+									//All pit warps use Side Warp A
+
+const int MOOSHPIT_MIN_FALL_TIME = 60; //Minimum time for the pit's fall animation, to prevent repeated falling in pits
+const int MOOSHPIT_EXTRA_FALL_TIME = 0; //Extra frames at the end of the falling animation before Link respawns
+									
+//Width and height of Link's hitbox for colliding with pits
+const int MOOSHPIT_LINKHITBOXWIDTH = 2;
+const int MOOSHPIT_LINKHITBOXHEIGHT = 2;
+
+//Width and height of Link's hitbox for colliding with pits/lava in sideview
+const int MOOSHPIT_SIDEVIEW_LINKHITBOXWIDTH = 2;
+const int MOOSHPIT_SIDEVIEW_LINKHITBOXHEIGHT = 2;
+
+const int MOOSHPIT_NO_GRID_SNAP = 0; //Set to 1 to prevent Link's falling sprite from snapping to the combo grid.
+
+const int MOOSHPIT_ENABLE_SLIDEYPITS = 0; //Set to 1 if Link should slide into pits he's partially on
+const int MOOSHPIT_SLIDEYPIT_FREQ = 3; //Link will be pushed into slideypits every 1/n frames
+const int MOOSHPIT_SLIDEYPIT_MAXTIME = 20; //Link will be pushed into slideypits more intensely after n frames
+const int MOOSHPIT_SLIDEYPIT_ACCELFREQ = 8; //How often Link accelerates when falling in the pit
+						
+const int MOOSHPIT_NO_MOVE_WHILE_FALLING = 1; //Set to 1 if you don't want Link able to move while falling
+
+// === SETTINGS ===
+//These are TRUE / FALSE constants. Set the to 1 to toggle features on, or 0 to toggle them off.
+
+const int MOOSHMAP_VISITED_CARRYOVER = 1; //Set to 1 to make which screens on a floor have been visited carry over
+const int MOOSHMAP_ALL_CARRYOVER = 0; //Set to 1 to make the other screen states carry over
+const int MOOSHMAP_D_CARRYOVER = 0; //Set to 1 to make Screen->D carry over
+
+const int MOOSHMAP_HIGHLIGHTCURRENTROOM = 0; //Set to 1 to highlight whichever room Link is in
+const int MOOSHMAP_DRAWLINKPOSITION = 1; //Set to 1 to draw a Link marker in whichever screen Link is in
+const int MOOSHMAP_PRECISELINKPOSITION = 0; //Set to 1 if the Link marker's position should be based on Link's (Like in ALttP)
+
+const int MOOSHMAP_SHOW_TITLE = 0; //Set to 1 to show the DMap name on the subscreen
+const int MOOSHMAP_SHOW_LITEMS = 1; //Set to 1 to show icons for the level items on the subscreen
+
+//Okay this one actually isn't true/false. I lied.
+const int MOOSHMAP_PRECISELINKPOSITIONBORDER = 1; //How thick the border around screens is (to keep the Link Marker from going offscreen)
+
+
+// === NUMBER COMBOS ===
+//These script uses a couple blocks of combos to mark decimal and hex numbers. These constants determine where those start and end.
+
+const int CMB_DEC = 25600; //Combo of the first decimal combo
+const int MAX_DEC = 259; //Decimal value of the last decimal combo
+
+const int CMB_HEX = 25864; //Combo of the first hex combo
+const int MAX_HEX = 0x8F; //Hex value of the last hex combo
+
+// === SCREEN FREEZE ===
+//These constants allow the script to freeze the screen.
+
+const int CMB_SCREENFREEZEA = 29; //An invisible Screen Freeze (Except FFCs) combo
+const int CMB_SCREENFREEZEB = 31; //An invisible Screen Freeze (FFCs Only) combo
+
+//These two FFC slots will become screen freeze when the map is opened
+const int FFC_SCREENFREEZEA = 31;
+const int FFC_SCREENFREEZEB = 32;
+
+// === GFX ===
+//These constants are for graphical things, combos, csets, and colors that are used by the script
+
+//Combo and CSet of the marker showing which floor Link is on
+const int CMB_MOOSHMAP_LINKFLOORMARKER = 26040;
+const int CS_MOOSHMAP_LINKFLOORMARKER = 6;
+
+//Combo and CSet of Link's position marker
+const int CMB_MOOSHMAP_LINKPOSITIONMARKER = 26041;
+const int CS_MOOSHMAP_LINKPOSITIONMARKER = 6;
+
+//Combo and CSet of the map icon on the subscreen
+const int CMB_MOOSHMAP_MAP = 26044;
+const int CS_MOOSHMAP_MAP = 6;
+
+//Combo and CSet of the compass icon on the subscreen
+const int CMB_MOOSHMAP_COMPASS = 26045;
+const int CS_MOOSHMAP_COMPASS = 7;
+
+//Combo and CSet of the boss key icon on the subscreen
+const int CMB_MOOSHMAP_BOSSKEY = 26046;
+const int CS_MOOSHMAP_BOSSKEY = 6;
+
+const int C_WHITE = 0x0E; //The color white
+const int C_BLACK = 0x0E; //The color black
+
+// === SFX ===
+//Sounds
+
+const int SFX_MAPSUBSCREEN_OPEN = 64; //SFX when the map is opened
+const int SFX_MAPSUBSCREEN_CLOSE = 65; //SFX when the map is closed
+const int SFX_MAPSUBSCREEN_FLOORCHANGE = 5; //SFX when the selected floor is changed
+
+// === MAPS AND SCREENS ===
+//The script references specific maps and screens in order to find map data.
+
+//Map the script grabs the layout of level maps from. Each screen corresponds to a level number of the same value in decimal
+const int MAP_MOOSHMAP_DATA = 1;
+
+//Map and Screen for default map subscreen background
+const int MAP_MOOSHMAP_BG = 1;
+const int SCREEN_MOOSHMAP_BG = 0x87;
+
+// === MISC CONSTANTS ===
+//Other loose odds and ends
+
+const int RT_MOOSHMAP = 6; //Bitmap used for map drawing. If you don't know what this is and haven't seen it before,
+						   //chances are it doesn't matter. Just be sure it's unique to any other RT_ constants you're using.
+
+const int DMF_ALLOWMAP = 11; //DMap flag that enables the dungeon map. Script 1 by default.
+
+//X,Y position of the map
+const int MOOSHMAP_MAP_X = 112;
+const int MOOSHMAP_MAP_Y = 40;
+//Spacing between map tiles
+const int MOOSHMAP_MAP_SQUARE_SCALE = 12;
+
+//X,Y position of the center position for the floor listing
+const int MOOSHMAP_FLOOR_X = 56;
+const int MOOSHMAP_FLOOR_Y = 64;
+//Width,Height of each floor combo
+const int MOOSHMAP_FLOOR_WIDTH = 2;
+const int MOOSHMAP_FLOOR_HEIGHT = 1;
+//Y spacing between floor combos
+const int MOOSHMAP_FLOOR_SPACING = 16;
+
+//Font of the map title. See FONT_ in std_constants.zh
+const int MOOSHMAP_TITLE_FONT = 1;
+//X,Y position of the map title
+const int MOOSHMAP_TITLE_X = 176;
+const int MOOSHMAP_TITLE_Y = 148;
+
+//Y,Y position of the map icon
+const int MOOSHMAP_MAPICON_X = 40;
+const int MOOSHMAP_MAPICON_Y = 128;
+
+//Y,Y position of the compass icon
+const int MOOSHMAP_COMPASSICON_X = 56;
+const int MOOSHMAP_COMPASSICON_Y = 128;
+
+//Y,Y position of the boss key icon
+const int MOOSHMAP_BOSSKEYICON_X = 72;
+const int MOOSHMAP_BOSSKEYICON_Y = 128;
+
+
+// === INTERNALS ===
+
+int MooshMap[163];
+
+const int MM_ISOPEN = 0;
+const int MM_NUMFLOORS = 1;
+const int MM_LINKFLOOR = 2;
+const int MM_SELECTEDFLOOR = 3;
+const int MM_BGMAP = 4;
+const int MM_BGSCREEN = 5;
+const int MM_OPENFRAMES = 6;
+const int MM_FLOORSWITCHFRAMES = 7;
+const int MM_LASTDMAP = 8;
+const int MM_LASTSCREEN = 9;
+const int MM_LASTSCREENSTATES = 10;
+
+const int MM_STARTFLOORINDEX = 20;
+const int MM_NUMFLOORINDEX = 11;
+
+const int MM_F_FLOORCMB = 0;
+const int MM_F_FLOORCS = 1;
+const int MM_F_REFMAP = 2;
+const int MM_F_REFSCREEN = 3;
+const int MM_F_MARKERSCREEN = 4;
+const int MM_F_MARKERSCREEN2 = 5;
+const int MM_F_NUMFLOORS = 6;
+const int MM_F_FLOORDMAPS = 7;
+
+const int DoorAutoWarpA = 3632; //combo with an autowarp A combo type
+const int DoorComboType = 142; //combotype for doors
+
+int ScrollwarpingDoors[4];
+const int doorWalk = 0;
+const int doorWalkLinkDir = 1;
+const int doorNextScreenLinkX = 2;
+const int doorNextScreenLinkY = 3;
+
+int GV[1000];
+const int ButtonALocked = 0;
+const int ButtonBLocked = 1;
+const int SwordAction = 2;
+const int GotShopHC = 3;
+const int FirstStrongMaterial = 4;
+const int LinkIced = 5;
+
+global script Active{
+	void run(){
+		StartGhostZH();
+		MooshPit_Init();
+		MooshMap_Init();
+		
+		Link->Invisible = false;
+		
+		//unvisited mooshmap screens graphic
+		CopyTile(62760, 62762); CopyTile(62760, 62764); CopyTile(62760, 62766); CopyTile(62760, 62768);
+		CopyTile(62760, 62780); CopyTile(62760, 62782); CopyTile(62760, 62784); CopyTile(62760, 62786);
+		CopyTile(62760, 62788); CopyTile(62760, 62790); CopyTile(62760, 62800); CopyTile(62760, 62802);
+		CopyTile(62760, 62804); CopyTile(62760, 62806); CopyTile(62760, 62808);
+		
+		int LinksCurrDMap = -1;
+		int LinksCurrScreen = -1;
+		
+		int AutomatedTriggers;
+		
+		int SpiritX = -100;
+		int SpiritY = -100;
+		int SpiritLastX = -100;
+		int SpiritLastY = -100;
+		int SpiritAppearing;
+		int SpiritDir = 3657;
+		int SpiritDisappearing;
+		int SpiritStun;
+		
+		int LastLinkX;
+		int LastLinkY;
+		
+		int PotsCount;
+		int PotsPos[176];
+		
+		int LinkDiamondState; //0 = normal, <0 = moving, >0 = countdown
+		int LinkDiamondDir;
+		
+		ffc TheGlobalFFC;
+		
+		GV[LinkIced] = 0;
+		
+		while(true){
+			UpdateGhostZH1();
+			MooshPit_Update();
+			MooshMap_Update();
+			
+			int ScrollWarpingDoors[] = "ScrollwarpingDoors";
+			if ( CountFFCsRunning(Game->GetFFCScript(ScrollWarpingDoors)) == 0 )
+				RunFFCScript(Game->GetFFCScript(ScrollWarpingDoors), 0);
+			
+			if ( CountFFCsRunning(3) == 0 ) { //the global ffc
+				int theffc;
+				theffc = RunFFCScript(3, 0);
+				TheGlobalFFC = Screen->LoadFFC(theffc);
+			}
+			
+			if ( Link->Action == LA_SCROLLING ) {
+				SpiritX = -100;
+				SpiritY = -100;
+				SpiritLastX = -100;
+				SpiritLastY = -100;
+				SpiritAppearing = 0;
+				SpiritDir = 3657;
+				SpiritDisappearing = 0;
+			}
+			
+			if ( Link->Action != LA_SCROLLING ) { //global screen scripts
+				if ( LinksCurrDMap != Game->GetCurDMap() || LinksCurrScreen != Game->GetCurDMapScreen() ) { //screen init
+					//set continue point if dmap changed and script 2 screenflag is on
+					if ( LinksCurrDMap != Game->GetCurDMap() && ScreenFlag(SF_MISC, 3) > 0 ) {
+						Game->ContinueDMap = Game->GetCurDMap();
+						Game->ContinueScreen = Game->GetCurScreen();
+						Game->LastEntranceDMap = Game->GetCurDMap();
+						Game->LastEntranceScreen = Game->GetCurScreen();
+					}
+					LinksCurrDMap = Game->GetCurDMap();
+					LinksCurrScreen = Game->GetCurDMapScreen();
+					
+					if ( LinkDiamondState != 0 ) {
+						Link->Invisible = true;
+						Link->CollDetection = false;
+					}
+					
+					if ( CountFFCsRunning(1) == 0 ) {
+						for ( int i = 0; i < 176; i++ ){
+							if ( Screen->ComboT[i] == CT_CHEST2 ) {
+								int args[8] = {0, 0, 0, i, 0, 0, 0};
+								RunFFCScript(1, args);
+							}
+						}
+					}
+					
+					AutomatedTriggers = 0;
+					for ( int i = 0; i < 176; i++ ){
+						if ( !Screen->State[ST_SECRET] ) { //check for automated triggers
+							if ( Screen->ComboF[i] == 31 )
+								AutomatedTriggers ++;
+						}
+					}
+					
+					SpiritX = -100;
+					SpiritY = -100;
+					SpiritLastX = -100;
+					SpiritLastY = -100;
+					SpiritAppearing = 0;
+					SpiritDir = 3657;
+					SpiritDisappearing = 0;
+					
+					GV[SwordAction] = -1;
+					
+					PotsCount = 0;
+					for ( int i = 0; i < 176; i++ ){
+						PotsPos[i] = -1;
+						if ( Screen->ComboT[i] == CT_SLASHNEXTITEM ) {
+							PotsPos[PotsCount] = i;
+							PotsCount ++;
+						}
+					}
+					
+				}//end of screen init
+				
+				for ( int i = 0; i < PotsCount; i++ ){
+					if ( PotsPos[i] > -1 ) {
+						if ( Screen->ComboT[PotsPos[i]] != CT_SLASHNEXTITEM ) {
+							Game->PlaySound(76);
+							lweapon wpn = CreateLWeaponAt(LW_SPARKLE, ComboX(PotsPos[i]), ComboY(PotsPos[i]));
+							wpn->CollDetection = false;
+							wpn->UseSprite(22);
+							wpn->DrawYOffset = 0;
+							PotsPos[i] = -1;
+						}
+					}
+				}
+				
+				if ( AutomatedTriggers > 0 ) {
+					if ( !Screen->isSolid(Link->X+8, Link->Y+12) && Link->Z == 0 && Screen->ComboF[ComboAt(Link->X+8, Link->Y+12)] == 31 ) {
+						if ( AutomatedTriggers > 1 )
+							Game->PlaySound(22);
+						Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] ++;
+						AutomatedTriggers --;
+					}
+					if ( AutomatedTriggers == 0 ) {
+						Game->PlaySound(27);
+						Screen->TriggerSecrets();
+						Screen->State[ST_SECRET] = true;
+					}
+				}
+				
+				for (int i = 1; i <= Screen->NumLWeapons(); i++) {
+					lweapon wpn = Screen->LoadLWeapon(i);
+					if ( wpn->ID == LW_SCRIPT1 && wpn->Misc[0] == -500 ) {
+						int angle = Angle(wpn->X, wpn->Y, Link->X, Link->Y);
+						wpn->X += VectorX(2.5, angle);
+						wpn->Y += VectorY(2.5, angle);
+						if ( Distance(wpn->X, wpn->Y, Link->X, Link->Y) <= 2 ) {
+							wpn->DeadState = 0;
+							Game->DCounter[CR_LIFE] += wpn->Misc[1]*4;
+						}
+					}
+					
+					if ( wpn->ID == LW_ARROW ) {
+						wpn->Misc[0] += 1.5;
+						if ( wpn->Misc[0] >= 24 && wpn->DeadState == WDS_ALIVE ) {
+							wpn->Step = 0;
+							wpn->DeadState = WDS_ARROW;
+						}
+					}
+					
+					if ( wpn->ID == LW_SWORD ) {
+						int ax = wpn->X + wpn->HitXOffset;
+						int ay = wpn->Y + wpn->HitYOffset;
+						if ( Screen->ComboD[ComboAt(ax+1, ay+1)] == 3644 ) {
+							LinkDiamondState = 61;
+							LinkDiamondDir = Link->Dir;
+							Link->Invisible = true;
+							Link->CollDetection = false;
+							Link->X = ComboX(ComboAt(ax+1, ay+1));
+							Link->Y = ComboY(ComboAt(ax+1, ay+1));
+						}
+						if ( Screen->ComboD[ComboAt(ax+1+wpn->HitWidth-2, ay+1)] == 3644 ) {
+							LinkDiamondState = 61;
+							LinkDiamondDir = Link->Dir;
+							Link->Invisible = true;
+							Link->CollDetection = false;
+							Link->X = ComboX(ComboAt(ax+1+wpn->HitWidth-2, ay+1));
+							Link->Y = ComboY(ComboAt(ax+1+wpn->HitWidth-2, ay+1));
+						}
+						if ( Screen->ComboD[ComboAt(ax+1, ay+1+wpn->HitHeight-2)] == 3644 ) {
+							LinkDiamondState = 61;
+							LinkDiamondDir = Link->Dir;
+							Link->Invisible = true;
+							Link->CollDetection = false;
+							Link->X = ComboX(ComboAt(ax+1, ay+1+wpn->HitHeight-2));
+							Link->Y = ComboY(ComboAt(ax+1, ay+1+wpn->HitHeight-2));
+						}
+						if ( Screen->ComboD[ComboAt(ax+1+wpn->HitWidth-2, ay+1+wpn->HitHeight-2)] == 3644 ) {
+							LinkDiamondState = 61;
+							LinkDiamondDir = Link->Dir;
+							Link->Invisible = true;
+							Link->CollDetection = false;
+							Link->X = ComboX(ComboAt(ax+1+wpn->HitWidth-2, ay+1+wpn->HitHeight-2));
+							Link->Y = ComboY(ComboAt(ax+1+wpn->HitWidth-2, ay+1+wpn->HitHeight-2));
+						}
+					}
+				}
+				for (int i = 1; i <= Screen->NumNPCs(); i++) {
+					npc enem = Screen->LoadNPC(i);
+					if ( enem->HP <= 0 ) {
+						if ( enem->HP != -500 && enem->ID != 179 ) {
+							enem->HP = -500;
+							lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, enem->X, enem->Y);
+							wpn->CollDetection = false;
+							wpn->UseSprite(88);
+							wpn->DrawYOffset = 0;
+							wpn->Misc[0] = -500;
+							wpn->Misc[1] = 1;
+							if ( enem->ID == 177 ) //crab
+								wpn->Misc[1] = 2;
+							if ( enem->ID == 50 ) //darknut blue
+								wpn->Misc[1] = 4;
+							if ( enem->ID == 49 ) //darknut red
+								wpn->Misc[1] = 2;
+							if ( enem->ID == 42 ) //gel
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 38 ) //keese black
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 29 ) //moblin blue
+								wpn->Misc[1] = 2;
+							if ( enem->ID == 28 ) //moblin red
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 23 ) //octorock blue
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 20 ) //octorock red
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 44 ) //rope
+								wpn->Misc[1] = 2;
+							if ( enem->ID == 178 ) //star
+								wpn->Misc[1] = 1;
+							if ( enem->ID == 500 ) //wizzrobe ice
+								wpn->Misc[1] = 3;
+							if ( enem->ID == 33 ) //zora
+								wpn->Misc[1] = 2;
+						}
+					}
+				}
+				for (int i = 1; i <= Screen->NumItems(); i++) {
+					item itm = Screen->LoadItem(i);
+					if ( itm->ID == 144 ) {
+						lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, itm->X, itm->Y);
+						wpn->CollDetection = false;
+						wpn->UseSprite(88);
+						wpn->DrawYOffset = 0;
+						wpn->Misc[0] = -500;
+						wpn->Misc[1] = 192;
+						itm->X = -1000;
+					}
+				}
+				
+				if ( GetEquipmentB() == 143 && Link->PressB ) {
+					if ( SpiritX == -100 && SpiritY == -100 && SpiritAppearing == 0 && SpiritDisappearing == 0 ) {
+						Game->PlaySound(78);
+						SpiritAppearing = 32+30;
+						if ( Link->Dir == DIR_UP )
+							SpiritDir = 3657;
+						if ( Link->Dir == DIR_RIGHT )
+							SpiritDir = 3657;
+						if ( Link->Dir == DIR_DOWN )
+							SpiritDir = 3658;
+						if ( Link->Dir == DIR_LEFT )
+							SpiritDir = 3658;
+					}
+					else if ( SpiritAppearing == 0 && SpiritDisappearing == 0 )
+						SpiritDisappearing = 16;
+				}
+				if ( SpiritAppearing == 0 && SpiritDisappearing == 0 && MooshPit[MP_FALLSTATE] != 0 )
+					SpiritDisappearing = 16;
+				
+				if ( SpiritAppearing > 0 ) {
+					if ( SpiritAppearing <= 32 ) {
+						if ( Link->Dir == DIR_UP ) {
+							SpiritX = Link->X - SpiritAppearing;
+							SpiritY = Link->Y-32 + SpiritAppearing;
+						}
+						if ( Link->Dir == DIR_RIGHT ) {
+							SpiritX = Link->X+32 - SpiritAppearing;
+							SpiritY = Link->Y - SpiritAppearing;
+						}
+						if ( Link->Dir == DIR_DOWN ) {
+							SpiritX = Link->X + SpiritAppearing;
+							SpiritY = Link->Y+32 - SpiritAppearing;
+						}
+						if ( Link->Dir == DIR_LEFT ) {
+							SpiritX = Link->X-32 + SpiritAppearing;
+							SpiritY = Link->Y + SpiritAppearing;
+						}
+					}
+					SpiritAppearing --;
+					Link->CollDetection = false;
+					if ( SpiritAppearing == 0 )
+						Link->CollDetection = true;
+					NoAction();
+				}
+				if ( SpiritDisappearing > 0 ) {
+					if ( SpiritDisappearing == 16 )
+						Game->PlaySound(79);
+					SpiritDisappearing --;
+					if ( SpiritDisappearing == 0 ) {
+						SpiritX = -100;
+						SpiritY = -100;
+						SpiritLastX = -100;
+						SpiritLastY = -100;
+						SpiritAppearing = 0;
+						SpiritDir = 3657;
+						SpiritDisappearing = 0;
+					}
+				}
+				
+				if ( GV[SwordAction] != -1 ) {
+					if ( SpiritX != -100 && SpiritY != -100 ) {
+						lweapon bolt;
+						if ( Link->Dir == DIR_UP ) {
+							bolt = CreateLWeaponAt(LW_ARROW, SpiritX, SpiritY-8);
+						}
+						if ( Link->Dir == DIR_RIGHT ) {
+							bolt = CreateLWeaponAt(LW_ARROW, SpiritX+8, SpiritY);
+							bolt->Tile ++;
+						}
+						if ( Link->Dir == DIR_DOWN ) {
+							bolt = CreateLWeaponAt(LW_ARROW, SpiritX, SpiritY+8);
+							bolt->Flip = 2;
+						}
+						if ( Link->Dir == DIR_LEFT ) {
+							bolt = CreateLWeaponAt(LW_ARROW, SpiritX-8, SpiritY);
+							bolt->Tile ++;
+							bolt->Flip = 1;
+						}
+						bolt->Dir = Link->Dir;
+						bolt->Step = 150;
+						bolt->Damage = 3;
+					}
+					GV[SwordAction] = -1;
+				}
+				
+				if ( LinkDiamondState != 0 )
+					Screen->FastCombo(3, Link->X, Link->Y, 3663, 10, OP_OPAQUE);
+				if ( LinkDiamondState < 0 ) {
+					bool backtonormal;
+					if ( LinkDiamondDir == DIR_UP ) {
+						Link->Y -= 2;
+						if ( Screen->isSolid(Link->X+8, Link->Y+1) && Screen->ComboD[ComboAt(Link->X+8, Link->Y+1)] != 3644 )
+							backtonormal = true;
+					}
+					if ( LinkDiamondDir == DIR_RIGHT ) {
+						Link->X += 2;
+						if ( Screen->isSolid(Link->X+16, Link->Y+8) && Screen->ComboD[ComboAt(Link->X+16, Link->Y+8)] != 3644 )
+							backtonormal = true;
+					}
+					if ( LinkDiamondDir == DIR_DOWN ) {
+						Link->Y += 2;
+						if ( Screen->isSolid(Link->X+8, Link->Y+16) && Screen->ComboD[ComboAt(Link->X+8, Link->Y+16)] != 3644 )
+							backtonormal = true;
+					}
+					if ( LinkDiamondDir == DIR_LEFT ) {
+						Link->X -= 2;
+						if ( Screen->isSolid(Link->X-1, Link->Y+8) && Screen->ComboD[ComboAt(Link->X-1, Link->Y+8)] != 3644 )
+							backtonormal = true;
+					}
+					
+					if ( LinkDiamondState > -6 )
+						LinkDiamondState --;
+					else {
+						if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 3644 ) {
+							backtonormal = false;
+							LinkDiamondState = 61;
+							Link->X = ComboX(ComboAt(Link->X+8, Link->Y+8));
+							Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+8));
+						}
+					}
+					
+					TheGlobalFFC->X = Link->X;
+					TheGlobalFFC->Y = Link->Y;
+					
+					if ( backtonormal ) {
+						LinkDiamondState = 0;
+						Link->Invisible = false;
+						Link->CollDetection = true;
+						TheGlobalFFC->X = 0;
+						TheGlobalFFC->Y = 0;
+					}
+					NoAction();
+				}
+				if ( LinkDiamondState > 0 ) {
+					if ( LinkDiamondState == 61 )
+						Game->PlaySound(36);
+					
+					if ( Link->InputUp )
+						LinkDiamondDir = DIR_UP;
+					if ( Link->InputDown )
+						LinkDiamondDir = DIR_DOWN;
+					if ( Link->InputLeft )
+						LinkDiamondDir = DIR_LEFT;
+					if ( Link->InputRight )
+						LinkDiamondDir = DIR_RIGHT;
+					
+					Screen->FastTile(3, Link->X, Link->Y-16, 5740, 6, OP_OPAQUE);
+					Screen->FastTile(3, Link->X+16, Link->Y, 5741, 6, OP_OPAQUE);
+					Screen->FastTile(3, Link->X, Link->Y+16, 5742, 6, OP_OPAQUE);
+					Screen->FastTile(3, Link->X-16, Link->Y, 5743, 6, OP_OPAQUE);
+					if ( LinkDiamondDir == DIR_UP )
+						Screen->FastTile(3, Link->X, Link->Y-16, 5760, 6, OP_OPAQUE);
+					if ( LinkDiamondDir == DIR_RIGHT )
+						Screen->FastTile(3, Link->X+16, Link->Y, 5761, 6, OP_OPAQUE);
+					if ( LinkDiamondDir == DIR_DOWN )
+						Screen->FastTile(3, Link->X, Link->Y+16, 5762, 6, OP_OPAQUE);
+					if ( LinkDiamondDir == DIR_LEFT )
+						Screen->FastTile(3, Link->X-16, Link->Y, 5763, 6, OP_OPAQUE);
+					
+					if ( LinkDiamondState == 1 ) {
+						LinkDiamondState = -1;
+						Game->PlaySound(32);
+					}
+					
+					LinkDiamondState --;
+					NoAction();
+				}
+				
+				if ( GV[LinkIced] > 0 ) {
+					Link->Invisible = true;
+					Screen->DrawTile(2, Link->X, Link->Y, Link->Tile, 1, 1, 6, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Screen->DrawTile(2, Link->X, Link->Y, 60088, 1, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Link->HitDir = -1;
+					NoAction();
+					GV[LinkIced] --;
+					if ( GV[LinkIced] == 0 )
+						Link->Invisible = false;
+				}
+				
+			}//end of global screen scripts
+			
+			if ( GV[ButtonALocked] == 1 && !Link->PressA && !Link->InputA )
+				GV[ButtonALocked] = 0;
+			if ( GV[ButtonBLocked] == 1 && !Link->PressB && !Link->InputB )
+				GV[ButtonBLocked] = 0;
+			if ( GV[ButtonALocked] == 1 ) {
+				Link->InputA = false;
+				Link->PressA = false;
+			}
+			if ( GV[ButtonBLocked] == 1 ) {
+				Link->InputB = false;
+				Link->PressB = false;
+			}
+			
+			Waitdraw();
+			
+			if ( SpiritStun > 0 )
+				SpiritStun --;
+			if ( !Link->CollDetection )
+				SpiritStun = 2;
+			
+			if ( SpiritStun == 0 && (SpiritX != -100 || SpiritY != -100) && SpiritDisappearing == 0 ) {
+				SpiritX += Link->X-LastLinkX;
+				SpiritY += Link->Y-LastLinkY;
+			}
+			
+			if ( SpiritY < SpiritLastY )
+				SpiritDir = 3659;
+			if ( SpiritY > SpiritLastY )
+				SpiritDir = 3657;
+			if ( SpiritX > SpiritLastX )
+				SpiritDir = 3657;
+			if ( SpiritX < SpiritLastX )
+				SpiritDir = 3658;
+			SpiritLastX = SpiritX;
+			SpiritLastY = SpiritY;
+			
+			if ( SpiritX != -100 || SpiritY != -100 ) {
+				if ( SpiritAppearing <= 16 && SpiritDisappearing == 0 )
+					Screen->FastCombo(3, SpiritX, SpiritY, SpiritDir, 8, OP_OPAQUE);
+				else
+					Screen->FastCombo(3, SpiritX, SpiritY, SpiritDir, 8, OP_TRANS);
+			}
+			
+			LastLinkX = Link->X;
+			LastLinkY = Link->Y;
+			
+			UpdateGhostZH2();
+			Waitframe();
+		}
+	}
+}
+
+item script PickupMessage{
+	void run(int m, int tile, int cset){
+		MessageDrawStuff(1, 0, tile, cset);
+		Screen->Message(m);
+	}
+}
+
+item script StrongMaterialPickup{
+	void run(){
+		if ( GV[FirstStrongMaterial] == 0 ) {
+			MessageDrawStuff(1, 1, 0, 0);
+			Screen->Message(14);
+			GV[FirstStrongMaterial] = 1;
+		}
+	}
+}
+
+item script SwordAction{
+	void run(){
+		GV[SwordAction] = Link->Dir;
+	}
+}
+
+ffc script ScreenMessage{
+	void run(int m, int mpos, int npcname){
+		MessageDrawStuff(mpos, npcname, 0, 0);
+		Screen->Message(m);
+	}
+}
+
+void MessageDrawStuff(int messageposition, int npcname, int itemtile, int itemcset){
+	int mpos = messageposition;
+	if ( messageposition == 0 )
+		mpos = 32;
+	if ( messageposition == 1 )
+		mpos = 96;
+	if ( npcname > 0 ) { //normal with name
+		Screen->DrawTile(6, 16, mpos-16, 63760, 14, 4, 10, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		if ( npcname == 1 ) {
+			int NameOfNPC[] = "Onik";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 2 ) {
+			int NameOfNPC[] = "Shopkeeper";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+	}
+	if ( npcname == 0 ) { //normal without name
+		Screen->DrawTile(6, 16, mpos, 63700, 14, 3, 10, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	}
+	if ( itemtile > 0 ) { //blue
+		Screen->DrawTile(6, 16, 96, 63840, 14, 3, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, 38, 108, itemtile, itemcset, OP_OPAQUE);
+	}
+}
+
+int FONT_LA_WIDTH(int text){
+	if ( text == 0 )
+		return 0;
+	int TANGO_FONT_LA[] = {
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+		// Character widths, including any trailing space
+		// ASCII characters 32 to 126
+		
+		// sp !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  
+		   4, 4, 5, 8, 8, 7, 8, 3, 5, 5, 6, 6, 3, 6, 3, 5,
+		
+		// 0  1  2  3  4  5  6  7  8  9
+		   6, 5, 7, 7, 7, 7, 6, 6, 7, 6,
+		
+		// :  ;  <  =  >  ?  @
+		   4, 4, 6, 6, 6, 7, 8,
+		
+		// A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z
+		   8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 7, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+		
+		// [  \  ]  ^  _  `
+		   8, 8, 8, 4, 6, 3,
+		
+		// a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+		   6, 6, 5, 7, 6, 7, 6, 5, 5, 7, 6, 4, 7, 6, 6, 6, 6, 5, 6, 5, 6, 6, 7, 6, 7, 6,
+		
+		// {  |  }  ~
+		   6, 3, 6, 5
+	};
+	int width;
+	for(int i = 0; i < strlen(text); i++){
+		width += TANGO_FONT_LA[text[i]];
+	}
+	return width;
+}
+
+//int textrow1full[] = "Save the game?";
+//int option1[] = "Yes";
+//int option2[] = "No";
+//int Choice = ChoiceSelection(
+//0, //npc name
+//textrow1full, 0, 0, //textrow1
+//0, 0, 0, //textrow2
+//0, 0, 0, //textrow3
+//option1, option2, 0, 0, 0, //options 1-5
+//1, 2); //starting option and option B
+
+int ChoiceSelection(int npcname,
+					int textrow1full, int textrow1red, int textrow1before,
+					int textrow2full, int textrow2red, int textrow2before,
+					int textrow3full, int textrow3red, int textrow3before,
+					int option1, int option2, int option3, int option4, int option5,
+					int optionstart,
+					int optionb){
+	int NumOptions;
+	int YPos1;
+	int YPos2;
+	int YPos3;
+	int YPos4;
+	int YPos5;
+	if ( option3 == 0 ) {
+		NumOptions = 2;
+		YPos1 = 104+1.5*8;
+		YPos2 = 104+2.5*8;
+	}
+	else if ( option4 == 0 ) {
+		NumOptions = 3;
+		YPos1 = 104+1*8;
+		YPos2 = 104+2*8;
+		YPos3 = 104+3*8;
+	}
+	else if ( option5 == 0 ) {
+		NumOptions = 4;
+		YPos1 = 104+0.5*8;
+		YPos2 = 104+1.5*8;
+		YPos3 = 104+2.5*8;
+		YPos4 = 104+3.5*8;
+	}
+	else {
+		NumOptions = 5;
+		YPos1 = 104;
+		YPos2 = 104+1*8;
+		YPos3 = 104+2*8;
+		YPos4 = 104+3*8;
+		YPos5 = 104+4*8;
+	}
+	int Selection = optionstart;
+	int InitialDelay = 30;
+	int LongestText = FONT_LA_WIDTH(option1);
+	if ( FONT_LA_WIDTH(option2) > LongestText )
+		LongestText = FONT_LA_WIDTH(option2);
+	if ( FONT_LA_WIDTH(option3) > LongestText )
+		LongestText = FONT_LA_WIDTH(option3);
+	if ( FONT_LA_WIDTH(option4) > LongestText )
+		LongestText = FONT_LA_WIDTH(option4);
+	if ( FONT_LA_WIDTH(option5) > LongestText )
+		LongestText = FONT_LA_WIDTH(option5);
+	while(true){
+		MessageDrawStuff(0, npcname, 0, 0);
+		//textrow 1
+		Screen->DrawString(6, 32, 40, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow1full, OP_OPAQUE);
+		Screen->DrawString(6, 32, 40, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow1red, OP_OPAQUE);
+		Screen->DrawString(6, 32, 40, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow1before, OP_OPAQUE);
+		//textrow 2
+		Screen->DrawString(6, 32, 48, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow2full, OP_OPAQUE);
+		Screen->DrawString(6, 32, 48, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow2red, OP_OPAQUE);
+		Screen->DrawString(6, 32, 48, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow2before, OP_OPAQUE);
+		//textrow 3
+		Screen->DrawString(6, 32, 56, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow3full, OP_OPAQUE);
+		Screen->DrawString(6, 32, 56, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow3red, OP_OPAQUE);
+		Screen->DrawString(6, 32, 56, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow3before, OP_OPAQUE);
+		//choice box
+		Screen->DrawTile(6, 88, 96, 63714, 5, 4, 5, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		//options
+		Screen->DrawString(6, 128, YPos1, FONT_GBLA, 0x01, -1, TF_CENTERED, option1, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos2, FONT_GBLA, 0x01, -1, TF_CENTERED, option2, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos3, FONT_GBLA, 0x01, -1, TF_CENTERED, option3, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos4, FONT_GBLA, 0x01, -1, TF_CENTERED, option4, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos5, FONT_GBLA, 0x01, -1, TF_CENTERED, option5, OP_OPAQUE);
+		
+		if ( InitialDelay == 0 ) {
+			if ( Selection == 1 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos1, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos1, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 2 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos2, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos2, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 3 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos3, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos3, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 4 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos4, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos4, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 5 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos5, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos5, 63739, 5, OP_OPAQUE);
+			}
+			
+			if ( Link->PressUp ) {
+				Game->PlaySound(5);
+				Selection --;
+				if ( Selection < 1 )
+					Selection = NumOptions;
+			}
+			else if ( Link->PressDown ) {
+				Game->PlaySound(5);
+				Selection ++;
+				if ( Selection > NumOptions )
+					Selection = 1;
+			}
+			else if ( Link->PressB && optionb > 0 ) {
+				GV[ButtonBLocked] = 1;
+				WaitNoAction();
+				return optionb;
+			}
+			else if ( Link->PressA ) {
+				GV[ButtonALocked] = 1;
+				WaitNoAction();
+				return Selection;
+			}
+		}
+		
+		if ( InitialDelay > 0 )
+			InitialDelay --;
+		WaitNoAction();
+	}
+}
+
+int MooshPit_OnPit(int LinkX, int LinkY, bool countFFCs){
+	if(Link->Action==LA_FROZEN)
+		return -1;
+	
+	if(countFFCs){
+		if(MooshPit_OnFFC(LinkX, LinkY))
+			return -1;
+	}
+	
+	bool sideview;
+	if(Screen->Flags[SF_ROOMTYPE]&100b)
+		sideview = true;
+	//wew lad
+	int width = MOOSHPIT_LINKHITBOXWIDTH;
+	int height = MOOSHPIT_LINKHITBOXHEIGHT;
+	
+	int total;
+	int solidTotal;
+	
+	for(int x=0; x<=1; x++){
+		for(int y=0; y<=1; y++){
+			int X; int Y;
+			if(sideview){ //Hitbox functions differently in sideview
+				width = MOOSHPIT_SIDEVIEW_LINKHITBOXWIDTH;
+				height = MOOSHPIT_SIDEVIEW_LINKHITBOXHEIGHT;
+				X = Floor(LinkX+7-width/2+(width-1)*x)+1;
+				Y = Floor(LinkY+7-height/2+(height-1)*y)+1;
+			}
+			else{
+				X = Floor(LinkX+7-width/2+(width-1)*x)+1;
+				Y = Floor(LinkY+11-height/2+(height-1)*y)+1;
+			}
+			
+			//If one corner of Link's hitbox is on a pit, flag that corner as covered
+			if(Screen->ComboT[ComboAt(X, Y)]==CT_HOLELAVA){
+				total |= 1<<(1+(x+y*2));
+			}
+			//If Link is on a solid combo, count that corner as a pit
+			if(Screen->isSolid(X, Y)){
+				solidTotal |= 1<<(x+y*2);
+			}
+		}
+	}
+	if(total>0) //Assuming Link is on at least one actual pit, add up the solid and nonsolid pits
+		return (total>>1)|(solidTotal<<4);
+	return -1;
+}
+
+bool MooshPit_OnFFC(int LinkX, int LinkY){
+	for(int i=1; i<=32; i++){ //Cycle through every FFC
+		ffc f = Screen->LoadFFC(i);
+		//Check if the FFC is solid
+		if(f->Data>0&&!f->Flags[FFCF_CHANGER]&&!f->Flags[FFCF_ETHEREAL]){
+			//Check if Link collides with the FFC
+			if(RectCollision(LinkX+4, LinkY+9, LinkX+11, LinkY+14, f->X, f->Y, f->X+f->EffectWidth-1, f->Y+f->EffectHeight-1)){
+				return true;
+			}
+		}
+	}
+	//If Link doesn't collide with any FFC, return false
+	return false;
+}
+
+void MooshPit_Init(){
+	MooshPit[MP_LASTX] = Link->X;
+	MooshPit[MP_LASTY] = Link->Y;
+	MooshPit[MP_LASTDMAP] = Game->GetCurDMap();
+	MooshPit[MP_LASTSCREEN] = Game->GetCurDMapScreen();
+	MooshPit[MP_ENTRYX] = Link->X;
+	MooshPit[MP_ENTRYY] = Link->Y;
+	MooshPit[MP_ENTRYDMAP] = Game->GetCurDMap();
+	MooshPit[MP_ENTRYSCREEN] = Game->GetCurDMapScreen();
+	MooshPit[MP_FALLSTATE] = 0;
+	MooshPit[MP_FALLTIMER] = 0;
+	Link->CollDetection = true;
+	Link->Invisible = false;
+}
+
+void MooshPit_Update(){
+	int i;
+	bool isWarp;
+	if(Screen->Flags[SF_MISC]&(1<<SF_MISC_MOOSHPITWARP))
+		isWarp = true;
+	
+	bool sideview;
+	if(Screen->Flags[SF_ROOMTYPE]&100b)
+		sideview = true;
+	
+	if(Link->Action!=LA_SCROLLING){
+		//Update the entry point whenever the screen changes
+		if(MooshPit[MP_ENTRYDMAP]!=Game->GetCurDMap()||MooshPit[MP_ENTRYSCREEN]!=Game->GetCurDMapScreen()){
+			MooshPit[MP_ENTRYX] = Link->X;
+			MooshPit[MP_ENTRYY] = Link->Y;
+			MooshPit[MP_ENTRYDMAP] = Game->GetCurDMap();
+			MooshPit[MP_ENTRYSCREEN] = Game->GetCurDMapScreen();
+		}
+		
+		if(MooshPit[MP_FALLSTATE]==0){ //Not falling in pit
+			int onPit = MooshPit_OnPit(Link->X, Link->Y, true);
+			//Check if slidey pits are enabled and it's not sideview
+			if(MOOSHPIT_ENABLE_SLIDEYPITS&&!IsSideview()){
+				if(Link->Z<=0&&onPit>-1){ //If Link is partially on a pit
+					int slideVx; int slideVy;
+					int reps = 1;
+					//Check if it's a frame Link should be moved
+					if(MooshPit[MP_SLIDETIMER]%MOOSHPIT_SLIDEYPIT_FREQ==0||MooshPit[MP_SLIDETIMER]>=MOOSHPIT_SLIDEYPIT_MAXTIME){
+						if((onPit&0111b)==0111b){ //Going up-left
+							slideVx = -1;
+							slideVy = -1;
+						}
+						else if((onPit&1011b)==1011b){ //Going up-right
+							slideVx = 1;
+							slideVy = -1;
+						}
+						else if((onPit&1101b)==1101b){ //Going down-left
+							slideVx = -1;
+							slideVy = 1;
+						}
+						else if((onPit&1110b)==1110b){ //Going down-right
+							slideVx = 1;
+							slideVy = 1;
+						}
+						else if((onPit&0011b)==0011b){ //Going up
+							slideVy = -1;
+						}
+						else if((onPit&1100b)==1100b){ //Going down
+							slideVy = 1;
+						}
+						else if((onPit&0101b)==0101b){ //Going left
+							slideVx = -1;
+						}
+						else if((onPit&1010b)==1010b){ //Going right
+							slideVx = 1;
+						}
+						else if((onPit&0001b)==0001b){ //Going up-left
+							slideVx = -1;
+							slideVy = -1;
+						}
+						else if((onPit&0010b)==0010b){ //Going up-right
+							slideVx = 1;
+							slideVy = -1;
+						}
+						else if((onPit&0100b)==0100b){ //Going down-left
+							slideVx = -1;
+							slideVy = 1;
+						}
+						else if((onPit&1000b)==1000b){ //Going down-right
+							slideVx = 1;
+							slideVy = 1;
+						}
+						
+						//DEBUG DRAWS
+						//VX
+						// Screen->DrawInteger(6, 0, 0, FONT_Z1, 0x01, 0x0F, -1, -1, slideVx, 0, 128);
+						//VY
+						// Screen->DrawInteger(6, 0, 8, FONT_Z1, 0x01, 0x0F, -1, -1, slideVy, 0, 128);
+						//ONPIT BITS
+						// Screen->DrawInteger(6, 0, 16, FONT_Z1, 0x01, 0x0F, -1, -1, (onPit&1000b)>>3, 0, 128);
+						// Screen->DrawInteger(6, 8, 16, FONT_Z1, 0x01, 0x0F, -1, -1, (onPit&0100b)>>2, 0, 128);
+						// Screen->DrawInteger(6, 16, 16, FONT_Z1, 0x01, 0x0F, -1, -1, (onPit&0010b)>>1, 0, 128);
+						// Screen->DrawInteger(6, 24, 16, FONT_Z1, 0x01, 0x0F, -1, -1, (onPit&0001b), 0, 128);
+						
+						//If Link is over the max slide time, increase the speed every 4 frames
+						if(MooshPit[MP_SLIDETIMER]>=MOOSHPIT_SLIDEYPIT_MAXTIME)
+							reps += Floor((MooshPit[MP_SLIDETIMER]-MOOSHPIT_SLIDEYPIT_MAXTIME)/MOOSHPIT_SLIDEYPIT_ACCELFREQ);
+					}
+					
+					for(i=0; i<reps; i++){
+						if(slideVx<0&&CanWalk(Link->X, Link->Y, DIR_LEFT, 1, false)){
+							Link->X--;
+						}
+						else if(slideVx>0&&CanWalk(Link->X, Link->Y, DIR_RIGHT, 1, false)){
+							Link->X++;
+						}
+						if(slideVy<0&&CanWalk(Link->X, Link->Y, DIR_UP, 1, false)){
+							Link->Y--;
+						}
+						else if(slideVy>0&&CanWalk(Link->X, Link->Y, DIR_DOWN, 1, false)){
+							Link->Y++;
+						}
+					}
+					MooshPit[MP_SLIDETIMER]++;
+				}
+				else{
+					MooshPit[MP_SLIDETIMER] = 0;
+				}
+			}
+			if(onPit>-1){
+				//Combine solid combo bits with pit bits
+				onPit |= (onPit>>4);
+				//Remove non pit bits
+				onPit &= 1111b;
+			}
+			if(Link->Z<=0&&onPit==15){ //If Link steps on a pit
+				int underLink;
+				if(!sideview){
+					underLink = ComboAt(Link->X+8, Link->Y+12);
+					if(Screen->ComboT[underLink]!=CT_HOLELAVA){
+						for(i=0; i<4; i++){
+							underLink = ComboAt(Link->X+15*(i%2), Link->Y+8+7*Floor(i/2));
+							if(Screen->ComboT[underLink]==CT_HOLELAVA)
+								break;
+						}
+					}
+				}
+				else{
+					underLink = ComboAt(Link->X+8, Link->Y+8);
+					if(Screen->ComboT[underLink]!=CT_HOLELAVA){
+						for(i=0; i<4; i++){
+							underLink = ComboAt(Link->X+15*(i%2), Link->Y+15*Floor(i/2));
+							if(Screen->ComboT[underLink]==CT_HOLELAVA)
+								break;
+						}
+					}
+				}
+			
+				lweapon fall;
+				
+				//Check if the combo is lava
+				if(ComboFI(underLink, CF_LAVA)){
+					//Play sound and display animation
+					Game->PlaySound(SFX_FALLLAVA);
+					fall = CreateLWeaponAt(LW_SCRIPT10, Link->X, Link->Y);
+					if(!MOOSHPIT_NO_GRID_SNAP){
+						fall->X = ComboX(underLink);
+						fall->Y = ComboY(underLink);
+					}
+					fall->UseSprite(SPR_FALLLAVA);
+					fall->CollDetection = false;
+					fall->DeadState = fall->ASpeed*fall->NumFrames;
+				
+					//Mark as lava damage
+					MooshPit[MP_DAMAGETYPE] = 1;
+				}
+				//Otherwise it's a pit
+				else{
+					//Play sound and display animation
+					Game->PlaySound(SFX_FALLHOLE);
+					fall = CreateLWeaponAt(LW_SCRIPT10, Link->X, Link->Y);
+					if(!MOOSHPIT_NO_GRID_SNAP){
+						fall->X = ComboX(underLink);
+						fall->Y = ComboY(underLink);
+						if(isWarp){
+							Link->X = ComboX(underLink);
+							Link->Y = ComboY(underLink);
+						}
+					}
+					fall->UseSprite(SPR_FALLHOLE);
+					fall->CollDetection = false;
+					fall->DeadState = fall->ASpeed*fall->NumFrames;
+				
+					//Mark as hole damage
+					MooshPit[MP_DAMAGETYPE] = 0;
+				}
+				
+				MooshPit[MP_FALLX] = Link->X;
+				MooshPit[MP_FALLY] = Link->Y;
+				
+				//Cooldown should last as long as the fall animation
+				MooshPit[MP_FALLSTATE] = 1;
+				MooshPit[MP_FALLTIMER] = Max(MOOSHPIT_MIN_FALL_TIME, fall->DeadState+MOOSHPIT_EXTRA_FALL_TIME);
+				
+				//Render Link invisible and intangible
+				Link->Invisible = true;
+				Link->CollDetection = false;
+				
+				NoAction();
+			}
+			else if(MooshPit_OnPit(Link->X, Link->Y, false)==-1&&Link->Action!=LA_FROZEN){ //All other times, while Link is on solid ground, record Link's last position
+				if(sideview){
+					//Link has no Z value in sideview, so we check if he's on a platform instead
+					if(OnSidePlatform(Link->X, Link->Y)){
+						MooshPit[MP_LASTDMAP] = Game->GetCurDMap();
+						MooshPit[MP_LASTSCREEN] = Game->GetCurDMapScreen();
+						MooshPit[MP_LASTX] = Link->X;
+						MooshPit[MP_LASTY] = Link->Y;
+					}
+				}
+				else{
+					if(Link->Z<=0){
+						MooshPit[MP_LASTDMAP] = Game->GetCurDMap();
+						MooshPit[MP_LASTSCREEN] = Game->GetCurDMapScreen();
+						MooshPit[MP_LASTX] = Link->X;
+						MooshPit[MP_LASTY] = Link->Y;
+					}
+				}
+			}
+		}
+		else if(MooshPit[MP_FALLSTATE]==1){ //Falling animation
+			if(MooshPit[MP_FALLTIMER]>0)
+				MooshPit[MP_FALLTIMER]--;
+		
+			Link->Jump = 0;
+			Link->Z = 0;
+			
+			//Keep Link invisible just in case
+			Link->Invisible = true;
+			Link->CollDetection = false;
+			NoAction();
+			if(MooshPit[MP_FALLTIMER]==0){
+				MooshPit[MP_SLIDETIMER] = 0;
+				if(!isWarp||MooshPit[MP_DAMAGETYPE]==1){ //If the pit isn't a warp, deal damage and move Link back to the return point
+					//If the entry would dump Link back in the pit, dump him out at the failsafe position
+					if(MooshPit_OnPit(MooshPit[MP_ENTRYX], MooshPit[MP_ENTRYY], false)==15){
+						Link->X = MooshPit[MP_LASTX];
+						Link->Y = MooshPit[MP_LASTY];
+						//If the failsafe position was on a different screen, warp there
+						if(Game->GetCurDMap()!=MooshPit[MP_LASTDMAP]||Game->GetCurDMapScreen()!=MooshPit[MP_LASTSCREEN]){
+							Link->PitWarp(MooshPit[MP_LASTDMAP], MooshPit[MP_LASTSCREEN]);
+						}
+				
+						Link->Invisible = false;
+						Link->CollDetection = true;
+					}
+					else{
+						//Move Link to the start and make him visible
+						Link->X = MooshPit[MP_ENTRYX];
+						Link->Y = MooshPit[MP_ENTRYY];
+						
+						Link->Invisible = false;
+						Link->CollDetection = true;
+					}
+					
+					//Subtract HP based on damage type
+					if(MooshPit[MP_DAMAGETYPE]==1)
+						Link->HP -= DAMAGE_FALLLAVA;
+					else
+						Link->HP -= DAMAGE_FALLHOLE;
+					//Play hurt sound and animation
+					Link->Action = LA_GOTHURTLAND;
+					Link->HitDir = -1;
+					Game->PlaySound(SFX_OUCH);
+					
+					MooshPit[MP_FALLSTATE] = 0;
+				}
+				else{
+					MooshPit[MP_FALLSTATE] = 2;
+					MooshPit[MP_FALLTIMER] = 1;
+					ffc warp = Screen->LoadFFC(FFC_MOOSHPIT_AUTOWARPA);
+					warp->Data = CMB_MOOSHPIT_AUTOWARPA;
+					warp->Flags[FFCF_CARRYOVER] = false;
+				}
+			}
+		}
+		else if(MooshPit[MP_FALLSTATE]==2){ //Just warped
+			if(sideview){
+				Link->X = MooshPit[MP_FALLX];
+				Link->Y = 0;
+			}
+			else{
+				Link->X = MooshPit[MP_FALLX];
+				Link->Y = MooshPit[MP_FALLY];
+				Link->Z = 176;
+			}
+			Link->Invisible = false;
+			Link->CollDetection = true;
+			
+			if(MOOSHPIT_NO_MOVE_WHILE_FALLING){
+				MooshPit[MP_FALLSTATE] = 3;
+				NoAction();
+			}
+			else
+				MooshPit[MP_FALLSTATE] = 0;
+			MooshPit[MP_FALLTIMER] = 0;
+		}
+		else if(MooshPit[MP_FALLSTATE]==3){ //Falling (no action)
+			NoAction();
+			if(IsSideview()){
+				if(OnSidePlatform(Link->X, Link->Y))
+					MooshPit[MP_FALLSTATE] = 0;
+			}
+			else{
+				if(Link->Z<=0)
+					MooshPit[MP_FALLSTATE] = 0;
+			}
+		}
+	}
+}
+
+void MooshPit_ResetEntry(){
+	MooshPit[MP_ENTRYX] = Link->X;
+	MooshPit[MP_ENTRYY] = Link->Y;
+	MooshPit[MP_ENTRYDMAP] = Game->GetCurDMap();
+	MooshPit[MP_ENTRYSCREEN] = Game->GetCurDMapScreen();
+}
+
+//Function to freeze the screen
+void MooshMap_ScreenFreeze(){
+	ffc f1 = Screen->LoadFFC(FFC_SCREENFREEZEA);
+	f1->Data = CMB_SCREENFREEZEA;
+	ffc f2 = Screen->LoadFFC(FFC_SCREENFREEZEB);
+	f2->Data = CMB_SCREENFREEZEB;
+}
+
+//Function to unfreeze the screen
+void MooshMap_ScreenUnfreeze(){
+	ffc f1 = Screen->LoadFFC(FFC_SCREENFREEZEA);
+	f1->Data = 0;
+	ffc f2 = Screen->LoadFFC(FFC_SCREENFREEZEB);
+	f2->Data = 0;
+}
+
+//Run in the first frame of the global
+void MooshMap_Init(){
+	MooshMap_ScreenUnfreeze(); //If the screen is somehow frozen when starting, unfreeze
+	MooshMap[MM_ISOPEN] = 0; //In case of F6
+	
+	MooshMap[MM_LASTDMAP] = Game->GetCurDMap();
+	MooshMap[MM_LASTSCREEN] = Game->GetCurScreen();
+	MooshMap[MM_LASTSCREENSTATES] = MooshMap_GetAllScreenStates();
+}
+
+//Run every frame in the global to run the map script
+void MooshMap_Update(){
+	if(MOOSHMAP_VISITED_CARRYOVER){
+		MooshMap_UpdateCarryover();
+	}
+	if(Game->DMapFlags[Game->GetCurDMap()]&(1<<DMF_ALLOWMAP)){
+		if(MooshMap[MM_ISOPEN]){ //If the map is open
+			if(MooshMap[MM_OPENFRAMES]>0){ //Opening animation
+				if(MooshMap[MM_OPENFRAMES]>9){
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else if(MooshMap[MM_OPENFRAMES]>6){
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else if(MooshMap[MM_OPENFRAMES]>3){
+					MooshMap_DrawAll(MooshMap[MM_SELECTEDFLOOR]);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else{
+					MooshMap_DrawAll(MooshMap[MM_SELECTEDFLOOR]);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				MooshMap[MM_OPENFRAMES]--;
+			}
+			else{
+				MooshMap_DrawAll(MooshMap[MM_SELECTEDFLOOR]);
+				if(MooshMap[MM_NUMFLOORS]>1){
+					if(Link->InputUp||Link->InputDown){
+						if(Link->InputUp&&!Link->InputDown){
+							if(MooshMap[MM_FLOORSWITCHFRAMES]>0)
+								MooshMap[MM_FLOORSWITCHFRAMES]--;
+						}
+						else if(Link->InputDown&&!Link->InputUp){
+							if(MooshMap[MM_FLOORSWITCHFRAMES]>0)
+								MooshMap[MM_FLOORSWITCHFRAMES]--;
+						}
+						else
+							MooshMap[MM_FLOORSWITCHFRAMES] = 16;
+					}
+					if(Link->PressUp||(Link->InputUp&&MooshMap[MM_FLOORSWITCHFRAMES]<=0)){
+						MooshMap[MM_FLOORSWITCHFRAMES] = 16;
+						Game->PlaySound(SFX_MAPSUBSCREEN_FLOORCHANGE);
+						MooshMap[MM_SELECTEDFLOOR]++;
+						//Wrap selection
+						if(MooshMap[MM_SELECTEDFLOOR]>MooshMap[MM_NUMFLOORS]-1)
+							MooshMap[MM_SELECTEDFLOOR] = 0;
+						MooshMap_UpdateBitmap(MooshMap[MM_SELECTEDFLOOR]); //The floor has changed, so we must update the bitmaps
+					}
+					else if(Link->PressDown||(Link->InputDown&&MooshMap[MM_FLOORSWITCHFRAMES]<=0)){
+						MooshMap[MM_FLOORSWITCHFRAMES] = 16;
+						Game->PlaySound(SFX_MAPSUBSCREEN_FLOORCHANGE);
+						MooshMap[MM_SELECTEDFLOOR]--;
+						//Wrap selection
+						if(MooshMap[MM_SELECTEDFLOOR]<0)
+							MooshMap[MM_SELECTEDFLOOR] = MooshMap[MM_NUMFLOORS]-1;
+						MooshMap_UpdateBitmap(MooshMap[MM_SELECTEDFLOOR]); //The floor has changed, so we must update the bitmaps
+						
+					}
+				}
+				if(Link->PressMap){
+					Game->PlaySound(SFX_MAPSUBSCREEN_CLOSE);
+					MooshMap[MM_ISOPEN] = 0; //The map is closed now
+					MooshMap[MM_OPENFRAMES] = 12; //It takes 12 frames to play the full closing animation
+				}
+				Link->InputStart = false;
+				Link->PressStart = false;
+				NoAction();
+			}
+		}
+		else{ //Otherwise, check if Link is trying to open it
+			if(MooshMap[MM_OPENFRAMES]>0){ //Closing animation
+				if(MooshMap[MM_OPENFRAMES]>9){
+					MooshMap_DrawAll(MooshMap[MM_SELECTEDFLOOR]);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else if(MooshMap[MM_OPENFRAMES]>6){
+					MooshMap_DrawAll(MooshMap[MM_SELECTEDFLOOR]);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else if(MooshMap[MM_OPENFRAMES]>3){
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				else{
+					Screen->Rectangle(7, 0, 0, 255, 175, C_BLACK, 1, 0, 0, 0, true, 64);
+				}
+				MooshMap[MM_OPENFRAMES]--;
+				if(MooshMap[MM_OPENFRAMES]<=0) //Unfreeze once the closing animation ends
+					MooshMap_ScreenUnfreeze();
+			}
+			else if(Link->PressMap){
+				if(MooshMap_LoadLevelMapData()){ //Only continue if we can get the floor data successfully
+					MooshMap_ScreenFreeze();
+					MooshMap_UpdateBitmap(MooshMap[MM_SELECTEDFLOOR]); //Update the non animated parts of the map before loading (screens, markers)
+					Game->PlaySound(SFX_MAPSUBSCREEN_OPEN);
+					MooshMap[MM_ISOPEN] = 1; //The map is open now
+					MooshMap[MM_OPENFRAMES] = 12; //It takes 12 frames to play the full opening animation
+				}
+			}
+		}
+		Link->InputMap = false;
+		Link->PressMap = false;
+	}
+}
+
+//Get a decimal number from a combo on a screen.
+//If it's not a decimal marker combo, return -1.
+int MooshMap_GetCMBDec(int map, int scrn, int pos){
+	int cd = Game->GetComboData(map, scrn, pos);
+	if(cd>=CMB_DEC&&cd<=CMB_DEC+MAX_DEC)
+		return cd-CMB_DEC;
+	return -1;
+}
+
+//Get a hexadecimal number from a combo on a screen.
+//If it's not a hex marker combo, return -1.
+int MooshMap_GetCMBHex(int map, int scrn, int pos){
+	int cd = Game->GetComboData(map, scrn, pos);
+	if(cd>=CMB_HEX&&cd<=CMB_HEX+MAX_HEX)
+		return cd-CMB_HEX;
+	return -1;
+}
+
+//Get map data from a screen based on the current Level
+bool MooshMap_LoadLevelMapData(){
+	if(Game->GetCurScreen()>=0x80)
+		return false;
+	
+	int num;
+	int level = Game->GetCurLevel();
+	num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 3);
+	MooshMap[MM_BGMAP] = MAP_MOOSHMAP_BG;
+	MooshMap[MM_BGSCREEN] = SCREEN_MOOSHMAP_BG;
+	if(num>-1){ //If there's a custom background map set, store that
+		MooshMap[MM_BGMAP] = num;
+		num = MooshMap_GetCMBHex(MAP_MOOSHMAP_DATA, level, 4);
+		if(num>-1) //Same for background screen
+			MooshMap[MM_BGSCREEN] = num;
+	}
+	MooshMap[MM_NUMFLOORS] = 0;
+	MooshMap[MM_SELECTEDFLOOR] = 0;
+	MooshMap[MM_LINKFLOOR] = -1;
+	for(int i=0; i<13; i++){ //Cycle through all valid floor slots
+		num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 51+i);
+		if(num==-1) //If there's no valid ref map at this position
+			break; //Break the loop
+		else{ //Otherwise, assume this is a valid floor
+			MooshMap[MM_NUMFLOORS]++;
+			
+			//Combo, CSet
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORCMB] = Game->GetComboData(MAP_MOOSHMAP_DATA, level, 35+i);
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORCS] = Game->GetComboCSet(MAP_MOOSHMAP_DATA, level, 35+i);
+			
+			//Ref Map (Also used earlier to check if it's a valid floor)
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_REFMAP] = num;
+			
+			//Ref Screen
+			num = MooshMap_GetCMBHex(MAP_MOOSHMAP_DATA, level, 67+i);
+			if(num==-1) //Error
+				return false;
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_REFSCREEN] = num;
+			
+			//Marker Screen
+			num = MooshMap_GetCMBHex(MAP_MOOSHMAP_DATA, level, 83+i);
+			if(num==-1) //Error
+				return false;
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_MARKERSCREEN] = num;
+			
+			//Marker Screen 2
+			num = MooshMap_GetCMBHex(MAP_MOOSHMAP_DATA, level, 99+i);
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_MARKERSCREEN2] = num;
+			
+			//Floor DMap 1
+			num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 115+i);
+			if(num==-1) //Error
+				return false;
+			if(Game->GetCurDMap()==num){ //If Link is on the current DMap, set Link's floor and the current floor
+				MooshMap[MM_LINKFLOOR] = i;
+				MooshMap[MM_SELECTEDFLOOR] = i;
+			}
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORDMAPS] = num;
+			
+			//Floor DMap 2 (Optional)
+			num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 131+i);
+			if(Game->GetCurDMap()==num){ //If Link is on the current DMap, set Link's floor and the current floor
+				MooshMap[MM_LINKFLOOR] = i;
+				MooshMap[MM_SELECTEDFLOOR] = i;
+			}
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORDMAPS+1] = num;
+			
+			//Floor DMap 3 (Optional)
+			num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 147+i);
+			if(Game->GetCurDMap()==num){ //If Link is on the current DMap, set Link's floor and the current floor
+				MooshMap[MM_LINKFLOOR] = i;
+				MooshMap[MM_SELECTEDFLOOR] = i;
+			}
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORDMAPS+2] = num;
+			
+			//Floor DMap 4 (Optional)
+			num = MooshMap_GetCMBDec(MAP_MOOSHMAP_DATA, level, 163+i);
+			if(Game->GetCurDMap()==num){ //If Link is on the current DMap, set Link's floor and the current floor
+				MooshMap[MM_LINKFLOOR] = i;
+				MooshMap[MM_SELECTEDFLOOR] = i;
+			}
+			MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORDMAPS+3] = num;
+		}
+	}
+	if(MooshMap[MM_NUMFLOORS]==0) //Can't have a map with 0 floors
+		return false;
+	return true; //Heyyy, we've loaded everything with no issue
+}
+
+//Draw the map and markers to various parts of the bitmap
+void MooshMap_UpdateBitmap(int floor){
+	int cmb; int cs; int flag; 
+	int cmbMarker; int csMarker; int ctMarker; 
+	int pos; 
+	int i; int j; int k;
+	bool test1; bool test2;
+
+	Screen->SetRenderTarget(RT_MOOSHMAP);
+	Screen->Rectangle(6, 0, 0, 511, 511, 0x00, 1, 0, 0, 0, true, 128); //Clear the bitmap
+	
+	int refMap = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_REFMAP];
+	int refScreen = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_REFSCREEN];
+	int markerScreen = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_MARKERSCREEN];
+	
+	//Find the first DMap associated with the current floor
+	int dmap = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_FLOORDMAPS];
+	if(MooshMap[MM_LINKFLOOR]==floor)
+		dmap = Game->GetCurDMap();
+	int srcMap = Game->DMapMap[dmap];
+	int offset = Game->DMapOffset[dmap];
+	
+	bool visited[64];
+	//Cycle through all screens once to find which have been visited
+	for(i=0; i<64; i++){
+		pos = i%8+Floor(i/8)*16;
+		if(Game->GetScreenState(srcMap, pos+offset, ST_VISITED)){
+			flag = Game->GetComboFlag(refMap, refScreen, pos);
+			if(flag>0&&!visited[i]){ //If a combo has a flag, it's part of a screen group
+				for(j=0; j<64; j++){ //Cycle through every screen again to
+					pos = j%8+Floor(j/8)*16;
+					if(Game->GetComboFlag(refMap, refScreen, pos)==flag) //All screens that share the flag should be marked as visited
+						visited[j] = true;
+				}
+			}
+			visited[i] = true;
+		}
+	}
+	
+	//Cycle through all the screens again and draw them this time
+	for(i=0; i<64; i++){
+		pos = i%8+Floor(i/8)*16;
+		cmb = Game->GetComboData(refMap, refScreen, pos);
+		cs = Game->GetComboCSet(refMap, refScreen, pos);
+		
+		if(Game->LItems[Game->GetCurLevel()]&LI_MAP) //If Link has the map, draw unvisited screens
+			Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8), MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8), cmb, cs, 128);
+		if(visited[i]) //If Link has been to the screen, or one grouped with it, draw it
+			Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+256, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8), cmb+1, cs, 128);
+		if(Game->LItems[Game->GetCurLevel()]&LI_COMPASS){ //If Link has the compass, show markers
+			for(k=0; k<2; k++){ //Repeat twice if MarkerScreen2 is set
+				int markerLayerOffset = 256*k;
+				markerScreen = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_MARKERSCREEN];
+				if(MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_MARKERSCREEN2]<0) //jesus christ, man, why are you doing it this way
+					k = 2; //seriously dude, no!
+				else if(k==1)
+					markerScreen = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_MARKERSCREEN2];
+				ctMarker = Game->GetComboType(refMap, markerScreen, pos);
+				if(ctMarker==CT_CHEST){ //Marker for Screen Item or Special Item (2 states: 0 = Item present, 1 = Item taken)
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					test1 = Game->GetScreenState(srcMap, pos+offset, ST_ITEM) || Game->GetScreenState(srcMap, pos+offset, ST_SPECIALITEM);
+					if(test1)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+				else if(ctMarker==CT_BOSSCHEST){ //Marker for Screen Item and Special Item (4 states: 0 = Both items present, 1 = Screen item present, 2 = Special item present, 3 = Both items taken);
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					test1 = Game->GetScreenState(srcMap, pos+offset, ST_ITEM);
+					test2 = Game->GetScreenState(srcMap, pos+offset, ST_SPECIALITEM);
+					if(test1&&test2)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+3, csMarker, 128);
+					else if(test1)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+2, csMarker, 128);
+					else if(test2)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+				else if(ctMarker==CT_DAMAGE1){ //Marker for bosses. Removed based on the level's boss flag. (2 states: 0 = Boss alive, 1 = Boss dead)
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					if(Game->LItems[Game->GetCurLevel()]&LI_BOSS)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+				else if(ctMarker==CT_STEP){ //Marker for screen secrets. (2 states: 0 = Secret not triggered, 1 = Secret triggered)
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					test1 = Game->GetScreenState(srcMap, pos+offset, ST_SECRET);
+					if(test1)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+				else if(ctMarker==CT_LOCKBLOCK){ //Marker for lock blocks. (2 states: 0 = Locked, 1 = Unlocked)
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					test1 = Game->GetScreenState(srcMap, pos+offset, ST_LOCKBLOCK);
+					if(test1)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+				else if(ctMarker==CT_BOSSLOCKBLOCK){ //Marker for boss lock blocks. (2 states: 0 = Locked, 1 = Unlocked)
+					cmbMarker = Game->GetComboData(refMap, markerScreen, pos);
+					csMarker = Game->GetComboCSet(refMap, markerScreen, pos);
+					test1 = Game->GetScreenState(srcMap, pos+offset, ST_BOSSLOCKBLOCK);
+					if(test1)
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker+1, csMarker, 128);
+					else
+						Screen->FastCombo(6, MOOSHMAP_MAP_SQUARE_SCALE*(i%8)+markerLayerOffset, MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8)+176, cmbMarker, csMarker, 128);
+				}
+			}
+		}
+	}
+	Screen->SetRenderTarget(RT_SCREEN);
+}
+
+//Draw the entire map
+void MooshMap_DrawAll(int floor){
+	Screen->DrawScreen(7, MooshMap[MM_BGMAP], MooshMap[MM_BGSCREEN], 0, 0, 0);
+	MooshMap_DrawMap(floor, MOOSHMAP_MAP_X, MOOSHMAP_MAP_Y);
+	MooshMap_DrawFloors(floor);
+	if(MOOSHMAP_SHOW_LITEMS)
+		MooshMap_DrawDungeonItems();
+	if(MOOSHMAP_SHOW_TITLE)
+		MooshMap_DrawTitle();
+}
+
+//Draw just the map block
+void MooshMap_DrawMap(int floor, int x, int y){
+	int refMap = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_REFMAP];
+	int refScreen = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*floor+MM_F_REFSCREEN];
+	
+	int cmb; int cs; int flag; 
+	int pos; 
+	int i;
+	int maxScale = MOOSHMAP_MAP_SQUARE_SCALE*8+1;
+	//Draw unvisited layer
+	Screen->DrawBitmap(7, RT_MOOSHMAP, 0, 0, maxScale, maxScale, x, y, maxScale, maxScale, 0, true);
+	//Draw visited layer
+	Screen->DrawBitmap(7, RT_MOOSHMAP, 256, 0, maxScale, maxScale, x, y, maxScale, maxScale, 0, true);
+	//Draw current screen layer
+	if(floor==MooshMap[MM_LINKFLOOR]&&MOOSHMAP_HIGHLIGHTCURRENTROOM){
+		pos = Game->GetCurDMapScreen();
+		flag = Game->GetComboFlag(refMap, refScreen, pos);
+		if(flag>0){ //Link is in a grouped screen
+			for(i=0; i<64; i++){
+				pos = i%8+Floor(i/8)*16;
+				if(Game->GetComboFlag(refMap, refScreen, pos)==flag){
+					cmb = Game->GetComboData(refMap, refScreen, pos);
+					cs = Game->GetComboCSet(refMap, refScreen, pos);
+					Screen->FastCombo(7, x+MOOSHMAP_MAP_SQUARE_SCALE*(i%8), y+MOOSHMAP_MAP_SQUARE_SCALE*Floor(i/8), cmb+2, cs, 128);
+				}
+			}
+		}
+		else{
+			cmb = Game->GetComboData(refMap, refScreen, pos);
+			cs = Game->GetComboCSet(refMap, refScreen, pos);
+			Screen->FastCombo(7, x+MOOSHMAP_MAP_SQUARE_SCALE*(pos%16), y+MOOSHMAP_MAP_SQUARE_SCALE*Floor(pos/16), cmb+2, cs, 128);
+		}
+	}
+	//Draw marker layer
+	Screen->DrawBitmap(7, RT_MOOSHMAP, 0, 176, maxScale, maxScale, x, y, maxScale, maxScale, 0, true);
+	//Draw second marker layer
+	Screen->DrawBitmap(7, RT_MOOSHMAP, 256, 176, maxScale, maxScale, x, y, maxScale, maxScale, 0, true);
+	//If set to draw Link's position, do so
+	if(MOOSHMAP_DRAWLINKPOSITION&&floor==MooshMap[MM_LINKFLOOR]){
+		pos = Game->GetCurDMapScreen();
+		int linkx = x+(pos%16)*MOOSHMAP_MAP_SQUARE_SCALE;
+		int linky = y+Floor(pos/16)*MOOSHMAP_MAP_SQUARE_SCALE;
+		if(MOOSHMAP_PRECISELINKPOSITION){
+			linkx += MOOSHMAP_PRECISELINKPOSITIONBORDER+(Link->X/240)*(MOOSHMAP_MAP_SQUARE_SCALE-MOOSHMAP_PRECISELINKPOSITIONBORDER*2)-8;
+			linky += MOOSHMAP_PRECISELINKPOSITIONBORDER+(Link->Y/160)*(MOOSHMAP_MAP_SQUARE_SCALE-MOOSHMAP_PRECISELINKPOSITIONBORDER*2)-8;
+		}
+		else{
+			linkx += MOOSHMAP_MAP_SQUARE_SCALE/2-8;
+			linky += MOOSHMAP_MAP_SQUARE_SCALE/2-8;
+		}
+		Screen->FastCombo(7, linkx, linky, CMB_MOOSHMAP_LINKPOSITIONMARKER, CS_MOOSHMAP_LINKPOSITIONMARKER, 128);
+	}
+}
+
+//Draw floor numbers next to the map
+void MooshMap_DrawFloors(int floor){
+	int x; int y;
+	int cmb; int cs;
+	for(int i=0; i<MooshMap[MM_NUMFLOORS]; i++){
+		cmb = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORCMB];
+		cs = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORCS];
+		x = MOOSHMAP_FLOOR_X;
+		y = MOOSHMAP_FLOOR_Y+(MOOSHMAP_FLOOR_SPACING*(MooshMap[MM_NUMFLOORS]-1))/2-MOOSHMAP_FLOOR_SPACING*i;
+		if(i==MooshMap[MM_SELECTEDFLOOR])
+			Screen->DrawCombo(7, x, y, cmb+1, MOOSHMAP_FLOOR_WIDTH, MOOSHMAP_FLOOR_HEIGHT, cs, -1, -1, 0, 0, 0, -1, 0, true, 128);
+		else
+			Screen->DrawCombo(7, x, y, cmb, MOOSHMAP_FLOOR_WIDTH, MOOSHMAP_FLOOR_HEIGHT, cs, -1, -1, 0, 0, 0, -1, 0, true, 128);
+		if(i==MooshMap[MM_LINKFLOOR])
+			Screen->FastCombo(7, x-16, y+((MOOSHMAP_FLOOR_HEIGHT-1)*8), CMB_MOOSHMAP_LINKFLOORMARKER, CS_MOOSHMAP_LINKFLOORMARKER, 128);
+	}
+}
+
+void MooshMap_DrawTitle(){
+	int str[21];
+	Game->GetDMapTitle(Game->GetCurDMap(), str);
+	for(int i=19; i>=0; i--){
+		if(str[i]==' ')
+			str[i] = 0;
+		else
+			break;
+	}
+	Screen->DrawString(7, MOOSHMAP_TITLE_X, MOOSHMAP_TITLE_Y-1, MOOSHMAP_TITLE_FONT, C_BLACK, -1, TF_CENTERED, str, 128);
+	Screen->DrawString(7, MOOSHMAP_TITLE_X, MOOSHMAP_TITLE_Y+1, MOOSHMAP_TITLE_FONT, C_BLACK, -1, TF_CENTERED, str, 128);
+	Screen->DrawString(7, MOOSHMAP_TITLE_X-1, MOOSHMAP_TITLE_Y, MOOSHMAP_TITLE_FONT, C_BLACK, -1, TF_CENTERED, str, 128);
+	Screen->DrawString(7, MOOSHMAP_TITLE_X+1, MOOSHMAP_TITLE_Y, MOOSHMAP_TITLE_FONT, C_BLACK, -1, TF_CENTERED, str, 128);
+	
+	Screen->DrawString(7, MOOSHMAP_TITLE_X, MOOSHMAP_TITLE_Y, MOOSHMAP_TITLE_FONT, C_WHITE, -1, TF_CENTERED, str, 128);
+}
+
+void MooshMap_DrawDungeonItems(){
+	int level = Game->GetCurLevel();
+	if(Game->LItems[level]&LI_MAP)
+		Screen->FastCombo(7, MOOSHMAP_MAPICON_X, MOOSHMAP_MAPICON_Y, CMB_MOOSHMAP_MAP, CS_MOOSHMAP_MAP, 128);
+	if(Game->LItems[level]&LI_COMPASS)
+		Screen->FastCombo(7, MOOSHMAP_COMPASSICON_X, MOOSHMAP_COMPASSICON_Y, CMB_MOOSHMAP_COMPASS, CS_MOOSHMAP_COMPASS, 128);
+	if(Game->LItems[level]&LI_BOSSKEY)
+		Screen->FastCombo(7, MOOSHMAP_BOSSKEYICON_X, MOOSHMAP_BOSSKEYICON_Y, CMB_MOOSHMAP_BOSSKEY, CS_MOOSHMAP_BOSSKEY, 128);
+}
+
+int MooshMap_GetAllScreenStates(){
+	int states;
+	for(int i=0; i<14; i++){
+		if(Screen->State[i])
+			states |= 1<<i;
+	}
+	return states;
+}
+
+void MooshMap_UpdateCarryover(){
+	if(Link->Action!=LA_SCROLLING){
+		int allStates = MooshMap_GetAllScreenStates();
+		if(MooshMap[MM_LASTDMAP]!=Game->GetCurDMap()||MooshMap[MM_LASTSCREEN]!=Game->GetCurScreen()||MooshMap[MM_LASTSCREENSTATES]!=allStates){
+			if(MooshMap[MM_LASTDMAP]!=Game->GetCurDMap()){
+				MooshMap_LoadLevelMapData(); //If what changed was the DMap, make sure the correct level is loaded
+			}
+			MooshMap[MM_LASTDMAP] = Game->GetCurDMap();
+			MooshMap[MM_LASTSCREEN] = Game->GetCurScreen();
+			MooshMap[MM_LASTSCREENSTATES] = allStates;
+			if(Game->DMapFlags[Game->GetCurDMap()]&(1<<DMF_ALLOWMAP)){ //Only bother running carryovers if the allow map flag is set
+				int i; int j; int k;
+				int currentFloor = -1;
+				for(i=0; i<13; i++){ //Cycle through all floors until we find which one Link is on
+					for(j=0; j<4; j++){
+						k = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*i+MM_F_FLOORDMAPS+j];
+						if(Game->GetCurDMap()==k){
+							currentFloor = i;
+							break;
+						}
+					}
+				}
+				if(currentFloor>0){
+					int map; int offset;
+					for(i=0; i<4; i++){ //Cycle through all DMaps on the current floor and set their states
+						k = MooshMap[MM_STARTFLOORINDEX+MM_NUMFLOORINDEX*currentFloor+MM_F_FLOORDMAPS+i];
+						if(k>-1&&k!=Game->GetCurDMap()){ //Don't bother for the current DMap or invalid ones
+							map = Game->DMapMap[k];
+							offset = Game->DMapOffset[k];
+							
+							//Start with carrying over the visited state
+							Game->SetScreenState(map, Game->GetCurDMapScreen()+offset, ST_VISITED, true);
+							//If set to do so, carry over the other 13
+							if(MOOSHMAP_ALL_CARRYOVER){
+								for(j=0; j<14; j++){
+									Game->SetScreenState(map, Game->GetCurDMapScreen()+offset, j, Screen->State[j]);
+								}
+							}
+							//Carry over Screen->D if set
+							if(MOOSHMAP_D_CARRYOVER){
+								for(j=0; j<8; j++){
+									Game->SetDMapScreenD(k, Game->GetCurDMapScreen(), j, Screen->D[j]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+const int LAYER_NPC_CANTALK = 6; //The layer used for the speech bubble
+const int CMB_NPC_CANTALK = 3636; //The combo used for the speech bubble
+const int CS_NPC_CANTALK = 10; //The CSet used for the speech bubble
+
+ffc script NPCScript{
+	void run(int m, int mpos, int npcname, int type){
+		//Saves the width and height of the FFC for collision checks
+		int Width = 16;
+		int Height = 16;
+		if(this->EffectWidth!=16)
+			Width = this->EffectWidth;
+		else if(this->TileWidth>1)
+			Width = this->TileWidth*16;
+		if(this->EffectHeight!=16)
+			Height = this->EffectHeight;
+		else if(this->TileHeight>1)
+			Height = this->TileHeight*16;
+		bool talk = false;
+		while(true){
+			//Facing Up
+			if(Link->Z == 0 && !Link->Invisible && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_UP&&Link->Y>=this->Y&&Link->Y<=this->Y+Height-8&&Link->X>=this->X-8&&Link->X<=this->X+Width-8){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			//Facing Down
+			else if(Link->Z == 0 && !Link->Invisible && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_DOWN&&Link->Y>=this->Y-16&&Link->Y<=this->Y+Height-16&&Link->X>=this->X-8&&Link->X<=this->X+Width-8
+			&& type != 1 ){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			//Facing Left
+			else if(Link->Z == 0 && !Link->Invisible && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_LEFT&&Link->Y>=this->Y-8&&Link->Y<=this->Y+Height-9&&Link->X>=this->X&&Link->X<=this->X+Width
+			&& type != 1 ){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			//Facing Right
+			else if(Link->Z == 0 && !Link->Invisible && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_RIGHT&&Link->Y>=this->Y-8&&Link->Y<=this->Y+Height-9&&Link->X>=this->X-16&&Link->X<=this->X+Width-16
+			&& type != 1 ){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			if ( talk == true ) {
+				talk = false;
+				
+				MessageDrawStuff(mpos, npcname, 0, 0);
+				Screen->Message(m);
+				
+				NoAction();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script ChestScript{
+	void run(int m, int tile, int cset, int pos){
+		if ( this->X == 0 && this->Y == 0 ) {
+			this->X = ComboX(pos);
+			this->Y = ComboY(pos);
+		}
+		//Saves the width and height of the FFC for collision checks
+		int Width = 16;
+		int Height = 16;
+		if(this->EffectWidth!=16)
+			Width = this->EffectWidth;
+		else if(this->TileWidth>1)
+			Width = this->TileWidth*16;
+		if(this->EffectHeight!=16)
+			Height = this->EffectHeight;
+		else if(this->TileHeight>1)
+			Height = this->TileHeight*16;
+		bool talk = false;
+		while(true){
+			if ( Screen->State[ST_CHEST] )
+				Quit();
+			
+			//Facing Up
+			if(Link->Z == 0 && !Link->Invisible && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_UP&&Link->Y>=this->Y&&Link->Y<=this->Y+Height-8&&Link->X>=this->X-8&&Link->X<=this->X+Width-8
+			&& Screen->ComboT[ComboAt(this->X+8, this->Y+8)] == CT_CHEST2){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			if ( talk == true ) {
+				talk = false;
+				Screen->ComboD[ComboAt(this->X, this->Y)] ++;
+				Screen->State[ST_CHEST] = true;
+				Screen->State[ST_SPECIALITEM] = true;
+				item itm = Screen->CreateItem(Screen->RoomData);
+				SetItemPickup(itm, IP_HOLDUP, true);
+				itm->X = Link->X;
+				itm->Y = Link->Y;
+				if ( m > 0 ) {
+					MessageDrawStuff(1, 0, tile, cset);
+					Screen->Message(m);
+				}
+				NoAction();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script TheGlobalFFC{
+	void run(){
+		while(true){
+			Waitframe();
+		}
+	}
+}
+
+ffc script ScrollwarpingDoors{
+	void run(){
+		Link->Invisible = false;
+		Link->CollDetection = true;
+		int doorfound;
+		if ( ScrollwarpingDoors[doorWalk] == 1 ) {
+			Link->Dir = ScrollwarpingDoors[doorWalkLinkDir];
+			doorfound = 0;
+			while(doorfound != -1){
+				if ( Screen->ComboT[ComboAt(Link->X+8, Link->Y - doorfound)] == DoorComboType ) {
+					Link->Y = Link->Y - doorfound - 14;
+					doorfound = -1;
+				}
+				else
+					doorfound += 16;
+				if ( doorfound >= 256 )
+					doorfound = -1;
+			}
+		}
+		if ( ScrollwarpingDoors[doorWalk] == 2 ) {
+			Link->Dir = ScrollwarpingDoors[doorWalkLinkDir];
+			doorfound = 0;
+			while(doorfound != -1){
+				if ( Screen->ComboT[ComboAt(Link->X + doorfound, Link->Y+12)] == DoorComboType ) {
+					Link->X = Link->X + doorfound + 10;
+					doorfound = -1;
+				}
+				else
+					doorfound += 16;
+				if ( doorfound >= 256 )
+					doorfound = -1;
+			}
+		}
+		if ( ScrollwarpingDoors[doorWalk] == 3 ) {
+			Link->Dir = ScrollwarpingDoors[doorWalkLinkDir];
+			doorfound = 0;
+			while(doorfound != -1){
+				if ( Screen->ComboT[ComboAt(Link->X+8, Link->Y + doorfound)] == DoorComboType ) {
+					Link->Y = Link->Y + doorfound + 6;
+					doorfound = -1;
+				}
+				else
+					doorfound += 16;
+				if ( doorfound >= 256 )
+					doorfound = -1;
+			}
+		}
+		if ( ScrollwarpingDoors[doorWalk] == 4 ) {
+			Link->Dir = ScrollwarpingDoors[doorWalkLinkDir];
+			doorfound = 0;
+			while(doorfound != -1){
+				if ( Screen->ComboT[ComboAt(Link->X - doorfound, Link->Y+8)] == DoorComboType ) {
+					Link->X = Link->X - doorfound - 10;
+					doorfound = -1;
+				}
+				else
+					doorfound += 16;
+				if ( doorfound >= 256 )
+					doorfound = -1;
+			}
+		}
+		ScrollwarpingDoors[doorWalk] = 0;
+		int initialLinkX = Link->X;
+		int initialLinkY = Link->Y;
+		int linkdrowning = 0;
+		while(true){
+			if ( comboDoorNorth(ComboAt(Link->X+8, Link->Y+12)) == true ) {
+				Link->Invisible = true;
+				ScrollwarpingDoors[doorWalkLinkDir] = Link->Dir;
+				Link->Dir = DIR_UP;
+				Screen->SetSideWarp(0, Game->GetCurDMapScreen() - 16, Game->GetCurDMap(), WT_SCROLLING);
+				ScrollwarpingDoors[doorWalk] = 1;
+				this->Data = DoorAutoWarpA;
+				ScrollwarpingDoors[doorNextScreenLinkX] = Link->X;
+				ScrollwarpingDoors[doorNextScreenLinkY] = Link->Y+176;
+				NoAction();
+			}
+			if ( comboDoorEast(ComboAt(Link->X+8, Link->Y+12)) == true ) {
+				Link->Invisible = true;
+				ScrollwarpingDoors[doorWalkLinkDir] = Link->Dir;
+				Link->Dir = DIR_RIGHT;
+				Screen->SetSideWarp(0, Game->GetCurDMapScreen() + 1, Game->GetCurDMap(), WT_SCROLLING);
+				ScrollwarpingDoors[doorWalk] = 2;
+				this->Data = DoorAutoWarpA;
+				ScrollwarpingDoors[doorNextScreenLinkX] = Link->X-256;
+				ScrollwarpingDoors[doorNextScreenLinkY] = Link->Y;
+				NoAction();
+			}
+			if ( comboDoorSouth(ComboAt(Link->X+8, Link->Y+12)) == true ) {
+				Link->Invisible = true;
+				ScrollwarpingDoors[doorWalkLinkDir] = Link->Dir;
+				Link->Dir = DIR_DOWN;
+				Screen->SetSideWarp(0, Game->GetCurDMapScreen() + 16, Game->GetCurDMap(), WT_SCROLLING);
+				ScrollwarpingDoors[doorWalk] = 3;
+				this->Data = DoorAutoWarpA;
+				ScrollwarpingDoors[doorNextScreenLinkX] = Link->X;
+				ScrollwarpingDoors[doorNextScreenLinkY] = Link->Y-176;
+				NoAction();
+			}
+			if ( comboDoorWest(ComboAt(Link->X+7, Link->Y+12)) == true ) {
+				Link->Invisible = true;
+				ScrollwarpingDoors[doorWalkLinkDir] = Link->Dir;
+				Link->Dir = DIR_LEFT;
+				Screen->SetSideWarp(0, Game->GetCurDMapScreen() - 1, Game->GetCurDMap(), WT_SCROLLING);
+				ScrollwarpingDoors[doorWalk] = 4;
+				this->Data = DoorAutoWarpA;
+				ScrollwarpingDoors[doorNextScreenLinkX] = Link->X+256;
+				ScrollwarpingDoors[doorNextScreenLinkY] = Link->Y;
+				NoAction();
+			}
+			
+			if ( Link->Action == LA_DROWNING || linkdrowning == 64 )
+				linkdrowning ++;
+			if ( linkdrowning == 64 ) {
+				Link->Invisible = true;
+				NoAction();
+			}
+			if ( linkdrowning == 65 ) {
+				Link->Invisible = false;
+				linkdrowning = 0;
+				Link->X = initialLinkX;
+				Link->Y = initialLinkY;
+			}
+			Waitframe();
+		}
+	}
+	bool comboDoorNorth(int cp) {
+		if ( Screen->ComboT[cp] == DoorComboType && Screen->ComboS[cp] == 0101b )
+			return true;
+		else
+			return false;
+	}
+	bool comboDoorEast(int cp) {
+		if ( Screen->ComboT[cp] == DoorComboType && Screen->ComboS[cp] == 1100b )
+			return true;
+		else
+			return false;
+	}
+	bool comboDoorSouth(int cp) {
+		if ( Screen->ComboT[cp] == DoorComboType && Screen->ComboS[cp] == 1010b )
+			return true;
+		else
+			return false;
+	}
+	bool comboDoorWest(int cp) {
+		if ( Screen->ComboT[cp] == DoorComboType && Screen->ComboS[cp] == 0011b )
+			return true;
+		else
+			return false;
+	}
+}
+
+//D0:
+//0 = one way only
+//1 = killing all enemies opens shutter (temporary)
+//2 = permanent secrets opens shutter
+//3 = shutter opens when no flag 16 is found (temporary)
+ffc script ScrollwarpingDoorShutter{
+	void run(int type){
+		int thisData = this->Data;
+		int thisCSet = this->CSet;
+		this->Data = FFCS_INVISIBLE_COMBO;
+		if ( type == 2 && Screen->State[ST_SECRET] )
+			Quit();
+		int cp = ComboAt(this->X+8, this->Y+8);
+		int doorDir;
+		if ( Screen->ComboS[cp] == 0101b )
+			doorDir = DIR_DOWN;
+		if ( Screen->ComboS[cp] == 1100b )
+			doorDir = DIR_LEFT;
+		if ( Screen->ComboS[cp] == 1010b )
+			doorDir = DIR_UP;
+		if ( Screen->ComboS[cp] == 0011b )
+			doorDir = DIR_RIGHT;
+		int underCombo = Screen->ComboD[cp];
+		int underCSet = Screen->ComboC[cp];
+		int LinkX = Link->X;
+		if ( ScrollwarpingDoors[doorWalk] != 0 )
+			LinkX = ScrollwarpingDoors[doorNextScreenLinkX];
+		if(LinkX<=0)
+			LinkX = 0;
+		else if(LinkX>=240)
+			LinkX = 240;
+		int LinkY = Link->Y;
+		if ( ScrollwarpingDoors[doorWalk] != 0 )
+			LinkY = ScrollwarpingDoors[doorNextScreenLinkY];
+		if(LinkY<=0)
+			LinkY = 0;
+		else if(LinkY>=160)
+			LinkY = 160;
+		int moveDir = Link->Dir;
+		if(ScrollwarpingDoors[doorWalk] != 0 && GB_Shutter_InShutter(this, LinkX, LinkY, doorDir)){
+			if(LinkY==0)
+				moveDir = DIR_DOWN;
+			else if(LinkY==160)
+				moveDir = DIR_UP;
+			else if(LinkX==0)
+				moveDir = DIR_RIGHT;
+			else if(LinkX==240)
+				moveDir = DIR_LEFT;
+			Waitframe();
+			while(GB_Shutter_InShutter(this, Link->X, Link->Y, doorDir)){
+				NoAction();
+				if(moveDir==DIR_UP)
+					Link->InputUp = true;
+				else if(moveDir==DIR_DOWN)
+					Link->InputDown = true;
+				else if(moveDir==DIR_LEFT)
+					Link->InputLeft = true;
+				else if(moveDir==DIR_RIGHT)
+					Link->InputRight = true;
+				Waitframe();
+			}
+			MooshPit_ResetEntry();
+			Game->PlaySound(SFX_SHUTTER);
+			this->Data = thisData+1;
+			this->CSet = thisCSet;
+			for(int i=0; i<4; i++){
+				if(moveDir==DIR_UP)
+					Link->Y = Min(Link->Y, this->Y-16);
+				else if(moveDir==DIR_DOWN)
+					Link->Y = Max(Link->Y, this->Y+8);
+				else if(moveDir==DIR_LEFT)
+					Link->X = Min(Link->X, this->X-16);
+				else if(moveDir==DIR_RIGHT)
+					Link->X = Max(Link->X, this->X+16);
+				Waitframe();
+			}
+			this->Data = FFCS_INVISIBLE_COMBO;
+			Screen->ComboD[cp] = thisData;
+			Screen->ComboC[cp] = thisCSet;
+			//if(type==1)
+				Waitframes(8);
+		}
+		else {
+			Screen->ComboD[cp] = thisData;
+			Screen->ComboC[cp] = thisCSet;
+			//if(type==1)
+				Waitframes(8);
+			//else
+			//	Waitframe();
+		}
+		while(true){
+			if(type==1){
+				if(!GB_Shutter_CheckEnemies()){
+					break;
+				}
+			}
+			if(type==2){
+				if(Screen->State[ST_SECRET]){
+					break;
+				}
+			}
+			if(type==3){
+				if(GB_Shutter_CheckFlag16()){
+					break;
+				}
+			}
+			Waitframe();
+		}
+		Game->PlaySound(SFX_SHUTTER);
+		Screen->ComboD[cp] = underCombo;
+		Screen->ComboC[cp] = underCSet;
+		this->Data = thisData+1;
+		this->CSet = thisCSet;
+		Waitframes(4);
+		this->Data = FFCS_INVISIBLE_COMBO;
+	}
+	bool GB_Shutter_InShutter(ffc this, int LinkX, int LinkY, int doorDir){
+		if ( ScrollwarpingDoors[doorWalk] == 1 && doorDir == DIR_UP && RectCollision(LinkX, LinkY, LinkX+15, LinkY+15, this->X, this->Y, this->X+15, this->Y+144) )
+			return true;
+		if ( ScrollwarpingDoors[doorWalk] == 2 && doorDir == DIR_RIGHT && RectCollision(LinkX, LinkY, LinkX+15, LinkY+15, this->X-224, this->Y, this->X+15, this->Y+15) )
+			return true;
+		if ( ScrollwarpingDoors[doorWalk] == 3 && doorDir == DIR_DOWN && RectCollision(LinkX, LinkY, LinkX+15, LinkY+15, this->X, this->Y-144, this->X+15, this->Y+15) )
+			return true;
+		if ( ScrollwarpingDoors[doorWalk] == 4 && doorDir == DIR_LEFT && RectCollision(LinkX, LinkY, LinkX+15, LinkY+15, this->X, this->Y, this->X+224, this->Y+15) )
+			return true;
+		if ( ScrollwarpingDoors[doorWalk] == 0 && RectCollision(LinkX, LinkY, LinkX+15, LinkY+15, this->X, this->Y, this->X+15, this->Y+15) )
+			return true;
+		return false;
+	}
+	bool GB_Shutter_CheckEnemies(){
+		for(int i=Screen->NumNPCs(); i>=1; i--){
+			npc n = Screen->LoadNPC(i);
+			if(n->Type!=NPCT_PROJECTILE&&n->Type!=NPCT_FAIRY&&n->Type!=NPCT_TRAP&&n->Type!=NPCT_GUY){
+				if(!(n->MiscFlags&(1<<3)))
+					return true;
+			}
+		}
+		return false;
+	}
+	bool GB_Shutter_CheckFlag16(){
+		for(int i=0; i<=6; i++){
+			if ( LastComboFlagOf(16, i) != -1 && (i == 0 || Screen->LayerMap(i) != -1) )
+				return false;
+		}
+		return true;
+	}
+}
+
+ffc script Ghost_Crab{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_KNOCKBACK);
+		Ghost_SetFlag(GHF_STUN);
+		int counter = -1;
+		while(true){
+			if ( Ghost_Dir == DIR_LEFT || Ghost_Dir == DIR_RIGHT )
+				counter = Ghost_ConstantWalk8(counter, 80, 4, 0, 0);
+			else if ( Ghost_Dir == DIR_UP || Ghost_Dir == DIR_DOWN )
+				counter = Ghost_ConstantWalk8(counter, 30, 4, 0, 0);
+			else
+				Ghost_Dir = Choose(DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT);
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script FireballShooter{
+	void run(){
+		int timer = Rand(180) + 60;
+		while(true){
+			if ( timer == 0 ) {
+				int angle = DegtoRad(Angle(this->X, this->Y, Link->X, Link->Y));
+				for (int i = 1; i <= 4; i++) {
+					eweapon fireball = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 150, 4, -1, 0, 0);
+					Game->PlaySound(40);
+					Waitframes(5);
+				}
+				timer = Rand(200) + 60;
+			}
+			else if ( timer > 0 )
+				timer --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script blockPermSecrets{
+	void run(){
+		int thisCombo = this->Data;
+		while(!Screen->State[ST_SECRET]){
+			if(this->Data != thisCombo) Screen->State[ST_SECRET] = true;
+			Waitframe();
+		}
+	}
+}
+
+ffc script CrystalSwitch{
+	void run(int type){
+		if ( Screen->State[ST_SECRET] || (type == 1 && Screen->D[0] == 1) || (type == 2 && Screen->D[0] == 2) ) {
+			Screen->ComboD[ComboAt(this->X, this->Y)] ++;
+			Quit();
+		}
+		while(Link->Action == LA_SCROLLING)
+			Waitframe();
+		while(true){
+			for (int i = 1; i <= Screen->NumLWeapons(); i++) {
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( wpn->ID == LW_SWORD || wpn->ID == LW_ARROW || wpn->ID == LW_BOMBBLAST ) {
+					if ( Collision(this, wpn) ) {
+						Screen->ComboD[ComboAt(this->X, this->Y)] ++;
+						if ( type == 3 ) {
+							if ( Screen->ComboD[37] == 2692 && Screen->ComboD[39] == 2693 && Screen->ComboD[41] == 2692 && 
+							Screen->ComboD[69] == 2693 && Screen->ComboD[71] == 2692 && Screen->ComboD[73] == 2692 && 
+							Screen->ComboD[101] == 2692 && Screen->ComboD[103] == 2692 && Screen->ComboD[105] == 2693 ) {
+								Game->PlaySound(27);
+								Screen->TriggerSecrets();
+								Screen->State[ST_SECRET] = true;
+								Screen->ComboD[37] = 2693; Screen->ComboD[39] = 2693; Screen->ComboD[41] = 2693; 
+								Screen->ComboD[69] = 2693; Screen->ComboD[71] = 2693; Screen->ComboD[73] = 2693; 
+								Screen->ComboD[101] = 2693; Screen->ComboD[103] = 2693; Screen->ComboD[105] = 2693;
+								Quit();
+							}
+							else {
+								Game->PlaySound(69);
+								bool others;
+								for (int i = 1; i <= 176; i++) {
+									if ( Screen->ComboD[i] == 2692 )
+										others = true;
+								}
+								if ( !others )
+									Game->PlaySound(73);
+								Quit();
+							}
+						}
+						else {
+							bool others;
+							for (int i = 1; i <= 176; i++) {
+								if ( Screen->ComboD[i] == 2692 )
+									others = true;
+							}
+							if ( others ) {
+								Game->PlaySound(69);
+								if ( type == 1 || type == 2 )
+									Screen->D[0] = type;
+								Quit();
+							}
+							else {
+								Game->PlaySound(27);
+								Screen->TriggerSecrets();
+								if ( ScreenFlag(SF_SECRETS, 1) == 0 )
+									Screen->State[ST_SECRET] = true;
+								Quit();
+							}
+						}
+					}
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script DominionStatue{
+	void run(){
+		this->Data = 1;
+		for (int i = 0; i <= 176; i++) {
+			if ( GetLayerComboD(1, i) == 3 || GetLayerComboD(1, i) == 3655 )
+				SetLayerComboD(1, i, 0);
+		}
+		SetLayerComboD(1, ComboAt(this->X, this->Y), 3655);
+		while(Link->Action == LA_SCROLLING)
+			Waitframe();
+		
+		int state;
+		int orbx;
+		int orby;
+		int skeletontimer;
+		int skeletonx;
+		int skeletony;
+		int statuehopping;
+		while(true){
+			if ( state == 0 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 3654 ) {
+				if ( Link->PressA ) {
+					Game->PlaySound(60);
+					orbx = Link->X;
+					orby = Link->Y;
+					Link->Invisible = true;
+					Link->CollDetection = false;
+					skeletontimer = 1;
+					skeletonx = Link->X;
+					skeletony = Link->Y;
+					state = 1;
+				}
+				Screen->FastCombo(LAYER_NPC_CANTALK, Link->X+8, Link->Y-16, CMB_NPC_CANTALK, CS_NPC_CANTALK, 128);
+			}
+			if ( state == 1 ) {
+				int angle = Angle(orbx, orby, this->X, this->Y);
+				orbx += VectorX(2.5, angle);
+				orby += VectorY(2.5, angle);
+				if ( Distance(orbx, orby, this->X, this->Y) <= 2 ) {
+					Game->PlaySound(36);
+					Link->X = this->X;
+					Link->Y = this->Y;
+					Link->CollDetection = true;
+					SetLayerComboD(1, ComboAt(this->X, this->Y), 0);
+					for (int i = 0; i <= 176; i++) {
+						if ( Screen->ComboD[i] == 3654 || Screen->ComboT[i] == CT_NOGROUNDENEMY || Screen->ComboT[i] == CT_SCRIPT1 )
+							SetLayerComboD(1, i, 3);
+					}
+					state = 2;
+				}
+				NoAction();
+				Screen->FastCombo(3, orbx, orby, 3656, 11, OP_OPAQUE);
+			}
+			if ( state == 2 ) {
+				if ( Link->Action == LA_WALKING )
+					statuehopping ++;
+				else
+					statuehopping = 0;
+				if ( statuehopping > 10 )
+					statuehopping = 0;
+				int yoffset;
+				if ( statuehopping >= 5 )
+					yoffset = -1;
+				Screen->FastCombo(3, Link->X, Link->Y+yoffset, 3655, 2, OP_OPAQUE);
+				Screen->FastCombo(3, Link->X, Link->Y+yoffset, 3656, 11, OP_OPAQUE);
+				
+				if ( Link->Action == LA_GOTHURTLAND || Link->PressA || Link->PressB ) {
+					Game->PlaySound(60);
+					Link->X = Clamp(Link->X, 16, 224);
+					Link->Y = Clamp(Link->Y, 16, 144);
+					this->X = ComboX(ComboAt(Link->X+8, Link->Y+8));
+					this->Y = ComboY(ComboAt(Link->X+8, Link->Y+8));
+					orbx = Link->X;
+					orby = Link->Y;
+					Link->CollDetection = false;
+					SetLayerComboD(1, ComboAt(this->X, this->Y), 3655);
+					state = 3;
+				}
+				
+				Link->X = Clamp(Link->X, 3, 237);
+				Link->Y = Clamp(Link->Y, 3, 157);
+				Link->InputA = false;
+				Link->InputB = false;
+				Link->PressA = false;
+				Link->PressB = false;
+			}
+			if ( state == 3 ) {
+				int angle = Angle(orbx, orby, skeletonx, skeletony);
+				orbx += VectorX(2.5, angle);
+				orby += VectorY(2.5, angle);
+				if ( Distance(orbx, orby, skeletonx, skeletony) <= 2 ) {
+					Link->X = skeletonx;
+					Link->Y = skeletony;
+					Link->Invisible = false;
+					Link->CollDetection = true;
+					skeletontimer = 0;
+					for (int i = 0; i <= 176; i++) {
+						if ( GetLayerComboD(1, i) == 3 )
+							SetLayerComboD(1, i, 0);
+					}
+					state = 0;
+				}
+				NoAction();
+				Screen->FastCombo(3, orbx, orby, 3656, 11, OP_OPAQUE);
+			}
+			
+			if ( skeletontimer > 0 ) {
+				if ( skeletontimer < 10 ) {
+					skeletontimer ++;
+					Screen->FastTile(2, skeletonx, skeletony, 33809, 6, OP_OPAQUE);
+				}
+				else
+					Screen->FastTile(2, skeletonx, skeletony, 33810, 6, OP_OPAQUE);
+			}
+			Waitframe();
+		}
+	}
+}
+
+//Three colors used for the lasers
+const int C_EZB_LASER1 = 0x77;
+const int C_EZB_LASER2 = 0x76;
+const int C_EZB_LASER3 = 0x7C;
+
+const int SFX_EZB_TELEPORT = 32; //Sound when a boss teleports
+const int SFX_EZB_LASER = 37; //Sound when a laser is fired
+
+
+const int EZBF_4WAY         = 000000001b;
+const int EZBF_8WAY         = 000000010b;
+const int EZBF_FLYING       = 000000100b;
+const int EZBF_AQUATIC      = 000001000b;
+const int EZBF_NOFALL       = 000010000b;
+const int EZBF_EXPLODEEATH  = 000100000b;
+const int EZBF_FACELINK     = 001000000b;
+const int EZBF_UNBLOCKABLE  = 010000000b;
+const int EZBF_KNOCKBACK    = 100000000b;
+
+ffc script EZBoss{
+	void run(int enemyid){
+		int i; int j; int k; int angle; int dist; int x; int y;
+		
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_STUN);
+		Ghost_SetFlag(GHF_CLOCK);
+		
+		int movementStyle = ghost->Attributes[0];
+		int attack1 = ghost->Attributes[1];
+		int attack2 = ghost->Attributes[2];
+		int attack3 = ghost->Attributes[3];
+		int special = ghost->Attributes[5];
+		int size = ghost->Attributes[6];
+		int fireSFX = ghost->Attributes[7];
+		int fireSPR = ghost->Attributes[8];
+		int flags = ghost->Attributes[9];
+		
+		int w = size&1111b;
+		int h = (size>>4)&1111b;
+		if(h==0)
+			h = w;
+		w = Clamp(w, 1, 4);
+		h = Clamp(h, 1, 4);
+			
+		int combo = ghost->Attributes[10];
+		Ghost_Transform(this, ghost, -1, -1, w, h);
+		
+		if(flags&EZBF_8WAY)
+			Ghost_SetFlag(GHF_8WAY);
+		else if(flags&EZBF_4WAY)
+			Ghost_SetFlag(GHF_4WAY);
+		if(flags&EZBF_NOFALL) {
+			Ghost_SetFlag(GHF_NO_FALL);
+			Ghost_SetFlag(GHF_FLYING_ENEMY);
+		}
+		if(flags&EZBF_FLYING){
+			Ghost_SetFlag(GHF_IGNORE_ALL_TERRAIN);
+			Ghost_SetFlag(GHF_FLYING_ENEMY);
+		}
+		else if(flags&EZBF_AQUATIC){
+			Ghost_SetFlag(GHF_WATER_ONLY);
+		}
+		if(flags&EZBF_KNOCKBACK){
+			Ghost_SetFlag(GHF_KNOCKBACK);
+		}
+		
+		int stepCounter = -1;
+		int attackCooldown = ghost->Haltrate*10;
+		int stepAngle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+		int vX; int vY;
+		
+		if(movementStyle==4){
+			angle = Rand(360);
+			if ( ghost->ID == 178 )
+				angle = Choose(45, 45+90, 45+90*2, 45+90*3);
+			vX = VectorX(ghost->Step/100, angle);
+			vY = VectorY(ghost->Step/100, angle);
+		}
+		
+		while(true){
+			bool attackCond = false;
+			//Handle Movement
+			if(movementStyle==0){ //4 Way Halting Walk
+				stepCounter = Ghost_HaltingWalk4(stepCounter, ghost->Step, ghost->Rate, ghost->Homing, ghost->Hunger, ghost->Haltrate, 48);
+				if(stepCounter==16)
+					attackCond = true;
+			}
+			else if(movementStyle==1){ //4 Way Constant Walk
+				stepCounter = Ghost_ConstantWalk4(stepCounter, ghost->Step, ghost->Rate, ghost->Homing, ghost->Hunger);
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==2){ //8 Way Constant Walk
+				stepCounter = Ghost_ConstantWalk8(stepCounter, ghost->Step, ghost->Rate, ghost->Homing, ghost->Hunger);
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==3){ //Homing in on Link
+				if(Distance(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())>8){
+					EZB_FaceLink(this, ghost);
+					Ghost_MoveAtAngle(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()), ghost->Step/100, 0);
+				}
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==4){ //Wall Bounce
+				Ghost_MoveXY(vX, vY, 0);
+				if((vX<0&&!Ghost_CanMove(DIR_LEFT, 1, 0)) || (vX>0&&!Ghost_CanMove(DIR_RIGHT, 1, 0)))
+					vX = -vX;
+				if((vY<0&&!Ghost_CanMove(DIR_UP, 1, 0)) || (vY>0&&!Ghost_CanMove(DIR_DOWN, 1, 0)))
+					vY = -vY;
+					
+				Ghost_Dir = EZB_AngleDir(this, ghost, Angle(0, 0, vX*10, vY*10));
+				if(flags&EZBF_FACELINK)
+					EZB_FaceLink(this, ghost);
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==5){ //Periodic Reaim
+				Ghost_MoveAtAngle(stepAngle, ghost->Step/100, 0);
+				Ghost_Dir = EZB_AngleDir(this, ghost, stepAngle);
+				if(flags&EZBF_FACELINK)
+					EZB_FaceLink(this, ghost);
+					
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+					
+				stepCounter++;
+				if(stepCounter>80&&Rand(10)==0){
+					stepAngle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					stepCounter = 0;
+				}
+			}
+			else if(movementStyle==6){ //Lazy chase
+				float homing = ghost->Homing*0.001;
+				float topSpeed = ghost->Step*0.01;
+				vX = Clamp(vX+Sign(CenterLinkX()-CenterX(ghost))*homing, -topSpeed, topSpeed);
+				vY = Clamp(vY+Sign(CenterLinkY()-CenterY(ghost))*homing, -topSpeed, topSpeed);
+				Ghost_MoveXY(vX, vY, 0);
+				if((vX<0&&!Ghost_CanMove(DIR_LEFT, 1, 0)) || (vX>0&&!Ghost_CanMove(DIR_RIGHT, 1, 0)))
+					vX = -vX;
+				if((vY<0&&!Ghost_CanMove(DIR_UP, 1, 0)) || (vY>0&&!Ghost_CanMove(DIR_DOWN, 1, 0)))
+					vY = -vY;
+					
+				Ghost_Dir = EZB_AngleDir(this, ghost, Angle(0, 0, vX*10, vY*10));
+				if(flags&EZBF_FACELINK)
+					EZB_FaceLink(this, ghost);
+				if(attackCooldown>0)
+					attackCooldown--;
+				else if(Rand(24)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==7){ //Hopping
+				EZB_Waitframes(this, ghost, Choose(24, 32, 48));
+				stepAngle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())+Rand(-30, 30);
+				Game->PlaySound(SFX_JUMP);
+				Ghost_Jump = 2.6;
+				while(Ghost_Jump>0||Ghost_Z>0){
+					Ghost_Dir = EZB_AngleDir(this, ghost, stepAngle);
+					Ghost_MoveAtAngle(stepAngle, ghost->Step/100, 0);
+					if(flags&EZBF_FACELINK)
+						EZB_FaceLink(this, ghost);
+					EZB_Waitframe(this, ghost);
+				}
+				if(Rand(ghost->Rate)==0)
+					attackCond = true;
+			}
+			else if(movementStyle==8){ //Teleport
+				EZB_Waitframes(this, ghost, Choose(32, 48, 96));
+				EZB_Teleport(this, ghost);
+				if(Rand(ghost->Rate)==0)
+					attackCond = true;
+			}
+			
+			if(attackCond&&attack1){
+				//Select an attack
+				int attack;
+				if(attack2==0)
+					attack = attack1;
+				else if(attack3==0)
+					attack = Choose(attack1, attack2);
+				else
+					attack = Choose(attack1, attack2, attack3);
+			
+				if(attack==1){ //Dash
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					EZB_FaceLink(this, ghost);
+					EZB_Waitframes(this, ghost, 30);
+					while(EZB_CanMoveAngle(angle)){
+						Ghost_MoveAtAngle(angle, 5, 0);
+						EZB_Trail(this, ghost);
+						EZB_Waitframe(this, ghost);
+					}
+				}
+				if(attack==2){ //Shoot (Directional)
+					EZB_FiringAnim(this, ghost);
+					EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, EZB_DirAngle(Ghost_Dir), 150);
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==3){ //Shoot (Angular)
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()), 150);
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==4){ //Tri Shot (Directional)
+					EZB_FiringAnim(this, ghost);
+					for(i=-1; i<=1; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, EZB_DirAngle(Ghost_Dir)+30*i, 250);
+					}
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==5){ //Tri Shot (Angular)
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					for(i=-1; i<=1; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())+30*i, 250);
+					}
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==6){ //Stream (Directional)
+					EZB_FiringAnim(this, ghost);
+					angle = EZB_DirAngle(Ghost_Dir);
+					EZB_Waitframes(this, ghost, 12);
+					for(i=0; i<10; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle, 350);
+						EZB_Waitframes(this, ghost, 8);
+					}
+					EZB_Waitframes(this, ghost, 12);
+				}
+				if(attack==7){ //Stream (Angular)
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					EZB_Waitframes(this, ghost, 12);
+					for(i=0; i<10; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle, 350);
+						EZB_Waitframes(this, ghost, 8);
+					}
+					EZB_Waitframes(this, ghost, 12);
+				}
+				if(attack==8){ //Breath (Directional)
+					EZB_FiringAnim(this, ghost);
+					angle = EZB_DirAngle(Ghost_Dir);
+					EZB_Waitframes(this, ghost, 24);
+					for(i=0; i<24; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle+Rand(-30, 30), 250);
+						EZB_Waitframes(this, ghost, 4);
+					}
+				}
+				if(attack==9){ //Breath (Angular)
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					EZB_Waitframes(this, ghost, 24);
+					for(i=0; i<24; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle+Rand(-30, 30), 250);
+						EZB_Waitframes(this, ghost, 4);
+					}
+				}
+				if(attack==10){ //Sweep (Directional)
+					EZB_FiringAnim(this, ghost);
+					k = Choose(-1, 1);
+					angle = EZB_DirAngle(Ghost_Dir)-45*k;
+					for(i=0; i<6; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle, 200);
+						angle += k*25;
+						EZB_Waitframes(this, ghost, 2);
+					}
+				}
+				if(attack==11){ //Sweep (Angular)
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					k = Choose(-1, 1);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())-75*k;
+					for(i=0; i<6; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle, 200);
+						angle += k*25;
+						EZB_Waitframes(this, ghost, 2);
+					}
+				}
+				if(attack==12){ //Bullet Barrage
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())-75*k;
+					for(i=0; i<3; i++){
+						for(j=-4; j<=4; j+=2){
+							EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle+16*j, 150);
+						}
+						EZB_Waitframes(this, ghost, 16);
+						for(j=-5; j<=5; j+=2){
+							EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle+16*j, 150);
+						}
+						EZB_Waitframes(this, ghost, 24);
+					}
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==13){ //Bullet swirl
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					k = Choose(-1, 1);
+					angle = Rand(360);
+					for(i=0; i<20; i++){
+						for(j=0; j<5; j++){
+							EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, angle+72*j, 150);
+						}
+						angle += 4*k;
+						EZB_Waitframes(this, ghost, 4);
+					}
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==14){ //Random bullet burst
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					for(i=0; i<40; i++){
+						EZB_Fire(this, ghost, CenterX(ghost)-8, CenterY(ghost)-8, Rand(360), 250);
+						EZB_Waitframes(this, ghost, 2);
+					}
+					EZB_Waitframes(this, ghost, 24);
+				}
+				if(attack==15){ //Laser
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					for(i=0; i<30; i++){
+						if(i%4<2){
+							DrawLaser(4, CenterX(ghost), CenterY(ghost), 8, angle, C_EZB_LASER3);
+						}
+						EZB_Waitframe(this, ghost);
+					}
+					Game->PlaySound(SFX_EZB_LASER);
+					for(i=0; i<20; i++){
+						Laser3Color(4, CenterX(ghost), CenterY(ghost), 8, angle, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						EZB_Waitframe(this, ghost);
+					}
+				}
+				if(attack==16){ //Big Laser
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					for(i=0; i<60; i++){
+						if(i%4<2){
+							DrawLaser(4, CenterX(ghost), CenterY(ghost), 40, angle, C_EZB_LASER3);
+						}
+						EZB_Waitframe(this, ghost);
+					}
+					Game->PlaySound(SFX_EZB_LASER);
+					for(i=0; i<40; i++){
+						Laser3Color(4, CenterX(ghost), CenterY(ghost), 40, angle, ghost->WeaponDamage*2, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						EZB_Waitframe(this, ghost);
+					}
+				}
+				if(attack==17){ //Laser Spread
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+					for(i=0; i<30; i++){
+						for(j=-2; j<=2; j++){
+							if(i%4<2){
+								DrawLaser(4, CenterX(ghost), CenterY(ghost), 6, angle+30*j, C_EZB_LASER3);
+							}
+						}
+						EZB_Waitframe(this, ghost);
+					}
+					Game->PlaySound(SFX_EZB_LASER);
+					for(i=0; i<20; i++){
+						for(j=-2; j<=2; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, angle+30*j, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						}
+						EZB_Waitframe(this, ghost);
+					}
+				}
+				if(attack==18){ //Laser Spin
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					k = Choose(-1, 1);
+					angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())+45;
+					Game->PlaySound(SFX_EZB_LASER);
+					for(i=0; i<30; i++){
+						for(j=0; j<4; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, angle+90*j, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						}
+						EZB_Waitframe(this, ghost);
+					}
+					for(i=0; i<30; i++){
+						for(j=0; j<4; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, angle+90*j, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						}
+						angle += k;
+						EZB_Waitframe(this, ghost);
+					}
+					for(i=0; i<120; i++){
+						for(j=0; j<4; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, angle+90*j, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						}
+						angle += k*1.5;
+						EZB_Waitframe(this, ghost);
+					}
+					for(i=0; i<30; i++){
+						for(j=0; j<4; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, angle+90*j, ghost->WeaponDamage, C_EZB_LASER1, C_EZB_LASER2, C_EZB_LASER3);
+						}
+						angle += k;
+						EZB_Waitframe(this, ghost);
+					}
+				}
+				if(attack==19){ //Corner ghosts
+					EZB_FaceLink(this, ghost);
+					EZB_FiringAnim(this, ghost);
+					eweapon wpn1 = EZB_FireSpecial(this, ghost, 8, 8, Angle(8, 8, CenterLinkX(), CenterLinkY()), 200, 2);
+					SetEWeaponMovement(wpn1, EWM_VEER, wpn1->Angle, 0.0125);
+					eweapon wpn2 = EZB_FireSpecial(this, ghost, 232, 8, Angle(232, 8, CenterLinkX(), CenterLinkY()), 200, 1);
+					SetEWeaponMovement(wpn2, EWM_VEER, wpn2->Angle, 0.0125);
+					eweapon wpn3 = EZB_FireSpecial(this, ghost, 232, 152, Angle(232, 152, CenterLinkX(), CenterLinkY()), 200, 1);
+					SetEWeaponMovement(wpn3, EWM_VEER, wpn3->Angle, 0.0125);
+					eweapon wpn4 = EZB_FireSpecial(this, ghost, 8, 152, Angle(8, 152, CenterLinkX(), CenterLinkY()), 200, 2);
+					SetEWeaponMovement(wpn4, EWM_VEER, wpn4->Angle, 0.0125);
+					EZB_Waitframes(this, ghost, 60);
+					EZB_Waitframes(this, ghost, 24);
+				}
+				
+				
+				Ghost_Data = combo;
+				
+				attackCooldown = ghost->Haltrate*10;
+				if(movementStyle==4){ //Wall bounce
+					angle = Rand(360);
+					vX = VectorX(ghost->Step/100, angle);
+					vY = VectorY(ghost->Step/100, angle);
+				}
+			}
+			EZB_Waitframe(this, ghost);
+		}
+	}
+	bool EZB_CanMoveAngle(int angle){
+		int vx = VectorX(10, angle);
+		int vy = VectorY(10, angle);
+		if((vx<0&&!Ghost_CanMove(DIR_LEFT, 1, 0))||(vx>0&&!Ghost_CanMove(DIR_RIGHT, 1, 0)))
+			return false;
+		if((vy<0&&!Ghost_CanMove(DIR_UP, 1, 0))||(vy>0&&!Ghost_CanMove(DIR_DOWN, 1, 0)))
+			return false;
+		return true;
+	}
+	void EZB_FiringAnim(ffc this, npc ghost){
+		int flags = ghost->Attributes[9];
+		int combo = ghost->Attributes[10];
+		if(flags&EZBF_8WAY)
+			Ghost_Data = combo+8;
+		else if(flags&EZBF_4WAY)
+			Ghost_Data = combo+4;
+		else
+			Ghost_Data = combo+1;
+	}
+	void EZB_Trail(ffc this, npc ghost){
+		int flags = ghost->Attributes[9];
+		int tile = Game->ComboTile(Ghost_Data);
+		if(flags&EZBF_4WAY||flags&EZBF_8WAY)
+			tile = Game->ComboTile(Ghost_Data+Ghost_Dir);
+		lweapon trail = CreateLWeaponAt(LW_SCRIPT10, ghost->X+ghost->DrawXOffset, ghost->Y+ghost->DrawYOffset);
+		trail->Extend = 3;
+		trail->TileWidth = ghost->TileWidth;
+		trail->TileHeight = ghost->TileHeight;
+		trail->DrawYOffset = 0;
+		trail->CSet = this->CSet;
+		trail->Tile = tile;
+		trail->OriginalTile = tile;
+		trail->DrawStyle = DS_PHANTOM;
+		trail->DeadState = 8;
+	}
+	int EZB_DirAngle(int dir){
+		if(dir==DIR_UP)
+			return -90;
+		else if(dir==DIR_DOWN)
+			return 90;
+		else if(dir==DIR_LEFT)
+			return 180;
+		else if(dir==DIR_LEFTUP)
+			return -135;
+		else if(dir==DIR_RIGHTUP)
+			return -45;
+		else if(dir==DIR_LEFTDOWN)
+			return 135;
+		else if(dir==DIR_RIGHTDOWN)
+			return 45;
+		else
+			return 0;
+	}
+	eweapon EZB_Fire(ffc this, npc ghost, int x, int y, int angle, int step){
+		int flags = ghost->Attributes[9];
+		int type = WeaponTypeToID(ghost->Weapon);
+		int wflags;
+		if(flags&EZBF_UNBLOCKABLE)
+			wflags |= EWF_UNBLOCKABLE;
+		if(type==EW_BEAM||type==EW_ARROW||type==EW_MAGIC||type==EW_BOMB||type==EW_SBOMB)
+			wflags |= EWF_ROTATE;
+			
+		int fireSFX = ghost->Attributes[7];
+		int fireSPR = ghost->Attributes[8];
+		int sfx = fireSFX;
+		if(fireSFX<=0)
+			sfx = -1;
+		int spr = fireSPR;
+		if(fireSPR<=0)
+			spr = -1;
+			
+		eweapon e = FireEWeapon(type, x, y, DegtoRad(angle), step, ghost->WeaponDamage, spr, sfx, wflags);
+		return e;
+	}
+	eweapon EZB_FireSpecial(ffc this, npc ghost, int x, int y, int angle, int step, int special){
+		int flags = ghost->Attributes[9];
+		int type = WeaponTypeToID(ghost->Weapon);
+		int wflags;
+		if(flags&EZBF_UNBLOCKABLE)
+			wflags |= EWF_UNBLOCKABLE;
+		if(type==EW_BEAM||type==EW_ARROW||type==EW_MAGIC||type==EW_BOMB||type==EW_SBOMB)
+			wflags |= EWF_ROTATE;
+			
+		int fireSFX = ghost->Attributes[7];
+		int fireSPR = ghost->Attributes[8];
+		int sfx = fireSFX;
+		if(fireSFX<=0)
+			sfx = -1;
+		int spr = fireSPR;
+		if(fireSPR<=0)
+			spr = -1;
+		
+		if ( special == 1 ) {
+			spr = 91;
+			sfx = 79;
+		}
+		if ( special == 2 ) {
+			spr = 92;
+			sfx = 79;
+		}
+			
+		eweapon e = FireEWeapon(type, x, y, DegtoRad(angle), step, ghost->WeaponDamage, spr, sfx, wflags);
+		return e;
+	}
+	void EZB_Teleport(ffc this, npc ghost){
+		int size = ghost->Attributes[6];
+		int w = size&1111b;
+		int h = (size>>4)&1111b;
+		if(h==0)
+			h = w;
+		w = Clamp(w, 1, 4);
+		h = Clamp(h, 1, 4);
+		
+		Game->PlaySound(SFX_EZB_TELEPORT);
+		int tc;
+		ghost->CollDetection = false;
+		for(int i=0; i<16; i++){
+			if(i%2==0)
+				ghost->DrawYOffset = -1000;
+			else
+				ghost->DrawYOffset = -2;
+			EZB_Waitframe(this, ghost);
+		}
+		ghost->DrawYOffset = -1000;
+		tc = Rand(176);
+		for(int i=0; i<352&&(!EZB_CanPlace(this, ghost, ComboX(tc), ComboY(tc))||Distance(ComboX(tc)+ghost->HitWidth/2, ComboY(tc)+ghost->HitHeight/2, CenterLinkX(), CenterLinkY())<((w+h)/2)*8+32); i++){
+			if(i>=176)
+				tc = i-176;
+			else
+				tc = Rand(176);
+		}
+		Ghost_X = ComboX(tc);
+		Ghost_Y = ComboY(tc);
+		EZB_Waitframe(this, ghost);
+		EZB_FaceLink(this, ghost);
+		for(int i=0; i<16; i++){
+			if(i%2==0)
+				ghost->DrawYOffset = -1000;
+			else
+				ghost->DrawYOffset = -2;
+			EZB_Waitframe(this, ghost);
+		}
+		ghost->DrawYOffset = -2;
+		ghost->CollDetection = true;
+	}	
+	int EZB_AngleDir(ffc this, npc ghost, int angle){
+		int flags = ghost->Attributes[9];
+		if(flags&EZBF_8WAY)
+			return AngleDir8(angle);
+		else
+			return AngleDir4(angle);
+	}
+	void EZB_FaceLink(ffc this, npc ghost){
+		int flags = ghost->Attributes[9];
+		if(flags&EZBF_8WAY)
+			Ghost_Dir = AngleDir8(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()));
+		else
+			Ghost_Dir = AngleDir4(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()));
+	}
+	bool EZB_CanPlace(ffc this, npc ghost, int X, int Y){
+		for(int x=ghost->HitXOffset; x<=ghost->HitXOffset+ghost->HitWidth-1; x=Min(x+8, ghost->HitXOffset+ghost->HitWidth-1)){
+			for(int y=ghost->HitYOffset; y<=ghost->HitYOffset+ghost->HitHeight-1; y=Min(y+8, ghost->HitYOffset+ghost->HitHeight-1)){
+				if(!Ghost_CanMovePixel(X+x, Y+y))
+					return false;
+				if(y==ghost->HitYOffset+ghost->HitHeight-1)
+					break;
+			}
+			if(x==ghost->HitXOffset+ghost->HitWidth-1)
+				break;
+		}
+		return true;
+	}
+	void EZB_Waitframes(ffc this, npc ghost, int frames){
+		for(int i=0; i<frames; i++){
+			EZB_Waitframe(this, ghost);
+		}
+	}
+	void EZB_Waitframe(ffc this, npc ghost){
+		int flags = ghost->Attributes[9];
+		if(flags&EZBF_EXPLODEEATH)
+			Ghost_Waitframe(this, ghost, 1, true);
+		else
+			Ghost_Waitframe(this, ghost);
+	}
+}
+
+ffc script BossMusic {
+    void run (int bosstrack) {
+		Waitframes(4);
+		
+        if ( EnemiesAlive() ) {
+			int filename[256];
+			int track;
+			bool success;
+			
+			//Grabs Song and Track number if tracker file.
+			Game->GetDMapMusicFilename(bosstrack, filename);
+			track = Game->GetDMapMusicTrack(bosstrack);
+
+			success = Game->PlayEnhancedMusic(filename, track);
+
+			// Idle until all enemies have been killed
+			while ( EnemiesAlive() ) {
+				Waitframe();
+			}
+			
+			//Delay from boss death before music changes back. //but why?
+			Waitframe();
+			
+			// Revert to the original Screen/DMap song.
+			Game->GetDMapMusicFilename(Game->GetCurDMap(), filename);
+			track = Game->GetDMapMusicTrack(Game->GetCurDMap());
+			
+			success = Game->PlayEnhancedMusic(filename, track);
+		}
+	}
+	bool EnemiesAlive(){
+		for(int i=Screen->NumNPCs(); i>=1; i--){
+			npc n = Screen->LoadNPC(i);
+			if(n->Type!=NPCT_PROJECTILE&&n->Type!=NPCT_FAIRY&&n->Type!=NPCT_TRAP&&n->Type!=NPCT_GUY){
+				if(!(n->MiscFlags&(1<<3)))
+					return true;
+			}
+		}
+		return false;
+	}
+}
+
+ffc script ShopHC{
+    void run(){
+		int lmax = Link->MaxHP;
+		while(true){
+			if ( Link->MaxHP > lmax ) {
+				GV[GotShopHC] = 1;
+				Quit();
+			}
+			Waitframe();
+		}
+	}
+}
+ffc script HCShopWarp{
+    void run(){
+		if ( GV[GotShopHC] == 1 )
+			Screen->ComboD[ComboAt(this->X, this->Y)] ++;
+	}
+}
+
+ffc script MagicEWeaponChanger{
+    void run(int type){ //0 = ice projectile, 1 = normal magic
+        int gothurtframes = 0;
+        while(true){
+            if ( Link->Action == LA_GOTHURTLAND )
+                gothurtframes ++;
+            else
+                gothurtframes = 0;
+            for (int i = 1; i <= Screen->NumEWeapons(); i++) { //for all eweapons
+                eweapon wpn = Screen->LoadEWeapon(i);
+                if ( wpn->ID == EW_MAGIC && wpn->Tile <= 100 ) {
+                    if ( type == 0 ) {
+                        wpn->UseSprite(93);
+                    }
+                    if ( type == 1 ) {
+                        Game->PlaySound(80);
+                        wpn->UseSprite(85);
+                        if ( wpn->Dir == DIR_LEFT || wpn->Dir == DIR_RIGHT )
+                            wpn->Tile ++;
+                    }
+                }
+                if ( type == 0 && wpn->ID == EW_MAGIC && LinkCollision(wpn) && gothurtframes == 1 && GV[LinkIced] == 0 ){
+                    Game->PlaySound(44);
+                    GV[LinkIced] = 120;
+                    Link->HitDir = -1;
+                }
+                if ( type == 0 && wpn->ID == EW_MAGIC && Screen->isSolid(wpn->X+8, wpn->Y+8) == true && wpn->DeadState < 0 ) {
+                    wpn->DeadState = WDS_DEAD;
+                }
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script FreezeFlameTorch{
+    void run(int radius, int speed, int counterClockwise){
+        int flame1X = 0;
+        int flame1Y = 0;
+        int flame2X = 0;
+        int flame2Y = 0;
+        int flame3X = 0;
+        int flame3Y = 0;
+        int flame4X = 0;
+        int flame4Y = 0;
+        Screen->D[0] = 0; //frosty
+        bool iFrozeHim = false;
+        int angle = 45;
+        while(true){
+            if ( counterClockwise == 1 )
+                angle -= speed;
+            else
+                angle += speed;
+            if(angle < -360)angle+=360; //Wrap if below -360. ???? i dont know
+            else if(angle > 360)angle-=360; //Wrap if above 360. ???? i dont know
+            flame1X = this->X + radius*Cos(angle);
+            flame1Y = this->Y + radius*Sin(angle);
+            flame2X = this->X + radius*Cos(angle+90);
+            flame2Y = this->Y + radius*Sin(angle+90);
+            flame3X = this->X + radius*Cos(angle+180);
+            flame3Y = this->Y + radius*Sin(angle+180);
+            flame4X = this->X + radius*Cos(angle+270);
+            flame4Y = this->Y + radius*Sin(angle+270);
+
+            Screen->FastCombo(2, flame1X, flame1Y, 5972, 7, OP_OPAQUE);
+            Screen->FastCombo(2, flame2X, flame2Y, 5972, 7, OP_OPAQUE);
+            Screen->FastCombo(2, flame3X, flame3Y, 5972, 7, OP_OPAQUE);
+            Screen->FastCombo(2, flame4X, flame4Y, 5972, 7, OP_OPAQUE);
+            if ( Screen->D[0] == 0 && GV[LinkIced] == 0 && Link->Action != LA_GOTHURTLAND && (RectCollision(Link->X+8, Link->Y+12, Link->X+8, Link->Y+12, flame1X, flame1Y, flame1X+15, flame1Y+15) == true
+            || RectCollision(Link->X, Link->Y+8, Link->X+15, Link->Y+15, flame2X+7, flame2Y+7, flame2X+8, flame2Y+8) == true
+            || RectCollision(Link->X, Link->Y+8, Link->X+15, Link->Y+15, flame3X+7, flame3Y+7, flame3X+8, flame3Y+8) == true
+            || RectCollision(Link->X, Link->Y+8, Link->X+15, Link->Y+15, flame4X+7, flame4Y+7, flame4X+8, flame4Y+8) == true) ) {
+                GV[LinkIced] = 120;
+                Screen->D[0] = 150;
+                iFrozeHim = true;
+                Game->PlaySound(19);
+                Game->PlaySound(79);
+                Link->HP -= 8;
+                Link->Action = LA_GOTHURTLAND;
+            }
+            if ( Screen->D[0] > 0 && iFrozeHim == true )
+                Screen->D[0] --;
+            if ( Screen->D[0] == 0 )
+                iFrozeHim = false;
+            Waitframe();
+        }
+    }
+}
+
+ffc script RealDefeatAllEnemies{
+    void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		Waitframes(4);
+		while(true){
+			if ( !CheckEnemies() ) {
+				Game->PlaySound(27);
+				Screen->TriggerSecrets();
+				Screen->State[ST_SECRET] = true;
+				Quit();
+			}
+			Waitframe();
+        }
+	}
+	bool CheckEnemies(){
+		for(int i=Screen->NumNPCs(); i>=1; i--){
+			npc n = Screen->LoadNPC(i);
+			if(n->Type!=NPCT_PROJECTILE&&n->Type!=NPCT_FAIRY&&n->Type!=NPCT_TRAP&&n->Type!=NPCT_GUY){
+				if(!(n->MiscFlags&(1<<3)))
+					return true;
+			}
+		}
+		return false;
+	}
+}

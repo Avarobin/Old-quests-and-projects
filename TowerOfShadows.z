@@ -1,0 +1,1739 @@
+import "std.zh"
+import "ffcscriptToS.zh"
+
+item script flameshot{
+	void run(int d,int s,int t,int c,int n,int a){
+                            if ( Screen->ComboD[15] != 3026 ) {
+		if(Screen->NumNPCs() > 0){
+		lweapon f = Screen->CreateLWeapon(31);
+			f->Tile = t; f->OriginalTile = t;
+			f->NumFrames = n; f->ASpeed = a;
+			f->CSet = c;
+		 	f->Step = s;
+			f->Damage = d;
+			f->X = Link->X;
+			f->Y = Link->Y;
+			f->Z = Link->Z;
+			npc e = Screen->LoadNPC(Rand(Screen->NumNPCs())+1);
+		 	f->Angular = true;
+ 			f->Angle = ArcTan((e->X-Link->X),(e->Y-Link->Y));
+			Game->PlaySound(66);
+		}
+                            }
+                            else {
+                            Screen->Message(583);
+                            }
+	}
+}
+item script string{
+  void run(int null0, int null1, int null2, int null3, int null4, int null5, int null6, int str){
+    Screen->Message(str);
+   }
+}
+
+item script FireMedalUse{
+    void run(){
+        for(int i=0; i<176; i++){
+            if ( Screen->ComboD[i] == 1154 )
+                Screen->ComboD[i] = 1463;
+        }
+    }
+}
+
+item script CandleUse{
+    void run(){
+        for(int i=0; i<176; i++){
+            if ( Screen->ComboD[i] == 1463 )
+                Screen->ComboD[i] = 1154;
+        }
+    }
+}
+
+//------------Random Sword Grunts------------\\
+item script SwordSFX {
+void run() {
+Game->PlaySound(71+Rand(4));
+}
+}
+
+const int RANGE = 256; // range in pixel
+const int TILE_UP = 31; // tiles for link using wand
+const int TILE_DOWN = 27;
+const int TILE_LEFT = 319;
+const int TILE_RIGHT = 26;
+const int INV_COMBO_ID = 1088;
+const int WAND_TILE_UP = 516;
+const int WAND_TILE_DOWN = 517;
+const int WAND_TILE_LEFT = 518;
+const int WAND_TILE_RIGHT = 519;
+
+
+int push_combo;
+int push_x;
+int push_y;
+int stored_x;
+int stored_y;
+
+item script PushingWand{
+void run(){
+  if ( Game->Counter[CR_SCRIPT14] == 0 ) {
+  Game->Counter[CR_SCRIPT14] += 22;
+  Game->PlaySound(SFX_WAND);
+  int dx = 0;
+  int dy = 0;
+  int x;
+  int y;
+  int loc;
+  if(Link->Dir == DIR_UP) dy = -1;
+  else if(Link->Dir == DIR_DOWN) dy = 1;
+  else if(Link->Dir == DIR_LEFT) dx = -1;
+  else if(Link->Dir == DIR_RIGHT) dx = 1;
+  for(int i=0;i<RANGE;i++){
+   x = Link->X + i*dx;
+   y = Link->Y + i*dy;
+   loc = ComboAt(x+8,y+8);
+   if(!CanWalk(x,y,Link->Dir,1,false)){
+    push_combo = 20;
+    push_x = x - dx;
+    push_y = y - dy;
+    stored_x = Link->X;
+    stored_y = Link->Y;
+    ffc inv_ffc = Screen->LoadFFC(33);
+    inv_ffc->Data = INV_COMBO_ID;
+    inv_ffc->X = push_x;
+    inv_ffc->Y = push_y;
+    if(x>16 && y>16 && x+16<15*16 && y+16<10*16) {
+     Link->X = push_x;
+     Link->Y = push_y;
+    }
+    PushCombo();
+    Quit();
+   }
+  }
+}
+}
+}
+
+const int SNOWFLAKE_TILE1=2660; //The first tile used for snowflakes
+const int SNOWFLAKE_TILE2=2663; //The last tile used for snowflakes
+const int SNOWFLAKE_CSET=2; //The cset used for snowflakes
+const int SNOWFLAKE_COUNT=20; //Number of snowflakes on the screen. Change the values of the arrays manually
+
+// Global Scripts - to combine with other global scripts
+global script Slot_2{
+void run(){
+
+int xoffset=8;
+int yoffset=8;
+int snowflakes[20];
+float xpos[20];
+float ypos[20];
+float angle[20];
+float speed[20];
+int graphic[20];
+
+int ii=0;
+	 while(ii<100){
+	 xpos[ii]=Rand(0,256)-xoffset;
+	 ypos[ii]=Rand(0,176)-yoffset;
+	 angle[ii]=Rand(-90-20,-90+20);
+	 graphic[ii]=Rand(SNOWFLAKE_TILE1,SNOWFLAKE_TILE2);
+	 int range=SNOWFLAKE_TILE2-SNOWFLAKE_TILE1;
+	 speed[ii]=0.5+0.2*Sin((graphic[ii]-SNOWFLAKE_TILE1)*(90/range));
+	 ii++;
+	 }
+
+  //---to do when the quest starts---
+  bool drowned = false;
+  Link->Item[132] = false;
+  while(true){
+   //---to repeat each frame---
+   if ( CountFFCsRunning(8) == 0 )
+       RunFFCScript(8, 0);
+   if(push_combo ==1) LinkBack();
+   else if(push_combo > 0) PushCombo();
+   //---put here other stuff---
+   if ( Link->PressL == true && Link->Action != LA_SCROLLING )
+       Link->SelectBWeapon(DIR_LEFT);
+   if ( Link->PressR == true && Link->Action != LA_SCROLLING )
+       Link->SelectBWeapon(DIR_RIGHT);
+   if ( Game->Counter[CR_SCRIPT14] > 0 )
+       Game->Counter[CR_SCRIPT14] -= 1;
+   if ( drowned == true && Link->Action != LA_DROWNING )
+       drowned = false;
+   for(int i=0; i<176; i++){
+       if ( Screen->ComboD[i] == 253 ) {
+           Game->PlaySound(83);
+           Screen->ComboD[i] = 1424;
+       }
+       else if ( Screen->ComboD[i] == 785 ) {
+           Game->PlaySound(83);
+           Screen->ComboD[i] = 1462;
+       }
+   }
+
+               if ( CountFFCsRunning(9) != 0 ) {
+	 ii=0;
+		 while(ii<20){
+
+		 if(xpos[ii]<=0-xoffset || xpos[ii]>=256-xoffset ||ypos[ii]<=0-yoffset|| ypos[ii]>=176-yoffset){
+			 xpos[ii]=Rand(0,256)-xoffset;
+			 ypos[ii]=176-yoffset;
+			 angle[ii]=Rand(-90-20,-90+20);
+			 graphic[ii]=Rand(SNOWFLAKE_TILE1,SNOWFLAKE_TILE2);
+			 int range=SNOWFLAKE_TILE2-SNOWFLAKE_TILE1;
+			 speed[ii]=0.5+0.2*Sin((graphic[ii]-SNOWFLAKE_TILE1)*(90/range));
+		 }
+
+		 xpos[ii]=xpos[ii]+speed[ii]*Cos(angle[ii]);
+		 ypos[ii]=ypos[ii]+speed[ii]*Sin(angle[ii]);
+                             if ( (xpos[ii] != 0 || ypos[ii] != 0) && CountFFCsRunning(9) != 0)
+		 Screen->FastCombo(6,xpos[ii],ypos[ii],graphic[ii],SNOWFLAKE_CSET,128);
+
+		 ii++;
+		 }
+}
+
+
+ if(link_on_combo_x(241)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(242)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(243)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(245)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(246)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(247)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(249)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(250)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(251)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(799)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(837)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(848)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(849)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(850)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(851)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(852)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(853)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(854)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(855)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(856)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(859)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(953)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(954)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(955)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+ if(link_on_combo_x(774)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(81);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT12] = 30;
+ }
+
+
+ if(link_on_combo_x(90)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(292)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(293)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(294)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(296)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(297)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(298)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(300)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(301)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(302)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(360)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(361)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(371)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(372)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(373)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(374)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(375)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(376)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(377)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(378)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1040)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1041)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1042)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1043)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1044)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1045)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1046)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1047)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1048)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1049)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1050)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1051)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1052)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1053)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1054)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(1055)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(576)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(577)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(578)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(579)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(580)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(581)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(582)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(583)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(584)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(585)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(586)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(587)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(604)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(777)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(778)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(779)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(780)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(781)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(782)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+ if(link_on_combo_x(787)&&drowned == false){
+  drowned = true;
+  Game->PlaySound(82);
+  //hier fuegen wir noch animation ein
+  Game->Counter[CR_SCRIPT13] = 30;
+ }
+   Waitframe();
+  }
+}
+}
+
+
+bool link_on_combo_x(int num){
+    if((Screen->ComboD[ComboAt(Link->X, Link->Y+4)]==num||Screen->ComboD[ComboAt(Link->X+15, Link->Y+4)]==num||Screen->ComboD[ComboAt(Link->X, Link->Y+15)]==num||Screen->ComboD[ComboAt(Link->X+15, Link->Y+15)]==num)&&Link->Action==LA_DROWNING) return true;
+     else return false;
+}
+
+
+
+// outside global script
+
+void PushCombo(){
+Link->Invisible = true;
+Link->CollDetection = false;
+Link->Item[132] = true;
+DrawLinkWandTiles(Link->Dir);
+NoAction();
+int x = Link->X;
+int y = Link->Y;
+if(x>16 && y>16 && x+16<15*16 && y+16<10*16) {
+  if(Link->Dir == DIR_UP) Link->InputUp = true;
+  else if(Link->Dir == DIR_DOWN) Link->InputDown = true;
+  else if(Link->Dir == DIR_LEFT) Link->InputLeft = true;
+  else if(Link->Dir == DIR_RIGHT) Link->InputRight = true;
+}
+push_combo --;
+}
+
+void LinkBack(){
+Link->X = stored_x;
+Link->Y = stored_y;
+Link->CollDetection = true;
+Link->Invisible = false;
+Link->Item[132] = false;
+ffc inv_ffc = Screen->LoadFFC(33);
+inv_ffc->Data = 0;
+push_combo = 0;
+NoAction();
+}
+
+void DrawLinkWandTiles(int dir){
+int link_tile;
+int wand_tile;
+int dx = 0;
+int dy = 0;
+if(dir == DIR_UP) {
+  link_tile = TILE_UP;
+  wand_tile = WAND_TILE_UP;
+  dy = -16;
+}
+else if(dir == DIR_DOWN) {
+  link_tile = TILE_DOWN;
+  wand_tile = WAND_TILE_DOWN;
+  dy = 16;
+}
+else if(dir == DIR_LEFT) {
+  link_tile = TILE_LEFT;
+  wand_tile = WAND_TILE_LEFT;
+  dx = -16;
+}
+else if(dir == DIR_RIGHT) {
+  link_tile = TILE_RIGHT;
+  wand_tile = WAND_TILE_RIGHT;
+  dx = 16;
+}
+Screen->FastTile(1, stored_x,stored_y, link_tile, 6, 128);
+Screen->FastTile(1, stored_x+dx,stored_y+dy, wand_tile, 6, 128);
+}
+
+
+ffc script Signpost{
+    void run(int m,int input){
+        int loc = ComboAt(this->X,this->Y);
+        while(true){
+            while(!AgainstComboBase(loc) || !SelectPressInput(input)) Waitframe();
+            SetInput(input,false);
+            Screen->Message(m);
+            Waitframe();
+        }
+    }
+    bool AgainstComboBase(int loc){
+        return Link->Z == 0 && (Link->Dir == DIR_UP && Link->Y == ComboY(loc)+8 && Abs(Link->X-ComboX(loc)) < 8);
+    }
+}
+
+//These functions should only be included in your script file once
+bool SelectPressInput(int input){
+    if(input == 0) return Link->PressA;
+    else if(input == 1) return Link->PressB;
+    else if(input == 2) return Link->PressL;
+    else if(input == 3) return Link->PressR;
+}
+void SetInput(int input, bool state){
+    if(input == 0) Link->InputA = state;
+    else if(input == 1) Link->InputB = state;
+    else if(input == 2) Link->InputL = state;
+    else if(input == 3) Link->InputR = state;
+}
+
+// Periodically reverses directional controls. Depending on the combo setup,
+// the reverser can be killed (possibly requiring multiple shots) and
+// regenerated.
+
+// Arguments are used only to override default settings. If they are all left
+// at 0, the default settings will be used. Note, however, that D6 is used
+// differently from the others.
+
+// D0: How long to keep the controls reversed before returning them to normal.
+// D1: How long to leave the controls normal before reversing them.
+// D2: The sound to play when the controls are reversed. If this is less than 0,
+//     no sound will be played.
+// D3: The sound to play when the controls are returned to normal. If this is
+//     less than 0, no sound will be played.
+// D4: Whether to change to the next combo while the controls are reversed.
+//     -1: Don't change combo
+//     1: Change combo
+// D5: Whether to change the CSet while the controls are reversed.
+//     -1: Don't change CSet
+//     1: Change CSet
+// D6: Which CSet to change to while the controls are reversed. This is ignored
+//     if D5 is not 1. If you want to set D5 to 1 but use the default value for
+//     the alternate CSet, set this to -1. This is awkward, but it is necessary
+//     because 0 is a valid CSet.
+// D7: The sound to play when the Control Reverser is killed.. If this is less
+//     than 0, no sound will be played.
+
+
+
+// The values of the following constants can safely be modified to change the
+// script's behavior.
+
+
+// How long the controls should be reversed before returning to normal.
+// Measured in frames (60 frames=1 second).
+// Do not set this lower than 1.
+// This is only a default value; it can be overridden by argument D0.
+const int REVERSE_TIME = 1500;
+
+// How long the controls should be left normal before they're reversed.
+// Measured in frames (60 frames=1 second).
+// Do not set this lower than 1.
+// This is only a default value; it can be overridden by argument D1.
+const int NORMAL_TIME = 1;
+
+// Whether a sound should be played when the controls are reversed.
+// 0: Don't play sound
+// 1: Play sound
+// This is only a default value; it can be overridden by argument D2.
+const int PLAY_REVERSE_SOUND = 0;
+
+// Which sound to play when the controls are reversed. Ignored if no sound
+// will be played.
+// Do not set this lower than 1 or greater than 127.
+// This is only a default value; it can be overridden by argument D2.
+const int REVERSE_SOUND = 47;
+
+// Whether a sound should be played when the controls are returned to normal.
+// 0: Don't play sound
+// 1: Play sound
+// This is only a default value; it can be overridden by argument D3.
+const int PLAY_NORMAL_SOUND = 0;
+
+// Which sound to play when the controls are returned to normal. Ignored if
+// no sound will be played.
+// Do not set this lower than 1 or greater than 127.
+// This is only a default value; it can be overridden by argument D3.
+const int NORMAL_SOUND = 46;
+
+// Whether to use a different combo while the controls are reversed. The FFC
+// will change to the next combo in the list when controls are reversed, and to
+// the previous combo when they are returned to normal.
+// 0: Don't change combo
+// 1: Change combo
+// This is only a default value; it can be overridden by argument D4.
+const int CHANGE_COMBO_WHILE_REVERSED = 0;
+
+// Whether to use a different CSet while the controls are reversed.
+// 0: Don't change CSet
+// 1: Change CSet
+// This is only a default value; it can be overridden by argument D5.
+const int CHANGE_CSET_WHILE_REVERSED = 0;
+
+// Which CSet to use while the controls are reversed. Ignored if the CSet is
+// not changed.
+// Do not set this lower than 0 or higher than 11.
+// This is only a default value; it can be overridden by argument D6.
+const int REVERSED_CSET = 0;
+
+// If the FFC's combo is changed to the combo with this number, the controls
+// will be returned to normal and the script will stop executing. If the FFC
+// changes back to its original combo, the script will start running again.
+const int DEATH_COMBO = 0;
+
+// Whether a sound will be played when the FFC "dies" (i.e., its combo changed
+// to the one identified by DEATH_COMBO).
+// 0: Don't play sound
+// 1: Play sound
+// This is only a default value; it can be overridden by argument D8.
+const int PLAY_DEATH_SOUND = 0;
+
+// Which sound to play when the FFC "dies." Ignored if no sound will be played.
+// Do not set this lower than 1 or greater than 127.
+// This is only a default value; it can be overridden by argument D8.
+const int DEATH_SOUND = 10;
+
+
+// The rest of the script cannot safely be edited.
+
+
+
+ffc script ControlReverser
+{
+  void run(int overrideReverseTime, int overrideNormalTime,
+           int overrideReverseSound, int overrideNormalSound,
+           int overrideChangeCombo, int overrideChangeCSet,
+           int overrideReverseCSet, int overrideDeathSound)
+  {
+    // Remember the FFC's initial appearance
+    int initialCombo=this->Data;
+    int initialCSet=this->CSet;
+
+    // How long to rest before switching the controls
+    int reverseTime;
+    int normalTime;
+
+    // The sound to play and whether to play one when the controls are reversed
+    bool playReverseSound;
+    int reverseSound;
+
+    // The sound to play when the controls are returned to normal
+    bool playNormalSound;
+    int normalSound;
+
+    // The sound to play when the Reverser is killed
+    bool playDeathSound;
+    int deathSound;
+
+    // Whether to change the FFC's appearance while the controls are reversed
+    bool changeCombo;
+    bool changeCSet;
+    int reverseCSet;
+
+    // Determine how long to keep the controls reversed
+    if(overrideReverseTime<=0)
+      reverseTime=REVERSE_TIME;
+    else
+      reverseTime=overrideReverseTime;
+
+    // Determine how long to leave the controls normal
+    if(overrideNormalTime<=0)
+      normalTime=NORMAL_TIME;
+    else
+      normalTime=overrideNormalTime;
+
+    // Determine which sound to play, if any, when controls are reversed
+    if(overrideReverseSound>0 && overrideReverseSound<128)
+    {
+      // Override default settings and use value from argument
+      reverseSound=overrideReverseSound;
+      playReverseSound=true;
+    }
+    else if(overrideReverseSound<0)
+    {
+      // Don't play sound, regardless of default settings
+      reverseSound=0;
+      playReverseSound=false;
+    }
+    else
+    {
+      // Use default settings
+      reverseSound=REVERSE_SOUND;
+      playReverseSound=PLAY_REVERSE_SOUND>0;
+    }
+
+    // Determine which sound to play, if any, when controls return to normal
+    if(overrideNormalSound>0 && overrideNormalSound<128)
+    {
+      normalSound=overrideNormalSound;
+      playNormalSound=true;
+    }
+    else if(overrideNormalSound<0)
+    {
+      normalSound=0;
+      playNormalSound=false;
+    }
+    else
+    {
+      normalSound=NORMAL_SOUND;
+      playNormalSound=PLAY_NORMAL_SOUND>0;
+    }
+
+    // Determine which sound to play, if any, when the FFC "dies"
+    if(overrideDeathSound>0 && overrideDeathSound<128)
+    {
+      deathSound=overrideDeathSound;
+      playDeathSound=true;
+    }
+    else if(overrideDeathSound<0)
+    {
+      deathSound=0;
+      playDeathSound=false;
+    }
+    else
+    {
+      deathSound=DEATH_SOUND;
+      playDeathSound=PLAY_DEATH_SOUND>0;
+    }
+
+    // Determine whether to change the combo while controls are reversed
+    changeCombo=overrideChangeCombo>0 ||
+                (CHANGE_COMBO_WHILE_REVERSED>0 && overrideChangeCombo==0);
+
+    // Determine which CSet to change to, if any, while controls are reversed
+    if(overrideChangeCSet>0)
+    {
+      changeCSet=true;
+      if(overrideReverseCSet>=0 && overrideReverseCSet<=11)
+        reverseCSet=overrideReverseCSet;
+      else
+        reverseCSet=REVERSED_CSET;
+    }
+    else if(overrideChangeCSet<0)
+    {
+      changeCSet=false;
+      reverseCSet=0;
+    }
+    else
+    {
+      changeCSet=CHANGE_CSET_WHILE_REVERSED>0;
+      reverseCSet=REVERSED_CSET;
+    }
+
+    while(true)
+    {
+      // Don't start running until the combo is the starting combo. This keeps
+      // the script inactive but ready after the FFC has been "killed."
+      while(this->Data!=initialCombo)
+        Waitframe();
+
+      this->CSet=initialCSet;
+
+      while(true)
+      {
+        // While controls are normal, do nothing
+        for(int i=0; i<normalTime; i++)
+        {
+          if(this->Data==DEATH_COMBO)
+            break;
+          Waitframe();
+        }
+
+        if(this->Data==DEATH_COMBO)
+        {
+          if(playDeathSound)
+            Game->PlaySound(deathSound);
+          break;
+        }
+
+        // Switch to reverse mode
+        if(playReverseSound)
+          Game->PlaySound(reverseSound);
+
+        if(changeCombo)
+          this->Data++;
+
+        if(changeCSet)
+          this->CSet=reverseCSet;
+
+        // Reverse controls for a while
+        for(int i=0; i<reverseTime; i++)
+        {
+          if(this->Data==DEATH_COMBO)
+            break;
+
+          bool dirTemp;
+
+          dirTemp=Link->InputUp;
+          Link->InputUp=Link->InputDown;
+          Link->InputDown=dirTemp;
+
+          dirTemp=Link->InputLeft;
+          Link->InputLeft=Link->InputRight;
+          Link->InputRight=dirTemp;
+
+          Waitframe();
+        }
+
+        if(this->Data==DEATH_COMBO)
+        {
+          if(playDeathSound)
+            Game->PlaySound(deathSound);
+          break;
+        }
+
+        // Switch back to normal mode
+        if(playNormalSound)
+          Game->PlaySound(normalSound);
+
+        if(changeCombo)
+          this->Data--;
+
+        if(changeCSet)
+          this->CSet=initialCSet;
+      }
+    }
+  }
+}
+
+
+//D0: X radius
+//D1: Y radius
+//D2: X step speed
+//D3: Y step speed
+ffc script Figure8{
+    void run(int radx, int rady, int speedx, int speedy) {
+        int cx = this->X;
+        int cy = this->Y;
+        int degx = 0;
+        int degy = 0;
+        bool ck = Max(speedx, speedy) == speedy;
+        while(true) {
+            degx = (degx + speedx) % 360;
+            degy = (degy + speedy) % 360;
+            if(ck) {
+                this->X = cx + radx * Cos(degx);
+                this->Y = cy + rady * Sin(degy);
+            }
+            else {
+                this->X = cx + radx * Sin(degx);
+                this->Y = cy + rady * Cos(degy);
+            }
+            Waitframe();
+        }
+    }
+}
+ffc script Parabolic{
+    void run(int radx, int rady, int speedx, int speedy) {
+        int cx = this->X;
+        int cy = this->Y;
+        int degx = 0;
+        int degy = 0;
+        bool ck = Max(speedx, speedy) == speedx;
+        while(true) {
+            degx = (degx + speedx) % 360;
+            degy = (degy + speedy) % 360;
+            if(ck) {
+                this->X = cx + radx * Cos(degx);
+                this->Y = cy + rady * Sin(degy);
+            }
+            else {
+                this->X = cx + radx * Sin(degx);
+                this->Y = cy + rady * Cos(degy);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Freeze{
+    void run() {
+        while(true) {
+            Link->InputUp = false;
+            Link->PressUp = false;
+            Link->InputRight = false;
+            Link->PressRight = false;
+            Link->InputDown = false;
+            Link->PressDown = false;
+            Link->InputLeft = false;
+            Link->PressLeft = false;
+            Link->InputA = false;
+            Link->PressA = false;
+            Link->InputB = false;
+            Link->PressB = false;
+            Waitframe();
+        }
+    }
+}
+
+ffc script WarpIfNoItem{
+    void run() {
+        if ( NumTriforcePieces() >= 4 ) {
+            Screen->TriggerSecrets();
+            Screen->State[ST_SECRET] = true;
+        }
+    }
+}
+
+ffc script TriggerIfTriforce{
+    void run(int NumOfThePieces) {
+        if ( NumTriforcePieces() >= NumOfThePieces ) {
+            Screen->TriggerSecrets();
+            Screen->State[ST_SECRET] = true;
+        }
+    }
+}
+
+ffc script DrownGraphic{
+    void run() {
+        this->Flags[FFCF_OVERLAY] = true;
+        this->Flags[FFCF_ETHEREAL] = true;
+        while(true) {
+            if ( Game->Counter[CR_SCRIPT12] == 30 ) {
+                this->Data = 1416;
+                this->X = Link->X;
+                this->Y = Link->Y;
+            }
+            if ( Game->Counter[CR_SCRIPT13] == 30 ) {
+                this->Data = 1420;
+                this->X = Link->X;
+                this->Y = Link->Y;
+            }
+            if ( Game->Counter[CR_SCRIPT12] > 0 ) {
+                Game->Counter[CR_SCRIPT12]--;
+            }
+            if ( Game->Counter[CR_SCRIPT13] > 0 ) {
+                Game->Counter[CR_SCRIPT13]--;
+            }
+            if ( this->Data != Game->Counter[CR_SCRIPT12] == 1418 && ( (Game->Counter[CR_SCRIPT12] == 0 && Game->Counter[CR_SCRIPT13] == 0) || Link->Action != LA_DROWNING ) ) {
+                this->Data = 1418;
+                this->X = 0;
+                this->Y = 0;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Whatever{
+    void run() {
+        while(true) {
+            Waitframe();
+        }
+    }
+}
+
+ffc script LightsOutPuzzle{
+    void run() {
+        int comboUnderLink;
+        while(true) {
+            comboUnderLink = ComboAt(Link->X+8, Link->Y+12);
+            if ( !Screen->State[ST_SECRET] ) {
+                if ( comboUnderLink == 35 && (Screen->ComboD[35] == 6384 || Screen->ComboD[35] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[35] == 6384 )
+                        Screen->ComboD[35] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[35] == 6388 )
+                        Screen->ComboD[35] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[37] == 6384 )
+                        Screen->ComboD[37] = 6388;
+                    else if ( Screen->ComboD[37] == 6388 )
+                        Screen->ComboD[37] = 6384;
+
+                    if ( Screen->ComboD[67] == 6384 )
+                        Screen->ComboD[67] = 6388;
+                    else if ( Screen->ComboD[67] == 6388 )
+                        Screen->ComboD[67] = 6384;
+                }
+                if ( comboUnderLink == 37 && (Screen->ComboD[37] == 6384 || Screen->ComboD[37] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[37] == 6384 )
+                        Screen->ComboD[37] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[37] == 6388 )
+                        Screen->ComboD[37] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[35] == 6384 )
+                        Screen->ComboD[35] = 6388;
+                    else if ( Screen->ComboD[35] == 6388 )
+                        Screen->ComboD[35] = 6384;
+
+                    if ( Screen->ComboD[39] == 6384 )
+                        Screen->ComboD[39] = 6388;
+                    else if ( Screen->ComboD[39] == 6388 )
+                        Screen->ComboD[39] = 6384;
+
+                    if ( Screen->ComboD[69] == 6384 )
+                        Screen->ComboD[69] = 6388;
+                    else if ( Screen->ComboD[69] == 6388 )
+                        Screen->ComboD[69] = 6384;
+                }
+                if ( comboUnderLink == 39 && (Screen->ComboD[39] == 6384 || Screen->ComboD[39] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[39] == 6384 )
+                        Screen->ComboD[39] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[39] == 6388 )
+                        Screen->ComboD[39] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[37] == 6384 )
+                        Screen->ComboD[37] = 6388;
+                    else if ( Screen->ComboD[37] == 6388 )
+                        Screen->ComboD[37] = 6384;
+
+                    if ( Screen->ComboD[41] == 6384 )
+                        Screen->ComboD[41] = 6388;
+                    else if ( Screen->ComboD[41] == 6388 )
+                        Screen->ComboD[41] = 6384;
+
+                    if ( Screen->ComboD[71] == 6384 )
+                        Screen->ComboD[71] = 6388;
+                    else if ( Screen->ComboD[71] == 6388 )
+                        Screen->ComboD[71] = 6384;
+                }
+                if ( comboUnderLink == 41 && (Screen->ComboD[41] == 6384 || Screen->ComboD[41] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[41] == 6384 )
+                        Screen->ComboD[41] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[41] == 6388 )
+                        Screen->ComboD[41] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[39] == 6384 )
+                        Screen->ComboD[39] = 6388;
+                    else if ( Screen->ComboD[39] == 6388 )
+                        Screen->ComboD[39] = 6384;
+
+                    if ( Screen->ComboD[43] == 6384 )
+                        Screen->ComboD[43] = 6388;
+                    else if ( Screen->ComboD[43] == 6388 )
+                        Screen->ComboD[43] = 6384;
+
+                    if ( Screen->ComboD[73] == 6384 )
+                        Screen->ComboD[73] = 6388;
+                    else if ( Screen->ComboD[73] == 6388 )
+                        Screen->ComboD[73] = 6384;
+                }
+                if ( comboUnderLink == 43 && (Screen->ComboD[43] == 6384 || Screen->ComboD[43] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[43] == 6384 )
+                        Screen->ComboD[43] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[43] == 6388 )
+                        Screen->ComboD[43] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[41] == 6384 )
+                        Screen->ComboD[41] = 6388;
+                    else if ( Screen->ComboD[41] == 6388 )
+                        Screen->ComboD[41] = 6384;
+
+                    if ( Screen->ComboD[75] == 6384 )
+                        Screen->ComboD[75] = 6388;
+                    else if ( Screen->ComboD[75] == 6388 )
+                        Screen->ComboD[75] = 6384;
+                }
+                if ( comboUnderLink == 67 && (Screen->ComboD[67] == 6384 || Screen->ComboD[67] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[67] == 6384 )
+                        Screen->ComboD[67] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[67] == 6388 )
+                        Screen->ComboD[67] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[35] == 6384 )
+                        Screen->ComboD[35] = 6388;
+                    else if ( Screen->ComboD[35] == 6388 )
+                        Screen->ComboD[35] = 6384;
+
+                    if ( Screen->ComboD[69] == 6384 )
+                        Screen->ComboD[69] = 6388;
+                    else if ( Screen->ComboD[69] == 6388 )
+                        Screen->ComboD[69] = 6384;
+
+                    if ( Screen->ComboD[99] == 6384 )
+                        Screen->ComboD[99] = 6388;
+                    else if ( Screen->ComboD[99] == 6388 )
+                        Screen->ComboD[99] = 6384;
+                }
+                if ( comboUnderLink == 69 && (Screen->ComboD[69] == 6384 || Screen->ComboD[69] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[69] == 6384 )
+                        Screen->ComboD[69] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[69] == 6388 )
+                        Screen->ComboD[69] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[37] == 6384 )
+                        Screen->ComboD[37] = 6388;
+                    else if ( Screen->ComboD[37] == 6388 )
+                        Screen->ComboD[37] = 6384;
+
+                    if ( Screen->ComboD[67] == 6384 )
+                        Screen->ComboD[67] = 6388;
+                    else if ( Screen->ComboD[67] == 6388 )
+                        Screen->ComboD[67] = 6384;
+
+                    if ( Screen->ComboD[71] == 6384 )
+                        Screen->ComboD[71] = 6388;
+                    else if ( Screen->ComboD[71] == 6388 )
+                        Screen->ComboD[71] = 6384;
+
+                    if ( Screen->ComboD[101] == 6384 )
+                        Screen->ComboD[101] = 6388;
+                    else if ( Screen->ComboD[101] == 6388 )
+                        Screen->ComboD[101] = 6384;
+                }
+                if ( comboUnderLink == 71 && (Screen->ComboD[71] == 6384 || Screen->ComboD[71] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[71] == 6384 )
+                        Screen->ComboD[71] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[71] == 6388 )
+                        Screen->ComboD[71] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[39] == 6384 )
+                        Screen->ComboD[39] = 6388;
+                    else if ( Screen->ComboD[39] == 6388 )
+                        Screen->ComboD[39] = 6384;
+
+                    if ( Screen->ComboD[69] == 6384 )
+                        Screen->ComboD[69] = 6388;
+                    else if ( Screen->ComboD[69] == 6388 )
+                        Screen->ComboD[69] = 6384;
+
+                    if ( Screen->ComboD[73] == 6384 )
+                        Screen->ComboD[73] = 6388;
+                    else if ( Screen->ComboD[73] == 6388 )
+                        Screen->ComboD[73] = 6384;
+
+                    if ( Screen->ComboD[103] == 6384 )
+                        Screen->ComboD[103] = 6388;
+                    else if ( Screen->ComboD[103] == 6388 )
+                        Screen->ComboD[103] = 6384;
+                }
+                if ( comboUnderLink == 73 && (Screen->ComboD[73] == 6384 || Screen->ComboD[73] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[73] == 6384 )
+                        Screen->ComboD[73] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[73] == 6388 )
+                        Screen->ComboD[73] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[41] == 6384 )
+                        Screen->ComboD[41] = 6388;
+                    else if ( Screen->ComboD[41] == 6388 )
+                        Screen->ComboD[41] = 6384;
+
+                    if ( Screen->ComboD[71] == 6384 )
+                        Screen->ComboD[71] = 6388;
+                    else if ( Screen->ComboD[71] == 6388 )
+                        Screen->ComboD[71] = 6384;
+
+                    if ( Screen->ComboD[75] == 6384 )
+                        Screen->ComboD[75] = 6388;
+                    else if ( Screen->ComboD[75] == 6388 )
+                        Screen->ComboD[75] = 6384;
+
+                    if ( Screen->ComboD[105] == 6384 )
+                        Screen->ComboD[105] = 6388;
+                    else if ( Screen->ComboD[105] == 6388 )
+                        Screen->ComboD[105] = 6384;
+                }
+                if ( comboUnderLink == 75 && (Screen->ComboD[75] == 6384 || Screen->ComboD[75] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[75] == 6384 )
+                        Screen->ComboD[75] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[75] == 6388 )
+                        Screen->ComboD[75] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[43] == 6384 )
+                        Screen->ComboD[43] = 6388;
+                    else if ( Screen->ComboD[43] == 6388 )
+                        Screen->ComboD[43] = 6384;
+
+                    if ( Screen->ComboD[73] == 6384 )
+                        Screen->ComboD[73] = 6388;
+                    else if ( Screen->ComboD[73] == 6388 )
+                        Screen->ComboD[73] = 6384;
+
+                    if ( Screen->ComboD[107] == 6384 )
+                        Screen->ComboD[107] = 6388;
+                    else if ( Screen->ComboD[107] == 6388 )
+                        Screen->ComboD[107] = 6384;
+                }
+                if ( comboUnderLink == 99 && (Screen->ComboD[99] == 6384 || Screen->ComboD[99] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[99] == 6384 )
+                        Screen->ComboD[99] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[99] == 6388 )
+                        Screen->ComboD[99] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[67] == 6384 )
+                        Screen->ComboD[67] = 6388;
+                    else if ( Screen->ComboD[67] == 6388 )
+                        Screen->ComboD[67] = 6384;
+
+                    if ( Screen->ComboD[101] == 6384 )
+                        Screen->ComboD[101] = 6388;
+                    else if ( Screen->ComboD[101] == 6388 )
+                        Screen->ComboD[101] = 6384;
+
+                    if ( Screen->ComboD[131] == 6384 )
+                        Screen->ComboD[131] = 6388;
+                    else if ( Screen->ComboD[131] == 6388 )
+                        Screen->ComboD[131] = 6384;
+                }
+                if ( comboUnderLink == 101 && (Screen->ComboD[101] == 6384 || Screen->ComboD[101] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[101] == 6384 )
+                        Screen->ComboD[101] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[101] == 6388 )
+                        Screen->ComboD[101] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[69] == 6384 )
+                        Screen->ComboD[69] = 6388;
+                    else if ( Screen->ComboD[69] == 6388 )
+                        Screen->ComboD[69] = 6384;
+
+                    if ( Screen->ComboD[99] == 6384 )
+                        Screen->ComboD[99] = 6388;
+                    else if ( Screen->ComboD[99] == 6388 )
+                        Screen->ComboD[99] = 6384;
+
+                    if ( Screen->ComboD[103] == 6384 )
+                        Screen->ComboD[103] = 6388;
+                    else if ( Screen->ComboD[103] == 6388 )
+                        Screen->ComboD[103] = 6384;
+
+                    if ( Screen->ComboD[133] == 6384 )
+                        Screen->ComboD[133] = 6388;
+                    else if ( Screen->ComboD[133] == 6388 )
+                        Screen->ComboD[133] = 6384;
+                }
+                if ( comboUnderLink == 103 && (Screen->ComboD[103] == 6384 || Screen->ComboD[103] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[103] == 6384 )
+                        Screen->ComboD[103] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[103] == 6388 )
+                        Screen->ComboD[103] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[71] == 6384 )
+                        Screen->ComboD[71] = 6388;
+                    else if ( Screen->ComboD[71] == 6388 )
+                        Screen->ComboD[71] = 6384;
+
+                    if ( Screen->ComboD[101] == 6384 )
+                        Screen->ComboD[101] = 6388;
+                    else if ( Screen->ComboD[101] == 6388 )
+                        Screen->ComboD[101] = 6384;
+
+                    if ( Screen->ComboD[105] == 6384 )
+                        Screen->ComboD[105] = 6388;
+                    else if ( Screen->ComboD[105] == 6388 )
+                        Screen->ComboD[105] = 6384;
+
+                    if ( Screen->ComboD[135] == 6384 )
+                        Screen->ComboD[135] = 6388;
+                    else if ( Screen->ComboD[135] == 6388 )
+                        Screen->ComboD[135] = 6384;
+                }
+                if ( comboUnderLink == 105 && (Screen->ComboD[105] == 6384 || Screen->ComboD[105] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[105] == 6384 )
+                        Screen->ComboD[105] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[105] == 6388 )
+                        Screen->ComboD[105] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[73] == 6384 )
+                        Screen->ComboD[73] = 6388;
+                    else if ( Screen->ComboD[73] == 6388 )
+                        Screen->ComboD[73] = 6384;
+
+                    if ( Screen->ComboD[103] == 6384 )
+                        Screen->ComboD[103] = 6388;
+                    else if ( Screen->ComboD[103] == 6388 )
+                        Screen->ComboD[103] = 6384;
+
+                    if ( Screen->ComboD[107] == 6384 )
+                        Screen->ComboD[107] = 6388;
+                    else if ( Screen->ComboD[107] == 6388 )
+                        Screen->ComboD[107] = 6384;
+
+                    if ( Screen->ComboD[137] == 6384 )
+                        Screen->ComboD[137] = 6388;
+                    else if ( Screen->ComboD[137] == 6388 )
+                        Screen->ComboD[137] = 6384;
+                }
+                if ( comboUnderLink == 107 && (Screen->ComboD[107] == 6384 || Screen->ComboD[107] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[107] == 6384 )
+                        Screen->ComboD[107] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[107] == 6388 )
+                        Screen->ComboD[107] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[75] == 6384 )
+                        Screen->ComboD[75] = 6388;
+                    else if ( Screen->ComboD[75] == 6388 )
+                        Screen->ComboD[75] = 6384;
+
+                    if ( Screen->ComboD[105] == 6384 )
+                        Screen->ComboD[105] = 6388;
+                    else if ( Screen->ComboD[105] == 6388 )
+                        Screen->ComboD[105] = 6384;
+
+                    if ( Screen->ComboD[139] == 6384 )
+                        Screen->ComboD[139] = 6388;
+                    else if ( Screen->ComboD[139] == 6388 )
+                        Screen->ComboD[139] = 6384;
+                }
+                if ( comboUnderLink == 131 && (Screen->ComboD[131] == 6384 || Screen->ComboD[131] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[131] == 6384 )
+                        Screen->ComboD[131] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[131] == 6388 )
+                        Screen->ComboD[131] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[99] == 6384 )
+                        Screen->ComboD[99] = 6388;
+                    else if ( Screen->ComboD[99] == 6388 )
+                        Screen->ComboD[99] = 6384;
+
+                    if ( Screen->ComboD[133] == 6384 )
+                        Screen->ComboD[133] = 6388;
+                    else if ( Screen->ComboD[133] == 6388 )
+                        Screen->ComboD[133] = 6384;
+                }
+                if ( comboUnderLink == 133 && (Screen->ComboD[133] == 6384 || Screen->ComboD[133] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[133] == 6384 )
+                        Screen->ComboD[133] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[133] == 6388 )
+                        Screen->ComboD[133] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[101] == 6384 )
+                        Screen->ComboD[101] = 6388;
+                    else if ( Screen->ComboD[101] == 6388 )
+                        Screen->ComboD[101] = 6384;
+
+                    if ( Screen->ComboD[131] == 6384 )
+                        Screen->ComboD[131] = 6388;
+                    else if ( Screen->ComboD[131] == 6388 )
+                        Screen->ComboD[131] = 6384;
+
+                    if ( Screen->ComboD[135] == 6384 )
+                        Screen->ComboD[135] = 6388;
+                    else if ( Screen->ComboD[135] == 6388 )
+                        Screen->ComboD[135] = 6384;
+                }
+                if ( comboUnderLink == 135 && (Screen->ComboD[135] == 6384 || Screen->ComboD[135] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[135] == 6384 )
+                        Screen->ComboD[135] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[135] == 6388 )
+                        Screen->ComboD[135] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[103] == 6384 )
+                        Screen->ComboD[103] = 6388;
+                    else if ( Screen->ComboD[103] == 6388 )
+                        Screen->ComboD[103] = 6384;
+
+                    if ( Screen->ComboD[133] == 6384 )
+                        Screen->ComboD[133] = 6388;
+                    else if ( Screen->ComboD[133] == 6388 )
+                        Screen->ComboD[133] = 6384;
+
+                    if ( Screen->ComboD[137] == 6384 )
+                        Screen->ComboD[137] = 6388;
+                    else if ( Screen->ComboD[137] == 6388 )
+                        Screen->ComboD[137] = 6384;
+                }
+                if ( comboUnderLink == 137 && (Screen->ComboD[137] == 6384 || Screen->ComboD[137] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[137] == 6384 )
+                        Screen->ComboD[137] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[137] == 6388 )
+                        Screen->ComboD[137] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[105] == 6384 )
+                        Screen->ComboD[105] = 6388;
+                    else if ( Screen->ComboD[105] == 6388 )
+                        Screen->ComboD[105] = 6384;
+
+                    if ( Screen->ComboD[135] == 6384 )
+                        Screen->ComboD[135] = 6388;
+                    else if ( Screen->ComboD[135] == 6388 )
+                        Screen->ComboD[135] = 6384;
+
+                    if ( Screen->ComboD[139] == 6384 )
+                        Screen->ComboD[139] = 6388;
+                    else if ( Screen->ComboD[139] == 6388 )
+                        Screen->ComboD[139] = 6384;
+                }
+                if ( comboUnderLink == 139 && (Screen->ComboD[139] == 6384 || Screen->ComboD[139] == 6388) ) {
+                    Game->PlaySound(84);
+                    if ( Screen->ComboD[139] == 6384 )
+                        Screen->ComboD[139] = 6389; //LinkOnThis
+                    else if ( Screen->ComboD[139] == 6388 )
+                        Screen->ComboD[139] = 6385; //LinkOnThis
+
+                    if ( Screen->ComboD[107] == 6384 )
+                        Screen->ComboD[107] = 6388;
+                    else if ( Screen->ComboD[107] == 6388 )
+                        Screen->ComboD[107] = 6384;
+
+                    if ( Screen->ComboD[137] == 6384 )
+                        Screen->ComboD[137] = 6388;
+                    else if ( Screen->ComboD[137] == 6388 )
+                        Screen->ComboD[137] = 6384;
+                }
+
+                if ( comboUnderLink != 35 && (Screen->ComboD[35] == 6385 || Screen->ComboD[35] == 6389) )
+                    Screen->ComboD[35] --;
+                if ( comboUnderLink != 37 && (Screen->ComboD[37] == 6385 || Screen->ComboD[37] == 6389) )
+                    Screen->ComboD[37] --;
+                if ( comboUnderLink != 39 && (Screen->ComboD[39] == 6385 || Screen->ComboD[39] == 6389) )
+                    Screen->ComboD[39] --;
+                if ( comboUnderLink != 41 && (Screen->ComboD[41] == 6385 || Screen->ComboD[41] == 6389) )
+                    Screen->ComboD[41] --;
+                if ( comboUnderLink != 43 && (Screen->ComboD[43] == 6385 || Screen->ComboD[43] == 6389) )
+                    Screen->ComboD[43] --;
+                if ( comboUnderLink != 67 && (Screen->ComboD[67] == 6385 || Screen->ComboD[67] == 6389) )
+                    Screen->ComboD[67] --;
+                if ( comboUnderLink != 69 && (Screen->ComboD[69] == 6385 || Screen->ComboD[69] == 6389) )
+                    Screen->ComboD[69] --;
+                if ( comboUnderLink != 71 && (Screen->ComboD[71] == 6385 || Screen->ComboD[71] == 6389) )
+                    Screen->ComboD[71] --;
+                if ( comboUnderLink != 73 && (Screen->ComboD[73] == 6385 || Screen->ComboD[73] == 6389) )
+                    Screen->ComboD[73] --;
+                if ( comboUnderLink != 75 && (Screen->ComboD[75] == 6385 || Screen->ComboD[75] == 6389) )
+                    Screen->ComboD[75] --;
+                if ( comboUnderLink != 99 && (Screen->ComboD[99] == 6385 || Screen->ComboD[99] == 6389) )
+                    Screen->ComboD[99] --;
+                if ( comboUnderLink != 101 && (Screen->ComboD[101] == 6385 || Screen->ComboD[101] == 6389) )
+                    Screen->ComboD[101] --;
+                if ( comboUnderLink != 103 && (Screen->ComboD[103] == 6385 || Screen->ComboD[103] == 6389) )
+                    Screen->ComboD[103] --;
+                if ( comboUnderLink != 105 && (Screen->ComboD[105] == 6385 || Screen->ComboD[105] == 6389) )
+                    Screen->ComboD[105] --;
+                if ( comboUnderLink != 107 && (Screen->ComboD[107] == 6385 || Screen->ComboD[107] == 6389) )
+                    Screen->ComboD[107] --;
+                if ( comboUnderLink != 131 && (Screen->ComboD[131] == 6385 || Screen->ComboD[131] == 6389) )
+                    Screen->ComboD[131] --;
+                if ( comboUnderLink != 133 && (Screen->ComboD[133] == 6385 || Screen->ComboD[133] == 6389) )
+                    Screen->ComboD[133] --;
+                if ( comboUnderLink != 135 && (Screen->ComboD[135] == 6385 || Screen->ComboD[135] == 6389) )
+                    Screen->ComboD[135] --;
+                if ( comboUnderLink != 137 && (Screen->ComboD[137] == 6385 || Screen->ComboD[137] == 6389) )
+                    Screen->ComboD[137] --;
+                if ( comboUnderLink != 139 && (Screen->ComboD[139] == 6385 || Screen->ComboD[139] == 6389) )
+                    Screen->ComboD[139] --;
+            }
+
+            if ( (Screen->ComboD[35] == 6388 || Screen->ComboD[35] == 6389) && (Screen->ComboD[37] == 6388 || Screen->ComboD[37] == 6389) && (Screen->ComboD[39] == 6388 || Screen->ComboD[39] == 6389) && (Screen->ComboD[41] == 6388 || Screen->ComboD[41] == 6389) && (Screen->ComboD[67] == 6388 || Screen->ComboD[67] == 6389) && (Screen->ComboD[69] == 6388 || Screen->ComboD[69] == 6389) && (Screen->ComboD[71] == 6388 || Screen->ComboD[71] == 6389) && (Screen->ComboD[73] == 6388 || Screen->ComboD[73] == 6389) && (Screen->ComboD[75] == 6388 || Screen->ComboD[75] == 6389) && (Screen->ComboD[99] == 6388 || Screen->ComboD[99] == 6389) && (Screen->ComboD[101] == 6388 || Screen->ComboD[101] == 6389) && (Screen->ComboD[103] == 6388 || Screen->ComboD[103] == 6389) && (Screen->ComboD[105] == 6388 || Screen->ComboD[105] == 6389) && (Screen->ComboD[107] == 6388 || Screen->ComboD[107] == 6389) && (Screen->ComboD[131] == 6388 || Screen->ComboD[131] == 6389) && (Screen->ComboD[133] == 6388
+            || Screen->ComboD[133] == 6389) && (Screen->ComboD[135] == 6388 || Screen->ComboD[135] == 6389) && (Screen->ComboD[137] == 6388 || Screen->ComboD[137] == 6389) && (Screen->ComboD[139] == 6388 || Screen->ComboD[139] == 6389) && !Screen->State[ST_SECRET] ) {
+                Game->PlaySound(27);
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script ScreenMessage{
+    void run(int m){
+        Screen->Message(m);
+    }
+}

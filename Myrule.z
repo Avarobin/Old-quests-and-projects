@@ -1,0 +1,3854 @@
+import "stdImproved/std_constants.zh"
+import "stdImproved/std_functions.zh"
+import "ffcscript.zh"
+import "ghost.zh"
+import "string.zh"
+
+int heartPieceNumber;
+int rock1;
+int rock2;
+int rock3;
+int rock4;
+int rock5;
+int rock6;
+int rock7;
+int rock8;
+int rock9;
+int rock10;
+int rock11;
+int rock12;
+
+int GV[1000];
+const int GV_DungeonTime = 0;
+const int GV_Rain = 1;
+const int GV_Difficulty = 2;
+const int GV_RandomRuleRotation = 3;
+const int GV_NumBItems = 4;
+const int GV_SecFrames = 5;
+const int GV_FirstExtraTime = 6;
+const int GV_WhiteDungeonMessage = 7;
+const int GV_QuietOW = 8;
+const int GV_FirstExtraRupees = 9;
+const int GV_ExtraTimesPickedUp = 10;
+const int GV_RainRuleStart = 11;
+const int GV_LastItemUsed = 12;
+const int GV_SwordDirection = 13;
+const int GV_20EnemiesCount = 14;
+const int GV_20EnemiesDisplay = 15;
+const int GV_InDungeon = 16;
+const int GV_NoSwordFrames = 17;
+const int GV_NextRule = 18;
+const int GV_NextRuleTimer = 19;
+
+int AddedMessage[41];
+int BrokeMessage[41];
+
+int PlayerRules[41]; //numbers of players rules in order (-1 by default)
+int RuleState[41]; //-1 = inactive, 0 = active, >1 = broke countdown
+int RuleActiveInit[41];
+
+global script Init{
+	void run(){
+		for (int i = 1; i <= 40; i++) {
+			RuleState[i] = -1;
+			PlayerRules[i] = -1;
+		}
+		AddRandomRule();
+	}
+}
+
+global script Active{
+	void run(){
+		InitializeGhostZHData();
+		Link->Invisible = false;
+		int counterForEverything = 0;
+		
+		Game->MCounter[CR_SCRIPT2] = 999;
+		Game->MCounter[CR_SCRIPT3] = 999;
+		Game->MCounter[CR_SCRIPT4] = 999;
+		AddedMessage[1] = 97;
+		AddedMessage[2] = 100;
+		AddedMessage[3] = 103;
+		AddedMessage[4] = 106;
+		AddedMessage[5] = 109;
+		AddedMessage[6] = 112;
+		AddedMessage[7] = 115;
+		AddedMessage[8] = 118;
+		AddedMessage[9] = 121;
+		AddedMessage[10] = 124;
+		AddedMessage[11] = 127;
+		AddedMessage[12] = 130;
+		AddedMessage[13] = 133;
+		AddedMessage[14] = 136;
+		AddedMessage[15] = 139;
+		AddedMessage[16] = 142;
+		AddedMessage[17] = 145;
+		AddedMessage[18] = 148;
+		AddedMessage[19] = 151;
+		AddedMessage[20] = 154;
+		AddedMessage[21] = 157;
+		AddedMessage[22] = 160;
+		AddedMessage[23] = 163;
+		AddedMessage[24] = 166;
+		AddedMessage[25] = 169;
+		AddedMessage[26] = 172;
+		AddedMessage[27] = 175;
+		AddedMessage[28] = 178;
+		AddedMessage[29] = 181;
+		AddedMessage[30] = 184;
+		AddedMessage[31] = 187;
+		AddedMessage[32] = 190;
+		AddedMessage[33] = 80;
+		AddedMessage[34] = 83;
+		AddedMessage[35] = 86;
+		AddedMessage[36] = 196;
+		AddedMessage[37] = 199;
+		AddedMessage[38] = 202;
+		AddedMessage[39] = 205;
+		AddedMessage[40] = 208;
+		BrokeMessage[1] = 99;
+		BrokeMessage[2] = 102;
+		BrokeMessage[3] = 105;
+		BrokeMessage[4] = 108;
+		BrokeMessage[5] = 111;
+		BrokeMessage[6] = 114;
+		BrokeMessage[7] = 117;
+		BrokeMessage[8] = 120;
+		BrokeMessage[9] = 123;
+		BrokeMessage[11] = 129;
+		BrokeMessage[12] = 132;
+		BrokeMessage[13] = 135;
+		BrokeMessage[14] = 138;
+		BrokeMessage[15] = 141;
+		BrokeMessage[16] = 144;
+		BrokeMessage[17] = 147;
+		BrokeMessage[18] = 150;
+		BrokeMessage[19] = 153;
+		BrokeMessage[20] = 156;
+		BrokeMessage[21] = 159;
+		BrokeMessage[22] = 162;
+		BrokeMessage[23] = 165;
+		BrokeMessage[24] = 168;
+		BrokeMessage[25] = 171;
+		BrokeMessage[26] = 174;
+		BrokeMessage[27] = 177;
+		BrokeMessage[28] = 180;
+		BrokeMessage[29] = 183;
+		BrokeMessage[30] = 186;
+		BrokeMessage[31] = 189;
+		BrokeMessage[32] = 192;
+		BrokeMessage[33] = 193;
+		BrokeMessage[34] = 194;
+		BrokeMessage[35] = 195;
+		BrokeMessage[36] = 198;
+		BrokeMessage[37] = 201;
+		BrokeMessage[38] = 204;
+		BrokeMessage[39] = 207;
+		
+		for (int i = 1; i <= 40; i++) {
+			if ( RuleState[i] > 0 )
+				RuleState[i] = 0;
+		}
+		
+		GV[GV_SecFrames] = 0;
+		GV[GV_LastItemUsed] = -1;
+		if ( RuleState[32] == 0 && GV[GV_20EnemiesCount] > 0 && GV[GV_InDungeon] == 0 )
+			GV[GV_20EnemiesDisplay] = 60;
+		GV[GV_NoSwordFrames] = 0;
+		
+		if ( GV[GV_Rain] == 0 )
+			GV[GV_Rain] = 1.5*60*60 + Rand(1.5*60*60);
+		
+		if ( RuleState[34] == 0 )
+			Link->HP -= 4;
+		while(true){
+			UpdateGhostZHData();
+			UpdateEWeapons();
+			CleanUpGhostFFCs();
+			
+			if ( ScreenFlag(SF_MISC, 2) == 0 ) {
+				if ( CountFFCsRunning(21) == 0 )
+					RunFFCScript(21, 0); //global rules ffc
+			}
+			
+			if ( Game->GetCurMap() == 1 )
+				GV[GV_DungeonTime] = 0;
+
+			if ( Link->Item[132] == true ) {
+				Link->HP = Link->MaxHP;
+				counterForEverything = Game->MCounter[CR_RUPEES];
+				Game->Counter[CR_RUPEES] = counterForEverything;
+				counterForEverything = Game->MCounter[CR_BOMBS];
+				Game->Counter[CR_BOMBS] = counterForEverything;
+			}
+
+			bool stairsNearLink;
+			//check a 5x5 field of combos around link
+			for (int h = -2; h <= 2; h++){
+				for (int v = -2; v <= 2; v++){
+					int x = Link->X+8 + 16*h;
+					int y = Link->Y+8 + 16*v;
+					if ( x >= 0 && x <= 255 && y >= 0 && y <= 175 ) {
+						int i = ComboAt(x, y);
+						if(Screen->ComboD[i]==741){ //pot
+							Game->PlaySound(63);
+							Screen->ComboD[i]++;
+							if ( RuleState[29] == 0 && RuleActiveInit[29] == 0 ) //not slash
+								RuleState[29] = 30;
+						}
+						if(Screen->ComboD[i]==89){ //bush
+							Screen->ComboD[i]=98;
+							if ( RuleState[29] == 0 && RuleActiveInit[29] == 0 ) //not slash
+								RuleState[29] = 30;
+						}
+						if ( Screen->ComboT[i] == CT_STAIR || Screen->ComboT[i] == CT_STAIRB )
+							stairsNearLink = true;
+					}
+				}
+			}
+
+			for (int i = 1; i <= Screen->NumNPCs(); i++) {
+				npc enem=Screen->LoadNPC(i);
+				if ( enem->ID == 41 && Link->Item[123] && ( Link->Item[133] || Link->Item[134] || Link->Item[135] ) ) {
+					npc betterStalfos=CreateNPCAt(79, enem->X, enem->Y);
+					enem->Y -= 1000;
+				}
+				if ( enem->ID == 79 && Link->Item[123] && ( ( Link->Item[133] && Link->Item[134] ) || ( Link->Item[133] && Link->Item[135] ) || ( Link->Item[134] && Link->Item[135] ) ) ) {
+					npc betterStalfos=CreateNPCAt(120, enem->X, enem->Y);
+					enem->Y -= 1000;
+				}
+				if ( enem->ID == 89 && Link->Item[123] ) {
+					npc realZol=CreateNPCAt(43, enem->X, enem->Y);
+					enem->Y -=1000;
+				}
+			}
+
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+14)] == 86 && Link->HP < Link->MaxHP ) {
+				if ( RuleState[19] == 0 && RuleActiveInit[19] == 0 ) //no recovery tiles
+					RuleState[19] = 1;
+				else if ( RuleState[19] <= 0 ) {
+					Link->HP ++;
+					Game->PlaySound(23);
+				}
+			}
+
+			if ( Link->Item[129] && !Link->Item[113] && Link->HP < Link->MaxHP/2 )
+				Link->Item[113] = true;
+			if ( Link->Item[129] && Link->Item[113] && Link->HP >= Link->MaxHP/2 )
+				Link->Item[113] = false;
+
+			if ( Link->Item[5] && !Link->Item[127] )
+				Link->Item[127] = true;
+			if ( Link->Item[6] && !Link->Item[128] )
+				Link->Item[128] = true;
+			
+			if ( Game->GetCurMap() == 1 ) {
+				if ( GV[GV_QuietOW] == 1 ) {
+					GV[GV_QuietOW] = 0;
+					Game->PlayMIDI(1);
+				}
+				if ( !Link->Item[153] ) { //after dungeon rules
+					if ( NumTriforcePieces() == 1 && RuleState[33] == -1 ) {
+						Game->PlayMIDI(0);
+						GV[GV_QuietOW] = 1;
+						AddRule(33);
+						GV[GV_SecFrames] = 0;
+						Game->Counter[CR_SCRIPT3] += 60;
+						if ( GV[GV_Difficulty] == 3 )
+							Game->Counter[CR_SCRIPT3] -= 30;
+					}
+					if ( NumTriforcePieces() == 2 && RuleState[34] == -1 ) {
+						Game->PlayMIDI(0);
+						GV[GV_QuietOW] = 1;
+						AddRule(34);
+						GV[GV_SecFrames] = 0;
+						Game->Counter[CR_SCRIPT3] += 60;
+						if ( GV[GV_Difficulty] == 3 )
+							Game->Counter[CR_SCRIPT3] -= 30;
+					}
+					if ( NumTriforcePieces() == 3 && RuleState[35] == -1 ) {
+						Game->PlayMIDI(0);
+						GV[GV_QuietOW] = 1;
+						AddRule(35);
+						GV[GV_SecFrames] = 0;
+						Game->Counter[CR_SCRIPT3] += 60;
+						if ( GV[GV_Difficulty] == 3 )
+							Game->Counter[CR_SCRIPT3] -= 30;
+					}
+				}
+				
+				if ( GV[GV_Rain] > 0 )
+					GV[GV_Rain] --;
+				if ( GV[GV_Rain] == 0 && !stairsNearLink ) { //rain start
+					for (int i = 0; i < 176; i++){
+						Game->SetComboData(1, 0x0F, i, 28);
+					}
+					GV[GV_Rain] = -1;
+				}
+			}
+			if ( GV[GV_Rain] < 0 ) {
+				GV[GV_Rain] --;
+				if ( GV[GV_Rain] <= -1200 ) { //rain end
+					for (int i = 0; i < 176; i++){
+						Game->SetComboData(1, 0x0F, i, 0);
+					}
+					GV[GV_Rain] = 1*60*60 + Rand(1.5*60*60);
+				}
+			}
+			
+			if ( Game->GetCurMap() == 6 ) { //white dungeon
+				if ( GV[GV_WhiteDungeonMessage] == 0 && !Link->Item[153] && GV[GV_RandomRuleRotation] < 33 ) {
+					GV[GV_WhiteDungeonMessage] = 1;
+					Screen->Message(95);
+				}
+			}
+			
+			while(Game->Counter[CR_SCRIPT3] >= 60){
+				Game->Counter[CR_SCRIPT3] -= 60;
+				Game->Counter[CR_SCRIPT4] ++;
+			}
+			if ( GV[GV_RandomRuleRotation] == 33 ) {
+				Game->Counter[CR_SCRIPT3] = 0;
+				Game->Counter[CR_SCRIPT4] = 0;
+			}
+			
+			Waitdraw();
+			DrawGhostFFCs();
+			AutoGhost();
+			Waitframe();
+		}
+	}
+}
+
+void AddRule(int rule){
+	int i = 1;
+	while(i>0){
+		if ( PlayerRules[i] == -1 ) {
+			PlayerRules[i] = rule;
+			i = -1;
+		}
+		else
+			i ++;
+	}
+	RuleState[rule] = 0;
+	Game->Counter[CR_SCRIPT2] ++;
+	
+	if ( rule == 1 )
+		RuleActiveInit[rule] = 120;
+	if ( rule == 2 )
+		RuleActiveInit[rule] = 120;
+	if ( rule == 7 )
+		RuleActiveInit[rule] = 150;
+	if ( rule == 8 )
+		RuleActiveInit[rule] = 60;
+	if ( rule == 18 )
+		RuleActiveInit[rule] = 90;
+	if ( rule == 19 )
+		RuleActiveInit[rule] = 90;
+	if ( rule == 22 )
+		RuleActiveInit[rule] = 120;
+	if ( rule == 26 )
+		RuleActiveInit[rule] = 120;
+	if ( rule == 29 )
+		RuleActiveInit[rule] = 60;
+	if ( rule == 30 )
+		RuleActiveInit[rule] = 120;
+	if ( rule == 31 )
+		RuleActiveInit[rule] = 60;
+	if ( rule == 32 ) {
+		if ( GV[GV_InDungeon] == 0 ) {
+			GV[GV_20EnemiesCount] = 20;
+			GV[GV_20EnemiesDisplay] = 60;
+		}
+	}
+	if ( rule == 34 ) {
+		if ( Link->HP == Link->MaxHP )
+			Link->HP -= 4;
+	}
+	
+	Screen->Message(AddedMessage[rule]);
+	NoAction();
+}
+
+void AddRandomRule(){
+	GV[GV_RandomRuleRotation] ++;
+	int n = GV[GV_RandomRuleRotation];
+	int tier;
+	
+	if ( n == 5 || n == 10 || n == 15 || n == 20 || n == 25 )
+		tier = 3;
+	else if ( n == 1 || n == 4 || n == 6 || n == 9 || n == 11 || n == 14 || n == 16 || n == 19 || n == 21 || n == 24 || n == 26 || n == 29 )
+		tier = 1;
+	else
+		tier = 2;
+	
+	int pool[15];
+	int poolsize;
+	
+	int currentrule = GV[GV_NextRule];
+	
+	if ( currentrule != 0 ) {
+		Game->Counter[CR_SCRIPT3] = GV[GV_NextRuleTimer];
+		if ( GV[GV_Difficulty] == 3 )
+			Game->Counter[CR_SCRIPT3] -= 30;
+	}
+	
+	if ( n < 33 ) {
+		if ( tier == 1 ) {
+			GV[GV_NextRuleTimer] = 100;
+			
+			for (int i = 1; i <= 12; i++) {
+				if ( (i != 9 || !Link->Item[134]) //low prio if water dungeon beaten
+				&& (i != 10 || Game->Counter[CR_SCRIPT2] > 2) ) { //low prio if 2 or less rules
+					if ( RuleState[i] == -1 && GV[GV_NextRule] != i ) {
+						pool[poolsize] = i;
+						poolsize ++;
+					}
+				}
+			}
+			
+			if ( poolsize == 0 ) {
+				if ( RuleState[9] == -1 && GV[GV_NextRule] != 9 ) {
+					pool[poolsize] = 9;
+					poolsize ++;
+				}
+			}
+		}
+		
+		if ( tier == 2 ) {
+			GV[GV_NextRuleTimer] = 140;
+			
+			for (int i = 13; i <= 27; i++) {
+				if ( (i != 16 || GV[GV_NumBItems] >= 2) //low prio if less than 2 B items
+				&& (i != 17 || Link->Item[52] || Link->Item[23]) //low prio if no boomerang and hookshot
+				&& (i != 18 || Link->Item[11]) //low prio if no candle
+				&& (i != 19 || Link->Item[133] || Link->Item[134] || Link->Item[135]) //low prio if no dungeon has been beaten
+				&& (i != 23 || Link->Item[54]) //low prio if no hammer
+				&& (i != 24 || Game->Counter[CR_SCRIPT2] > 2) ) { //low prio if 2 or less rules
+					if ( RuleState[i] == -1 && GV[GV_NextRule] != i ) {
+						pool[poolsize] = i;
+						poolsize ++;
+					}
+				}
+			}
+			
+			if ( poolsize == 0 ) {
+				if ( RuleState[16] == -1 && GV[GV_NextRule] != 16 ) {
+					pool[poolsize] = 16;
+					poolsize ++;
+				}
+				if ( RuleState[17] == -1 && GV[GV_NextRule] != 17 ) {
+					pool[poolsize] = 17;
+					poolsize ++;
+				}
+				if ( RuleState[18] == -1 && GV[GV_NextRule] != 18 ) {
+					pool[poolsize] = 18;
+					poolsize ++;
+				}
+				if ( RuleState[19] == -1 && GV[GV_NextRule] != 19 ) {
+					pool[poolsize] = 19;
+					poolsize ++;
+				}
+				if ( RuleState[23] == -1 && GV[GV_NextRule] != 23 ) {
+					pool[poolsize] = 23;
+					poolsize ++;
+				}
+			}
+		}
+		
+		if ( tier == 3 ) {
+			GV[GV_NextRuleTimer] = 180;
+			
+			for (int i = 28; i <= 32; i++) {
+				if ( RuleState[i] == -1 && GV[GV_NextRule] != i ) {
+					pool[poolsize] = i;
+					poolsize ++;
+				}
+			}
+		}
+	}
+	
+	if ( n < 33 ) {
+		int nextrule = Rand(1, poolsize)-1;
+		nextrule = pool[nextrule];
+		GV[GV_NextRule] = nextrule;
+	}
+	
+	if ( currentrule != 0 )
+		AddRule(currentrule);
+}
+
+item script messageM{
+	void run(int m, int BItem){
+		if ( BItem == 1 )
+			GV[GV_NumBItems] ++;
+		Screen->Message(m);
+	}
+}
+
+item script ExtraTime{
+	void run(){
+		GV[GV_ExtraTimesPickedUp] ++;
+		if ( !Link->Item[153] ) {
+			Game->Counter[CR_SCRIPT3] += 120;
+			while(Game->Counter[CR_SCRIPT3] >= 60){
+				Game->Counter[CR_SCRIPT3] -= 60;
+				Game->Counter[CR_SCRIPT4] ++;
+			}
+			if ( GV[GV_RandomRuleRotation] == 33 ) {
+				Game->Counter[CR_SCRIPT3] = 0;
+				Game->Counter[CR_SCRIPT4] = 0;
+			}
+			if ( GV[GV_FirstExtraTime] == 0 ) {
+				GV[GV_FirstExtraTime] = 1;
+				Screen->Message(94);
+			}
+		}
+		else {
+			Game->DCounter[CR_RUPEES] += 100;
+			if ( GV[GV_FirstExtraRupees] == 0 ) {
+				GV[GV_FirstExtraRupees] = 1;
+				Screen->Message(93);
+			}
+		}
+	}
+}
+
+item script GetItem{
+	void run(int i, int j, int k, int l, int m, int n, int o, int p){
+		if ( i != 0 )
+			Link->Item[i] = true;
+		if ( j != 0 )
+			Link->Item[j] = true;
+		if ( k != 0 )
+			Link->Item[k] = true;
+		if ( l != 0 )
+			Link->Item[l] = true;
+		if ( m != 0 )
+			Link->Item[m] = true;
+		if ( n != 0 )
+			Link->Item[n] = true;
+		if ( o != 0 )
+			Link->Item[o] = true;
+		if ( p != 0 )
+			Link->Item[p] = true;
+	}
+}
+
+item script SwordActive{
+	void run(){
+		GV[GV_LastItemUsed] = 0;
+		GV[GV_SwordDirection] = Link->Dir;
+		GV[GV_NoSwordFrames] = -10;
+		if ( RuleState[34] == 0 && Link->HP == Link->MaxHP ) //sword at full health
+			RuleState[34] = 1;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+ffc script messageFFC{
+	void run(int m){
+		Screen->Message(m);
+	}
+}
+
+ffc script createEnemyAtThis{
+	void run(int enemy){
+		npc enemie=CreateNPCAt(enemy, this->X, this->Y);
+	}
+}
+
+item script messageHeartPiece{
+	void run(){
+		if ( heartPieceNumber == 0 ) {
+			heartPieceNumber = 1;
+			Screen->Message(5);
+		}
+		else if ( heartPieceNumber == 1 ) {
+			heartPieceNumber = 2;
+			Screen->Message(6);
+		}
+		else if ( heartPieceNumber == 2 ) {
+			heartPieceNumber = 3;
+			Screen->Message(7);
+		}
+		else if ( heartPieceNumber == 3 ) {
+			heartPieceNumber = 0;
+			Screen->Message(8);
+		}
+	}
+}
+
+item script CandleActive{
+	void run(){
+		GV[GV_LastItemUsed] = 1;
+		for(int i=0; i<=175; i++){
+			if ( Screen->ComboD[i] == 749 )
+				Screen->ComboD[i] = 756;
+		}
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script BombActive{
+	void run(){
+		GV[GV_LastItemUsed] = 2;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script HookshotActive{
+	void run(){
+		GV[GV_LastItemUsed] = 3;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script BoomerangActive{
+	void run(){
+		GV[GV_LastItemUsed] = 4;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script ArrowsActive{
+	void run(){
+		GV[GV_LastItemUsed] = 5;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script HammerActive{
+	void run(){
+		if ( GV[GV_LastItemUsed] == 6 ) {
+			if ( RuleState[23] == 0 ) //hammer twice
+				RuleState[23] = 1;
+		}
+		GV[GV_LastItemUsed] = 6;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script DinsFireActive{
+	void run(){
+		GV[GV_LastItemUsed] = 7;
+		for(int i=0; i<=175; i++){
+			if ( Screen->ComboD[i] == 756 )
+				Screen->ComboD[i] = 749;
+		}
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+item script PotionActive{
+	void run(){
+		GV[GV_LastItemUsed] = 8;
+		if ( RuleState[35] == 0 ) //not use potions
+			RuleState[35] = 1;
+		if ( RuleState[27] == 0 ) {
+			if ( Screen->ComboI[ComboAt(Link->X+8, Link->Y+12)] == 98 ) //items in doors
+				RuleState[27] = 1;
+		}
+		if ( RuleState[38] == 0 ) {
+			if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 538 ) //white tiles
+				RuleState[38] = 1;
+		}
+	}
+}
+
+//Instructions:
+//1. Make a new combo with inherent flag 16 (or any secret flag)
+//2. Set this FFC to the above combo
+//3. When secrets are triggered by blocks, this script will make it permanent
+ffc script blockPermSecrets{
+	void run(int m){
+		int thisCombo = this->Data;
+		while(!Screen->State[ST_SECRET]){
+			if(this->Data != thisCombo) { Screen->State[ST_SECRET] = true; Game->PlaySound(m); }
+			Waitframe();
+		}
+	}
+}
+
+const int LightBlockCombo = 745; //change this to combo id of the first light block combo
+const int LightBlockSFX = 60; //you can also have a sfx playing when light blocks disappear
+
+ffc script LightBlockScript{
+	void run(){
+		int LightBlocksOnScreen; //this variable will represent how many light blocks are on screen
+		for(int i=0; i<=175; i++){
+			if ( Screen->ComboD[i] == LightBlockCombo ) //check every combo on screen if its a light block
+				LightBlocksOnScreen ++; //count the light blocks
+		}
+		while(true){
+			bool ChangedLightBlocksOnScreen = false; //this bool is needed for the script
+			for(int i=0; i<=175; i++){ //for every combo on screen
+				if ( Screen->ComboD[i] == LightBlockCombo || Screen->ComboD[i] == LightBlockCombo+1 ) { //if this combo is a light block, unchanged or not
+					if ( Screen->ComboD[i-16] == LightBlockCombo ) { //if combo above this combo is an unchanged light block
+						Screen->ComboD[i-16] ++; //change the combo above this combo
+						ChangedLightBlocksOnScreen = true;
+					}
+					if ( Screen->ComboD[i+1] == LightBlockCombo ) { //if combo right next to this combo is an unchanged light block
+						Screen->ComboD[i+1] ++; //change the combo right next to this combo
+						ChangedLightBlocksOnScreen = true;
+					}
+					if ( Screen->ComboD[i+16] == LightBlockCombo ) { //if combo below this combo is an unchanged light block
+						Screen->ComboD[i+16] ++; //change the combo below this combo
+						ChangedLightBlocksOnScreen = true;
+					}
+					if ( Screen->ComboD[i-1] == LightBlockCombo ) { //if combo left next to this combo is an unchanged light block
+						Screen->ComboD[i-1] ++; //change the combo left next to this combo
+						ChangedLightBlocksOnScreen = true;
+					}
+				}
+			} //end of big for loop
+			if ( ChangedLightBlocksOnScreen == true ) { //if there are changed light blocks on screen
+				Game->PlaySound(LightBlockSFX); //sound effect for light block disappearing
+				for(int i=0; i<=175; i++){
+					if ( Screen->ComboD[i] == LightBlockCombo+1 ) { //check all combos on screen for changed light blocks
+						Screen->ComboD[i] ++; //changed light block disappears
+						LightBlocksOnScreen --; //now theres one light block less
+					}
+				}
+				ChangedLightBlocksOnScreen = false; //set this back to false
+			}
+			if ( LightBlocksOnScreen == 0 ) { //if all light blocks are cleared
+				Game->PlaySound(27); //play secret sound
+				Screen->TriggerSecrets(); //trigger secrets
+				Screen->State[ST_SECRET] = true; //make them permanent
+				Quit(); //and quit the script
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script Bossmusic{
+	void run(int m){
+		while(true){
+			if ( Screen->State[ST_SECRET] == false )
+				Game->PlayMIDI(5);
+			else
+				Game->PlayMIDI(m);
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger1{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[141] == 669 ) {
+				Screen->ComboD[141] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[134] = 230;
+				Screen->ComboD[137] = 230;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[118] = 226;
+				Screen->ComboD[121] = 226;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[102] = 226;
+				Screen->ComboD[105] = 226;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[86] = 226;
+				Screen->ComboD[89] = 226;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[70] = 226;
+				Screen->ComboD[73] = 226;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[54] = 226;
+				Screen->ComboD[57] = 226;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[38] = 226;
+				Screen->ComboD[41] = 226;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 32 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && Link->X != 208 )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 32 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 35 )
+					Link->X -= 3;
+				else
+					Link->X = 32;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[141] == 670 ) {
+				Screen->ComboD[141] = 671;
+				endcounter = 200;
+				Screen->ComboD[134] = 754;
+				Screen->ComboD[137] = 754;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[118] = 516;
+				Screen->ComboD[121] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[102] = 516;
+				Screen->ComboD[105] = 516;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[86] = 569;
+				Screen->ComboD[89] = 569;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[70] = 569;
+				Screen->ComboD[73] = 569;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[54] = 516;
+				Screen->ComboD[57] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[38] = 516;
+				Screen->ComboD[41] = 516;
+				endcounter = 0;
+				Screen->ComboD[141] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger2{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[130] == 669 ) {
+				Screen->ComboD[130] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[99] = 231;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[100] = 227;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[101] = 227;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[102] = 227;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[103] = 227;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[104] = 227;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[105] = 227;
+			}
+			if ( statecounter == 186 ) {
+				Screen->ComboD[106] = 227;
+			}
+			if ( statecounter == 184 ) {
+				Screen->ComboD[107] = 227;
+			}
+			if ( statecounter == 182 ) {
+				Screen->ComboD[108] = 227;
+			}
+			if ( statecounter == 180 ) {
+				Screen->ComboD[109] = 227;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 32 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && Link->X != 208 )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 32 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 35 )
+					Link->X -= 3;
+				else
+					Link->X = 32;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[130] == 670 ) {
+				Screen->ComboD[130] = 671;
+				endcounter = 200;
+				Screen->ComboD[99] = 755;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[100] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[101] = 569;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[102] = 569;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[103] = 516;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[104] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[105] = 516;
+			}
+			if ( endcounter == 186 ) {
+				Screen->ComboD[106] = 516;
+			}
+			if ( endcounter == 184 ) {
+				Screen->ComboD[107] = 516;
+			}
+			if ( endcounter == 182 ) {
+				Screen->ComboD[108] = 516;
+			}
+			if ( endcounter == 180 ) {
+				Screen->ComboD[109] = 516;
+				endcounter = 0;
+				Screen->ComboD[130] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger3{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[141] == 669 ) {
+				Screen->ComboD[141] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[105] = 231;
+				Screen->ComboD[77] = 229;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[106] = 227;
+				Screen->ComboD[76] = 225;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[107] = 227;
+				Screen->ComboD[75] = 225;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[108] = 227;
+				Screen->ComboD[74] = 225;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[109] = 227;
+				Screen->ComboD[73] = 225;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[72] = 225;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[71] = 225;
+			}
+			if ( statecounter == 186 ) {
+				Screen->ComboD[70] = 225;
+			}
+			if ( statecounter == 184 ) {
+				Screen->ComboD[69] = 225;
+			}
+			if ( statecounter == 182 ) {
+				Screen->ComboD[68] = 225;
+			}
+			if ( statecounter == 180 ) {
+				Screen->ComboD[67] = 225;
+			}
+			if ( statecounter == 178 ) {
+				Screen->ComboD[66] = 225;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 32 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && Link->X != 208 )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 32 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 35 )
+					Link->X -= 3;
+				else
+					Link->X = 32;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[141] == 670 ) {
+				Screen->ComboD[141] = 671;
+				endcounter = 200;
+				Screen->ComboD[77] = 753;
+				Screen->ComboD[105] = 755;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[76] = 516;
+				Screen->ComboD[106] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[75] = 516;
+				Screen->ComboD[107] = 516;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[74] = 516;
+				Screen->ComboD[108] = 516;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[73] = 516;
+				Screen->ComboD[109] = 516;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[72] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[71] = 516;
+			}
+			if ( endcounter == 186 ) {
+				Screen->ComboD[70] = 569;
+			}
+			if ( endcounter == 184 ) {
+				Screen->ComboD[69] = 569;
+			}
+			if ( endcounter == 182 ) {
+				Screen->ComboD[68] = 569;
+			}
+			if ( endcounter == 180 ) {
+				Screen->ComboD[67] = 516;
+			}
+			if ( endcounter == 178 ) {
+				Screen->ComboD[66] = 516;
+				endcounter = 0;
+				Screen->ComboD[141] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger4{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[108] == 669 ) {
+				Screen->ComboD[108] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[35] = 231;
+				Screen->ComboD[54] = 228;
+				Screen->ComboD[59] = 229;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[36] = 227;
+				Screen->ComboD[70] = 224;
+				Screen->ComboD[58] = 225;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[37] = 227;
+				Screen->ComboD[86] = 224;
+				Screen->ComboD[57] = 225;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[38] = 227;
+				Screen->ComboD[102] = 224;
+				Screen->ComboD[56] = 225;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[39] = 227;
+				Screen->ComboD[118] = 224;
+				Screen->ComboD[55] = 225;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[40] = 227;
+				Screen->ComboD[134] = 224;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[41] = 227;
+			}
+			if ( statecounter == 186 ) {
+				Screen->ComboD[42] = 227;
+			}
+			if ( statecounter == 184 ) {
+				Screen->ComboD[43] = 227;
+			}
+			if ( statecounter == 182 ) {
+				Screen->ComboD[44] = 227;
+			}
+			if ( statecounter == 180 ) {
+				Screen->ComboD[45] = 227;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 112 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && Link->X != 208 )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 112 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 115 )
+					Link->X -= 3;
+				else
+					Link->X = 112;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[108] == 670 ) {
+				Screen->ComboD[108] = 671;
+				endcounter = 200;
+				Screen->ComboD[35] = 755;
+				Screen->ComboD[54] = 752;
+				Screen->ComboD[59] = 753;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[36] = 516;
+				Screen->ComboD[70] = 516;
+				Screen->ComboD[58] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[37] = 516;
+				Screen->ComboD[86] = 569;
+				Screen->ComboD[57] = 569;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[38] = 516;
+				Screen->ComboD[102] = 569;
+				Screen->ComboD[56] = 569;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[39] = 516;
+				Screen->ComboD[118] = 516;
+				Screen->ComboD[55] = 516;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[40] = 569;
+				Screen->ComboD[134] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[41] = 569;
+			}
+			if ( endcounter == 186 ) {
+				Screen->ComboD[42] = 516;
+			}
+			if ( endcounter == 184 ) {
+				Screen->ComboD[43] = 516;
+			}
+			if ( endcounter == 182 ) {
+				Screen->ComboD[44] = 516;
+			}
+			if ( endcounter == 180 ) {
+				Screen->ComboD[45] = 516;
+				endcounter = 0;
+				Screen->ComboD[108] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger5{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[34] == 669 ) {
+				Screen->ComboD[34] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[38] = 228;
+				Screen->ComboD[41] = 228;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[54] = 224;
+				Screen->ComboD[57] = 224;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[70] = 224;
+				Screen->ComboD[73] = 224;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[86] = 224;
+				Screen->ComboD[89] = 224;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[102] = 224;
+				Screen->ComboD[105] = 224;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[118] = 224;
+				Screen->ComboD[121] = 224;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[134] = 224;
+				Screen->ComboD[137] = 224;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 32 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && Link->X != 208 )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 32 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 35 )
+					Link->X -= 3;
+				else
+					Link->X = 32;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[34] == 670 ) {
+				Screen->ComboD[34] = 671;
+				endcounter = 200;
+				Screen->ComboD[38] = 752;
+				Screen->ComboD[41] = 752;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[54] = 516;
+				Screen->ComboD[57] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[70] = 516;
+				Screen->ComboD[73] = 516;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[86] = 569;
+				Screen->ComboD[89] = 569;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[102] = 569;
+				Screen->ComboD[105] = 569;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[118] = 516;
+				Screen->ComboD[121] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[134] = 516;
+				Screen->ComboD[137] = 516;
+				endcounter = 0;
+				Screen->ComboD[34] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Watertrigger6{
+	void run(){
+		int linkwater = 0;
+		int statecounter = 0;
+		int endcounter = 0;
+		while(true){
+			if ( Screen->ComboD[115] == 669 ) {
+				Screen->ComboD[115] = 670;
+				Game->PlaySound(26);
+				statecounter = 200;
+				Screen->ComboD[34] = 231;
+				Screen->ComboD[141] = 229;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[66] = 231;
+			}
+
+			if ( statecounter == 198 ) {
+				Screen->ComboD[35] = 227;
+				Screen->ComboD[140] = 225;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[67] = 227;
+			}
+			if ( statecounter == 196 ) {
+				Screen->ComboD[36] = 227;
+				Screen->ComboD[139] = 225;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[68] = 227;
+			}
+			if ( statecounter == 194 ) {
+				Screen->ComboD[37] = 227;
+				Screen->ComboD[138] = 225;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[69] = 227;
+			}
+			if ( statecounter == 192 ) {
+				Screen->ComboD[38] = 227;
+				Screen->ComboD[137] = 225;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[70] = 227;
+			}
+			if ( statecounter == 190 ) {
+				Screen->ComboD[39] = 227;
+				Screen->ComboD[136] = 225;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[71] = 227;
+			}
+			if ( statecounter == 188 ) {
+				Screen->ComboD[40] = 227;
+				Screen->ComboD[135] = 225;
+			}
+			if ( statecounter == 186 ) {
+				Screen->ComboD[41] = 227;
+				Screen->ComboD[134] = 225;
+			}
+			if ( statecounter == 184 ) {
+				Screen->ComboD[42] = 227;
+				Screen->ComboD[133] = 225;
+			}
+			if ( statecounter == 182 ) {
+				Screen->ComboD[43] = 227;
+				Screen->ComboD[132] = 225;
+			}
+			if ( statecounter == 180 ) {
+				Screen->ComboD[44] = 227;
+				Screen->ComboD[131] = 225;
+			}
+			if ( statecounter == 178 ) {
+				Screen->ComboD[45] = 227;
+				Screen->ComboD[130] = 225;
+			}
+
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 224 && Link->Y != 128 )
+				linkwater = 1; //down
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 225 && Link->X != 32 )
+				linkwater = 2; //left
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 226 && Link->Y != 24 )
+				linkwater = 3; //up
+			if ( statecounter >= 1 && Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 227 && ( ( Link->X != 208 && Link->Y <= 48 ) || ( Link->X != 112 && Link->Y >= 48 ) ) )
+				linkwater = 4; //right
+
+			if ( linkwater == 1 && Link->Y != 128 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_UP;
+				NoAction();
+				if ( Link->Y < 125 )
+					Link->Y += 3;
+				else
+					Link->Y = 128;
+			}
+			else if ( linkwater == 1 )
+				linkwater = 0;
+
+			if ( linkwater == 2 && Link->X != 32 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_RIGHT;
+				NoAction();
+				if ( Link->X > 35 )
+					Link->X -= 3;
+				else
+					Link->X = 32;
+			}
+			else if ( linkwater == 2 )
+				linkwater = 0;
+
+			if ( linkwater == 3 && Link->Y != 24 ) {
+				Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_DOWN;
+				NoAction();
+				if ( Link->Y > 27 )
+					Link->Y -= 3;
+				else
+					Link->Y = 24;
+			}
+			else if ( linkwater == 3 )
+				linkwater = 0;
+
+			if ( linkwater == 4 && Link->X != 208 && Link->Y < 48 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 205 )
+					Link->X += 3;
+				else
+					Link->X = 208;
+			}
+			else if ( linkwater == 4 && Link->X != 112 && Link->Y > 48 ) {
+				Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+				Link->Dir = DIR_LEFT;
+				NoAction();
+				if ( Link->X < 109 )
+					Link->X += 3;
+				else
+					Link->X = 112;
+			}
+			else if ( linkwater == 4 )
+				linkwater = 0;
+
+			if ( endcounter > 0 )
+				endcounter --;
+			if ( statecounter == 0 && linkwater == 0 && Screen->ComboD[115] == 670 ) {
+				Screen->ComboD[115] = 671;
+				endcounter = 200;
+				Screen->ComboD[34] = 755;
+				Screen->ComboD[141] = 753;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[66] = 651;
+			}
+
+			if ( endcounter == 198 ) {
+				Screen->ComboD[35] = 516;
+				Screen->ComboD[140] = 516;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[67] = 516;
+			}
+			if ( endcounter == 196 ) {
+				Screen->ComboD[36] = 516;
+				Screen->ComboD[139] = 516;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[68] = 516;
+			}
+			if ( endcounter == 194 ) {
+				Screen->ComboD[37] = 516;
+				Screen->ComboD[138] = 516;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[69] = 516;
+			}
+			if ( endcounter == 192 ) {
+				Screen->ComboD[38] = 569;
+				Screen->ComboD[137] = 569;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[70] = 569;
+			}
+			if ( endcounter == 190 ) {
+				Screen->ComboD[39] = 516;
+				Screen->ComboD[136] = 516;
+				if ( Screen->ComboD[87] == 649 ) Screen->ComboD[71] = 516;
+			}
+			if ( endcounter == 188 ) {
+				Screen->ComboD[40] = 516;
+				Screen->ComboD[135] = 516;
+			}
+			if ( endcounter == 186 ) {
+				Screen->ComboD[41] = 569;
+				Screen->ComboD[134] = 569;
+			}
+			if ( endcounter == 184 ) {
+				Screen->ComboD[42] = 516;
+				Screen->ComboD[133] = 516;
+			}
+			if ( endcounter == 182 ) {
+				Screen->ComboD[43] = 516;
+				Screen->ComboD[132] = 516;
+			}
+			if ( endcounter == 180 ) {
+				Screen->ComboD[44] = 516;
+				Screen->ComboD[131] = 516;
+			}
+			if ( endcounter == 178 ) {
+				Screen->ComboD[45] = 516;
+				Screen->ComboD[130] = 516;
+				endcounter = 0;
+				Screen->ComboD[115] = 668;
+				Screen->ComboD[60] = 668;
+			}
+
+			if ( statecounter > 0 )
+				statecounter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script mainrocks{
+	void run(){
+		rock1 = 0;
+		rock2 = 0;
+		rock3 = 0;
+		rock4 = 0;
+		rock5 = 0;
+		rock6 = 0;
+		rock7 = 0;
+		rock8 = 0;
+		rock9 = 0;
+		rock10 = 0;
+		rock11 = 0;
+		rock12 = 0;
+
+		int runterfallstelle = 0;
+		int runterfallanzahl = 0;
+		bool nichtsofort = true;
+		bool start = false;
+		while(true){
+			runterfallanzahl = Choose(2, 3);
+			if ( runterfallanzahl == 2 ) {
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+				if ( start == false ) {
+				start = true;
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+				}
+			}
+			else if ( runterfallanzahl == 3 ) {
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+				if ( start == false ) {
+				start = true;
+				runterfallstelle = Rand(34, 141);
+				while(Screen->ComboD[runterfallstelle] != 1){
+					runterfallstelle = Rand(34, 141);
+				}
+				if ( rock1 == 0 )
+					rock1 = runterfallstelle;
+				else if ( rock2 == 0 )
+					rock2 = runterfallstelle;
+				else if ( rock3 == 0 )
+					rock3 = runterfallstelle;
+				else if ( rock4 == 0 )
+					rock4 = runterfallstelle;
+				else if ( rock5 == 0 )
+					rock5 = runterfallstelle;
+				else if ( rock6 == 0 )
+					rock6 = runterfallstelle;
+				else if ( rock7 == 0 )
+					rock7 = runterfallstelle;
+				else if ( rock8 == 0 )
+					rock8 = runterfallstelle;
+				else if ( rock9 == 0 )
+					rock9 = runterfallstelle;
+				else if ( rock10 == 0 )
+					rock10 = runterfallstelle;
+				else if ( rock11 == 0 )
+					rock11 = runterfallstelle;
+				else if ( rock12 == 0 )
+					rock12 = runterfallstelle;
+				Screen->ComboD[runterfallstelle] = 0;
+				}
+			}
+			if ( nichtsofort == false )
+				Waitframes(Rand(30, 44));
+			else
+				nichtsofort = false;
+			Waitframe();
+		}
+	}
+}
+
+ffc script rocks{
+	void run(int rocknumber){
+		rock1 = 0;
+		rock2 = 0;
+		rock3 = 0;
+		rock4 = 0;
+		rock5 = 0;
+		rock6 = 0;
+		rock7 = 0;
+		rock8 = 0;
+		rock9 = 0;
+		rock10 = 0;
+		rock11 = 0;
+		rock12 = 0;
+		this->X = 0;
+		this->Y = -16;
+		while(true){
+			if ( rocknumber == 1 && rock1 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock1] = 759;
+				this->X = ComboX(rock1);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 1 && this->Vy != 0 && this->Y >= ComboY(rock1) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock1] = 760;
+				rock1 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 2 && rock2 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock2] = 759;
+				this->X = ComboX(rock2);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 2 && this->Vy != 0 && this->Y >= ComboY(rock2) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock2] = 760;
+				rock2 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 3 && rock3 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock3] = 759;
+				this->X = ComboX(rock3);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 3 && this->Vy != 0 && this->Y >= ComboY(rock3) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock3] = 760;
+				rock3 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 4 && rock4 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock4] = 759;
+				this->X = ComboX(rock4);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 4 && this->Vy != 0 && this->Y >= ComboY(rock4) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock4] = 760;
+				rock4 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 5 && rock5 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock5] = 759;
+				this->X = ComboX(rock5);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 5 && this->Vy != 0 && this->Y >= ComboY(rock5) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock5] = 760;
+				rock5 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 6 && rock6 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock6] = 759;
+				this->X = ComboX(rock6);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 6 && this->Vy != 0 && this->Y >= ComboY(rock6) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock6] = 760;
+				rock6 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 7 && rock7 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock7] = 759;
+				this->X = ComboX(rock7);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 7 && this->Vy != 0 && this->Y >= ComboY(rock7) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock7] = 760;
+				rock7 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 8 && rock8 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock8] = 759;
+				this->X = ComboX(rock8);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 8 && this->Vy != 0 && this->Y >= ComboY(rock8) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock8] = 760;
+				rock8 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 9 && rock9 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock9] = 759;
+				this->X = ComboX(rock9);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 9 && this->Vy != 0 && this->Y >= ComboY(rock9) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock9] = 760;
+				rock9 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 10 && rock10 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock10] = 759;
+				this->X = ComboX(rock10);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 10 && this->Vy != 0 && this->Y >= ComboY(rock10) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock10] = 760;
+				rock10 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 11 && rock11 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock11] = 759;
+				this->X = ComboX(rock11);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 11 && this->Vy != 0 && this->Y >= ComboY(rock11) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock11] = 760;
+				rock11 = 0;
+				this->Data = 1;
+			}
+
+			if ( rocknumber == 12 && rock12 != 0 && this->Vy == 0 ) {
+				Screen->ComboD[rock12] = 759;
+				this->X = ComboX(rock12);
+				Waitframes(60);
+				this->Data = 758;
+				Game->PlaySound(38);
+				this->Vy = 5;
+			}
+			if ( rocknumber == 12 && this->Vy != 0 && this->Y >= ComboY(rock12) ) {
+				this->Vy = 0;
+				this->Y = -16;
+				Game->PlaySound(64);
+				Screen->ComboD[rock12] = 760;
+				rock12 = 0;
+				this->Data = 1;
+			}
+			Waitframe();
+		}
+	}
+}
+
+// enemyId - the enemy type that will shoot fireballs
+// fireRateMin - minimum number of frames between shots
+// fireRateMax - maximum number of frames between shots
+// shotStep - speed of the shots
+ffc script EnemyFireball {
+  void run(int type) {
+	Waitframes(4);
+	int thisIsIt = 0;
+	if ( type == 1 || type == 2 ) {
+	  for (int i = 1; i <= Screen->NumNPCs(); i++) {
+		npc enem=Screen->LoadNPC(i);
+		if ( type == 1 && enem->ID == 106 )
+		  thisIsIt = i;
+		if ( type == 2 && enem->ID == 50 )
+		  thisIsIt = i;
+	  }
+	}
+	else
+	  thisIsIt = 1;
+	while (true) {
+	  npc enemy = Screen->LoadNPC(thisIsIt);
+ 
+		  // If their fire counter is 0, then reset it.
+		  if (enemy->Misc[2] <= 0) {
+ 
+			// This will pick a random number of frames between
+			// fireRateMin and fireRateMax.
+			enemy->Misc[2] =
+			  Rand(300 - 180 + 1) + 180;}
+ 
+		  // The counter is above 0.
+		  else {
+ 
+			// Decrement it.
+			enemy->Misc[2]--;
+ 
+		   // If this just brought the counter to 0, then also fire.
+			if (enemy->Misc[2] <= 0) {
+			  ShootFireball(enemy, type);}}
+ 
+	  Waitframe();}}}
+ 
+// Shoots a fireball at Link from the enemy's position.
+void ShootFireball(npc enemy, int type) {
+  int randomnum = Rand(1, 4);
+  if ( type == 1 || ( type == 5 && randomnum == 1 ) ) {
+  Game->PlaySound(40);
+  eweapon ewA = Screen->CreateEWeapon(EW_FIREBALL);
+  ewA->X = CenterX(enemy) - 8;
+  ewA->Y = CenterY(enemy) - 8;
+  ewA->Angular = true;
+  ewA->Angle = DegtoRad(Angle(ewA->X,ewA->Y,Link->X,Link->Y));
+  ewA->Dir = RadianAngleDir8(WrapAngle(ewA->Angle));
+  ewA->Step = 150;
+  ewA->Damage = enemy->WeaponDamage;
+  Waitframes(30);
+  Game->PlaySound(40);
+  eweapon ewB = Screen->CreateEWeapon(EW_FIREBALL);
+  ewB->X = CenterX(enemy) - 8;
+  ewB->Y = CenterY(enemy) - 8;
+  ewB->Angular = true;
+  ewB->Angle = DegtoRad(Angle(ewB->X,ewB->Y,Link->X,Link->Y));
+  ewB->Dir = RadianAngleDir8(WrapAngle(ewB->Angle));
+  ewB->Step = 150;
+  ewB->Damage = enemy->WeaponDamage;
+  Waitframes(30);
+  Game->PlaySound(40);
+  eweapon ewC = Screen->CreateEWeapon(EW_FIREBALL);
+  ewC->X = CenterX(enemy) - 8;
+  ewC->Y = CenterY(enemy) - 8;
+  ewC->Angular = true;
+  ewC->Angle = DegtoRad(Angle(ewC->X,ewC->Y,Link->X,Link->Y));
+  ewC->Dir = RadianAngleDir8(WrapAngle(ewC->Angle));
+  ewC->Step = 150;
+  ewC->Damage = enemy->WeaponDamage;
+  }
+
+  if ( ( type == 2 || ( type == 5 && randomnum == 2 ) ) && Screen->ComboD[94] != 397 ) {
+  Game->PlaySound(40);
+  eweapon ewA = Screen->CreateEWeapon(EW_FIREBALL);
+  ewA->X = CenterX(enemy) - 8;
+  ewA->Y = CenterY(enemy) - 8;
+  ewA->Angular = true;
+  ewA->Angle = DegtoRad(Angle(ewA->X,ewA->Y,Link->X,Link->Y));
+  ewA->Dir = RadianAngleDir8(WrapAngle(ewA->Angle));
+  ewA->Step = 135;
+  ewA->Damage = enemy->WeaponDamage;
+  eweapon ewB = Screen->CreateEWeapon(EW_FIREBALL);
+  ewB->X = CenterX(enemy) - 8;
+  ewB->Y = CenterY(enemy) - 8;
+  ewB->Angular = true;
+  ewB->Angle = DegtoRad(Angle(ewB->X,ewB->Y,Link->X,Link->Y));
+  ewB->Dir = RadianAngleDir8(WrapAngle(ewB->Angle));
+  ewB->Step = 150;
+  ewB->Damage = enemy->WeaponDamage;
+  eweapon ewC = Screen->CreateEWeapon(EW_FIREBALL);
+  ewC->X = CenterX(enemy) - 8;
+  ewC->Y = CenterY(enemy) - 8;
+  ewC->Angular = true;
+  ewC->Angle = DegtoRad(Angle(ewC->X,ewC->Y,Link->X,Link->Y));
+  ewC->Dir = RadianAngleDir8(WrapAngle(ewC->Angle));
+  ewC->Step = 165;
+  ewC->Damage = enemy->WeaponDamage;
+  }
+
+  if ( type == 3 || ( type == 5 && randomnum == 3 ) ) {
+  Game->PlaySound(40);
+  eweapon ewA = Screen->CreateEWeapon(EW_FIREBALL);
+  ewA->X = CenterX(enemy) - 8;
+  ewA->Y = CenterY(enemy) - 8;
+  ewA->Angular = true;
+  ewA->Angle = DegtoRad(Angle(ewA->X,ewA->Y,Link->X,Link->Y)) + 0.3141;
+  ewA->Dir = RadianAngleDir8(WrapAngle(ewA->Angle));
+  ewA->Step = 150;
+  ewA->Damage = enemy->WeaponDamage;
+  eweapon ewB = Screen->CreateEWeapon(EW_FIREBALL);
+  ewB->X = CenterX(enemy) - 8;
+  ewB->Y = CenterY(enemy) - 8;
+  ewB->Angular = true;
+  ewB->Angle = DegtoRad(Angle(ewB->X,ewB->Y,Link->X,Link->Y)) - 0.3141;
+  ewB->Dir = RadianAngleDir8(WrapAngle(ewB->Angle));
+  ewB->Step = 150;
+  ewB->Damage = enemy->WeaponDamage;
+  }
+
+  if ( type == 4 ) {
+  Game->PlaySound(40);
+  eweapon ewA = Screen->CreateEWeapon(EW_FIREBALL);
+  ewA->X = CenterX(enemy) - 8;
+  ewA->Y = CenterY(enemy) - 8;
+  ewA->Angular = true;
+  ewA->Angle = DegtoRad(Angle(ewA->X,ewA->Y,Link->X,Link->Y));
+  ewA->Dir = RadianAngleDir8(WrapAngle(ewA->Angle));
+  ewA->Step = 80;
+  ewA->Damage = enemy->WeaponDamage;
+  eweapon ewB = Screen->CreateEWeapon(EW_FIREBALL);
+  ewB->X = CenterX(enemy) - 8;
+  ewB->Y = CenterY(enemy) - 8;
+  ewB->Angular = true;
+  ewB->Angle = DegtoRad(Angle(ewB->X,ewB->Y,Link->X,Link->Y));
+  ewB->Dir = RadianAngleDir8(WrapAngle(ewB->Angle));
+  ewB->Step = 160;
+  ewB->Damage = enemy->WeaponDamage;
+  }
+
+  if ( type == 5 && randomnum == 4 ) {
+  for (int i = 1; i <= 16; i++) {
+  Game->PlaySound(40);
+  eweapon ew = Screen->CreateEWeapon(EW_FIREBALL);
+  ew->X = CenterX(enemy) - 8;
+  ew->Y = CenterY(enemy) - 8;
+  ew->Angular = true;
+  if ( i == 1 )
+	ew->Angle = 0;
+  if ( i == 2 )
+	ew->Angle = DegtoRad(22.5);
+  if ( i == 3 )
+	ew->Angle = DegtoRad(45);
+  if ( i == 4 )
+	ew->Angle = DegtoRad(67.5);
+  if ( i == 5 )
+	ew->Angle = DegtoRad(90);
+  if ( i == 6 )
+	ew->Angle = DegtoRad(112.5);
+  if ( i == 7 )
+	ew->Angle = DegtoRad(135);
+  if ( i == 8 )
+	ew->Angle = DegtoRad(157.5);
+  if ( i == 9 )
+	ew->Angle = DegtoRad(180);
+  if ( i == 10 )
+	ew->Angle = DegtoRad(202.5);
+  if ( i == 11 )
+	ew->Angle = DegtoRad(225);
+  if ( i == 12 )
+	ew->Angle = DegtoRad(247.5);
+  if ( i == 13 )
+	ew->Angle = DegtoRad(270);
+  if ( i == 14 )
+	ew->Angle = DegtoRad(292.5);
+  if ( i == 15 )
+	ew->Angle = DegtoRad(315);
+  if ( i == 16 )
+	ew->Angle = DegtoRad(337.5);
+  ew->Dir = RadianAngleDir8(WrapAngle(ew->Angle));
+  ew->Step = 150;
+  ew->Damage = enemy->WeaponDamage;
+  }
+  }
+}
+
+ffc script FunnyKey {
+	void run() {
+		int state = 0;
+		bool upRoute = true;
+		while(true) {
+			int keyItem = 0;
+			if ( !Screen->State[ST_ITEM] ) {
+				for (int i = 1; i <= Screen->NumItems(); i++) {
+					item what = Screen->LoadItem(i);
+					if ( what->ID == 9 )
+						keyItem = i;
+				}
+				item key = Screen->LoadItem(keyItem);
+
+				if ( state == 0 && ComboAt(Link->X+8, Link->Y+12) == 43 ) {
+					Game->PlaySound(27);
+					Screen->TriggerSecrets();
+					state = 1;
+				}
+				if ( state == 1 && key->Y < 128 ) {
+					key->Y += 2;
+					if ( key->Y == 128 )
+						state = 2;
+				}
+				if ( state == 2 && key->X > 32 ) {
+					if ( key->X > 34 )
+						key->X -= 3;
+					else
+						key->X = 32;
+					if ( key->X == 32 )
+						state = 3;
+				}
+				if ( state == 3 && ComboAt(Link->X+8, Link->Y+12) == 132 ) {
+					state = 4;
+				}
+				else if ( state == 3 && ComboAt(Link->X+8, Link->Y+12) == 98 ) {
+					state = 4;
+					upRoute = false;
+				}
+				if ( state == 4 && upRoute == true && key->Y > 32 ) {
+					key->Y -= 2;
+					if ( key->Y == 32 )
+						state = 5;
+				}
+				if ( state == 5 && upRoute == true && key->X < 208 ) {
+					if ( key->X < 206 )
+						key->X += 3;
+					else
+						key->X = 208;
+					if ( key->X == 208 )
+						state = 6;
+				}
+				if ( state == 6 && upRoute == true && key->Y < 80 ) {
+					key->Y += 2;
+					if ( key->Y == 80 )
+						state = 7;
+				}
+				if ( state == 4 && upRoute == false && key->X < 208 ) {
+					if ( key->X < 206 )
+						key->X += 3;
+					else
+						key->X = 208;
+					if ( key->X == 208 )
+						state = 5;
+				}
+				if ( state == 5 && upRoute == false && key->Y > 80 ) {
+					key->Y -= 2;
+					if ( key->Y == 80 )
+						state = 7;
+				}
+				if ( state == 7 && key->X > 80 ) {
+					key->X -= 2;
+					if ( key->X == 80 ) {
+						state = 8;
+					}
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script FireballGanonDrawing{
+	void run() {
+		int changewait = Rand(20, 60);
+		Waitframes(4);
+		while(true) {
+			npc enem = Screen->LoadNPC(1);
+			changewait--;
+			if ( changewait == 0 ) {
+				if ( enem->OriginalTile == 36400 )
+					enem->OriginalTile = Choose(36660, 36920, 37180, 37440);
+				else if ( enem->OriginalTile == 36660 )
+					enem->OriginalTile = Choose(36400, 36920, 37180, 37440);
+				else if ( enem->OriginalTile == 36920 )
+					enem->OriginalTile = Choose(36400, 36660, 37180, 37440);
+				else if ( enem->OriginalTile == 37180 )
+					enem->OriginalTile = Choose(36400, 36660, 36920, 37440);
+				else if ( enem->OriginalTile == 37440 )
+					enem->OriginalTile = Choose(36400, 36660, 36920, 37180);
+				changewait = Rand(20, 60);
+			}
+			if ( enem->HP <= 0 ) {
+				Game->PlayMIDI(0);
+				Waitframes(120);
+				Screen->Message(19);
+				Waitframe();
+				this->Data = 888;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script MysteryEggHC{
+	void run() {
+		if ( Game->Counter[CR_SCRIPT1] == 3 ) {
+			Screen->TriggerSecrets();
+			Screen->State[ST_SECRET] = true;
+		}
+	}
+}
+
+ffc script TriforceGlass{
+	void run() {
+		if ( !Screen->State[ST_SECRET] ) {
+			Game->PlayMIDI(0);
+		}
+		while(true) {
+			if ( Link->Y <= 128 && NumTriforcePieces() == 3 && !Screen->State[ST_SECRET] ) {
+				Link->Invisible = true;
+				Game->PlaySound(14);
+				for(int i = 0; i < 120; i++){
+					Screen->FastTile(2, 120, 128, 160, 2, OP_OPAQUE);
+					Screen->FastTile(6, 120, 112, 23460, 2, OP_OPAQUE);
+					WaitNoAction();
+				}
+				for(int i = 0; i < 96; i+=4){
+					Screen->FastTile(2, 120, 128, 160, 2, OP_OPAQUE);
+					Screen->FastTile(6, 120, 112-i, 23460, 2, OP_OPAQUE);
+					WaitNoAction();
+				}
+				Screen->TriggerSecrets();
+				Screen->State[ST_SECRET] = true;
+				Game->PlaySound(66);
+				for(int i = 0; i < 60; i++){
+					Screen->FastTile(2, 120, 128, 160, 2, OP_OPAQUE);
+					WaitNoAction();
+				}
+				Link->Invisible = false;
+				Game->PlayMIDI(4);
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script ZeldaFlyDownWait{
+	void run(){
+		Waitframes(60);
+		while(true){
+			if ( this->Vy == 0 ) {
+				Game->PlayMIDI(11);
+				Screen->Message(28);
+				Waitframe();
+				this->Data = 888;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script ZeldaEndGame{
+	void run(){
+		bool lookAtZelda = false;
+		Link->Dir = DIR_UP;
+		WaitNoAction();
+		Screen->Message(58);
+		WaitNoAction();
+		while(true){
+			if ( Link->Y <= 96 && lookAtZelda == false ) {
+				lookAtZelda = true;
+				Link->X = 140;
+				Link->Y = 80;
+				Link->Dir = DIR_LEFT;
+				Game->PlaySound(34);
+				WaitNoAction(360);
+				Game->Counter[CR_LIFE] = Link->MaxHP;
+				Link->Invisible = true;
+				this->Data = 786;
+				for(int i = 0; i < 60; i++){
+					Screen->FastTile(2, 140, 80, 160, 2, OP_OPAQUE);
+					Screen->FastTile(6, 140, 64, 23460, 2, OP_OPAQUE);
+					Screen->FastTile(6, 120, 64, 23460, 2, OP_OPAQUE);
+					WaitNoAction();
+				}
+				Link->Invisible = false;
+				this->Data = 888;
+				WaitNoAction();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script RulesNullifiedMessageWarp{
+	void run(){
+		Waitframes(200);
+		Screen->Message(77);
+		Waitframes(60);
+		this->Data = 888;
+		Waitframe();
+	}
+}
+
+ffc script NoAction{
+	void run(){
+		while(true){
+			NoAction();
+			Waitframe();
+		}
+	}
+}
+
+ffc script TextThenWarp{
+	void run(int m, int wait, int SUPERGAMER){
+		Waitframes(wait);
+		if ( SUPERGAMER == 1 && Link->MaxHP == 48 )
+			Screen->Message(68);
+		else
+			Screen->Message(m);
+		Waitframes(60);
+		this->Data = 888;
+	}
+}
+
+ffc script WindDown{
+	void run(){
+		int counter = 0;
+		while(true){
+			if ( counter == 0 ) {
+			Game->PlaySound(59);
+			eweapon ewA = Screen->CreateEWeapon(EW_WIND);
+			ewA->X = this->X;
+			ewA->Y = this->Y;
+			ewA->Angular = true;
+			ewA->Angle = DegtoRad(Rand(60, 120));
+			ewA->Step = 100;
+			counter = 45;
+			}
+			if ( counter > 0 )
+				counter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script WindUp{
+	void run(){
+		int counter = 0;
+		while(true){
+			if ( counter == 0 ) {
+			Game->PlaySound(59);
+			eweapon ewA = Screen->CreateEWeapon(EW_WIND);
+			ewA->X = this->X;
+			ewA->Y = this->Y;
+			ewA->Angular = true;
+			ewA->Angle = DegtoRad(Rand(240, 300));
+			ewA->Step = 100;
+			counter = 45;
+			}
+			if ( counter > 0 )
+				counter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script WindChallenge3Up{
+	void run(){
+		int counter = 60;
+		while(true){
+			if ( counter == 0 ) {
+				for(int i = 0;  i < 6; i++){
+					Game->PlaySound(59);
+					eweapon ewA = Screen->CreateEWeapon(EW_WIND);
+					ewA->X = this->X;
+					ewA->Y = this->Y;
+					ewA->Angular = true;
+					ewA->Angle = DegtoRad(270);
+					ewA->Step = 150;
+					Waitframes(10);
+				}
+				counter = 60;
+			}
+			if ( counter > 0 )
+				counter --;
+			Waitframe();
+		}
+	}
+}
+ffc script WindChallenge3Down{
+	void run(){
+		int counter = 0;
+		while(true){
+			if ( counter == 0 ) {
+				for(int i = 0;  i < 6; i++){
+					Game->PlaySound(59);
+					eweapon ewA = Screen->CreateEWeapon(EW_WIND);
+					ewA->X = this->X;
+					ewA->Y = this->Y;
+					ewA->Angular = true;
+					ewA->Angle = DegtoRad(90);
+					ewA->Step = 150;
+					Waitframes(10);
+				}
+				counter = 60;
+			}
+			if ( counter > 0 )
+				counter --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script DontFindMeTwice{
+	void run(){
+		Waitframe();
+		if ( Link->Item[123] ) {
+			Screen->ComboD[23] = 356;
+			Screen->ComboD[24] = 357;
+		}
+	}
+}
+
+ffc script FireBar{
+	void run(int num, int sprite, int speed, int angle, int spacing){
+		npc bar[20];
+		int distance[20];
+		for(int i = 0;  i < num; i++){
+			bar[i] = Screen->CreateNPC(sprite);
+			bar[i]->X = this->X;
+			bar[i]->Y = this->Y;
+			distance[i] = i * spacing;
+		}
+		while(true){
+			for(int i = 0; i < num; i++){
+				bar[i]->X = this->X + distance[i]*Cos(angle*speed);
+				bar[i]->Y = this->Y + distance[i]*Sin(angle*speed);
+			}
+			angle %= 360;
+			angle++;
+			Waitframe();
+		}
+	}
+}
+
+ffc script dungeon1beat{
+	void run(){
+		int thisCombo = this->Data;
+		while(true){
+			if(this->Data != thisCombo) { if ( Link->Item[133] == false ) Link->Item[133] = true; }
+			Waitframe();
+		}
+	}
+}
+
+ffc script dungeon2beat{
+	void run(){
+		int thisCombo = this->Data;
+		while(true){
+			if(this->Data != thisCombo) { if ( Link->Item[134] == false ) Link->Item[134] = true; }
+			Waitframe();
+		}
+	}
+}
+
+ffc script dungeon3beat{
+	void run(){
+		int thisCombo = this->Data;
+		while(true){
+			if(this->Data != thisCombo) { if ( Link->Item[135] == false ) Link->Item[135] = true; }
+			Waitframe();
+		}
+	}
+}
+
+ffc script butterflies{
+	void run(){
+		int butterflies = Choose(0, 0, 0, 1, 1, 2);
+		int butterfly1x;
+		int butterfly1y;
+		int butterfly2x;
+		int butterfly2y;
+		if ( butterflies == 0 ) {
+			butterfly1x = -1;
+			butterfly1y = -1;
+			butterfly2x = -1;
+			butterfly2y = -1;
+		}
+		if ( butterflies == 1 ) {
+			butterfly2x = -1;
+			butterfly2y = -1;
+		}
+		int butterflyColor1 = Choose(1, 2);
+		int butterflyColor2 = Choose(1, 2);
+		int pos1x = 0;
+		int pos1y = 0;
+		bool trueOrFalse = false;
+		pos1x = Rand(20, 220);
+		pos1y = Rand(20, 140);
+		while(trueOrFalse == false ){
+			pos1x = Rand(20, 220);
+			pos1y = Rand(20, 140);
+			trueOrFalse = true;
+			if ( Distance(Link->X, Link->Y, pos1x, pos1y) < 60 || Screen->isSolid(pos1x, pos1y) == true )
+				trueOrFalse = false;
+		}
+		if ( butterfly1x != -1 && butterfly1y != -1 ) {
+			butterfly1x = pos1x;
+			butterfly1y = pos1y;
+		}
+		pos1x = Rand(20, 220);
+		pos1y = Rand(20, 140);
+		while(trueOrFalse == false ){
+			pos1x = Rand(20, 220);
+			pos1y = Rand(20, 140);
+			trueOrFalse = true;
+			if ( Distance(Link->X, Link->Y, pos1x, pos1y) < 60 || Screen->isSolid(pos1x, pos1y) == true )
+				trueOrFalse = false;
+		}
+		if ( butterfly2x != -1 && butterfly2y != -1 ) {
+			butterfly2x = pos1x;
+			butterfly2y = pos1y;
+		}
+		if ( butterflies >= 1 ) {
+			item afairy1 = Screen->CreateItem(69);
+			SetItemPickup(afairy1, IP_DUMMY, true);
+			afairy1->X = butterfly1x;
+			afairy1->Y = butterfly1y;
+		}
+		if ( butterflies == 2 ) {
+			item afairy2 = Screen->CreateItem(145);
+			SetItemPickup(afairy2, IP_DUMMY, true);
+			afairy2->X = butterfly2x;
+			afairy2->Y = butterfly2y;
+		}
+		int directionB1 = 1; //1 = left, 2 = right
+		int directionB2 = 1; //1 = left, 2 = right
+		int storedX1 = butterfly1x;
+		int storedX2 = butterfly2x;
+		while(true){
+			for (int i = 1; i <= Screen->NumItems(); i++) {
+				item fairyi = Screen->LoadItem(i);
+				if ( fairyi->ID == 69 && butterfly1x != -1 && butterfly1y != -1 ) {
+					butterfly1x = fairyi->X;
+					butterfly1y = fairyi->Y;
+				}
+				if ( fairyi->ID == 145 && butterfly2x != -1 && butterfly2y != -1 ) {
+					butterfly2x = fairyi->X;
+					butterfly2y = fairyi->Y;
+				}
+			}
+
+			if ( storedX1 > butterfly1x )
+				directionB1 = 1;
+			else if ( storedX1 < butterfly1x )
+				directionB1 = 2;
+			if ( storedX2 > butterfly2x )
+				directionB2 = 1;
+			else if ( storedX2 < butterfly2x )
+				directionB2 = 2;
+
+			for (int i = 1; i <= Screen->NumLWeapons(); i++) {
+				lweapon cutter = Screen->LoadLWeapon(i);
+				if ( RectCollision(cutter->X+2, cutter->Y+2, cutter->X+13, cutter->Y+13, butterfly1x, butterfly1y, butterfly1x+15, butterfly1y+15) == true && butterfly1x != -1 && butterfly1y != -1 && (
+				cutter->ID == LW_SWORD
+				|| cutter->ID == LW_HAMMER
+				|| cutter->ID == LW_HOOKSHOT
+				|| cutter->ID == LW_ARROW
+				|| cutter->ID == LW_BEAM
+				|| cutter->ID == LW_BRANG
+				|| cutter->ID == LW_BOMBBLAST
+				|| cutter->ID == LW_FIRE
+				|| cutter->ID == LW_REFFIREBALL ) ) {
+					npc dead1 = CreateNPCAt(24, butterfly1x, butterfly1y);
+					dead1->X = butterfly1x;
+					dead1->Y = butterfly1y;
+					butterfly1x = -1;
+					butterfly1y = -1;
+					if ( RuleState[6] == 0 ) //butterfly kill
+						RuleState[6] = 15;
+				}
+				if ( RectCollision(cutter->X+2, cutter->Y+2, cutter->X+13, cutter->Y+13, butterfly2x, butterfly2y, butterfly2x+15, butterfly2y+15) == true && butterfly2x != -1 && butterfly2y != -1 && (
+				cutter->ID == LW_SWORD
+				|| cutter->ID == LW_HAMMER
+				|| cutter->ID == LW_HOOKSHOT
+				|| cutter->ID == LW_ARROW
+				|| cutter->ID == LW_BEAM
+				|| cutter->ID == LW_BRANG
+				|| cutter->ID == LW_BOMBBLAST
+				|| cutter->ID == LW_FIRE
+				|| cutter->ID == LW_REFFIREBALL ) ) {
+					npc dead2 = CreateNPCAt(24, butterfly2x, butterfly2y);
+					dead2->X = butterfly2x;
+					dead2->Y = butterfly2y;
+					butterfly2x = -1;
+					butterfly2y = -1;
+					if ( RuleState[6] == 0 ) //butterfly kill
+						RuleState[6] = 15;
+				}
+			}
+
+			if ( butterfly1x != -1 && butterfly1y != -1 ) {
+				Screen->FastCombo(1, butterfly1x, butterfly1y, 87, 2, OP_OPAQUE);
+				if ( directionB1 == 1 && butterflyColor1 == 1 )
+					Screen->FastCombo(5, butterfly1x, butterfly1y, 90, 2, OP_OPAQUE);
+				else if ( directionB1 == 2 && butterflyColor1 == 1 )
+					Screen->FastCombo(5, butterfly1x, butterfly1y, 91, 2, OP_OPAQUE);
+				else if ( directionB1 == 1 && butterflyColor1 == 2 )
+					Screen->FastCombo(5, butterfly1x, butterfly1y, 94, 2, OP_OPAQUE);
+				else if ( directionB1 == 2 && butterflyColor1 == 2 )
+					Screen->FastCombo(5, butterfly1x, butterfly1y, 95, 2, OP_OPAQUE);
+			}
+			if ( butterfly2x != -1 && butterfly2y != -1 ) {
+				Screen->FastCombo(1, butterfly2x, butterfly2y, 87, 2, OP_OPAQUE);
+				if ( directionB2 == 1 && butterflyColor2 == 1 )
+					Screen->FastCombo(5, butterfly2x, butterfly2y, 90, 2, OP_OPAQUE);
+				else if ( directionB2 == 2 && butterflyColor2 == 1 )
+					Screen->FastCombo(5, butterfly2x, butterfly2y, 91, 2, OP_OPAQUE);
+				else if ( directionB2 == 1 && butterflyColor2 == 2 )
+					Screen->FastCombo(5, butterfly2x, butterfly2y, 94, 2, OP_OPAQUE);
+				else if ( directionB2 == 2 && butterflyColor2 == 2 )
+					Screen->FastCombo(5, butterfly2x, butterfly2y, 95, 2, OP_OPAQUE);
+			}
+
+			storedX1 = butterfly1x;
+			storedX2 = butterfly2x;
+			Waitframe();
+		}
+	}
+}
+
+ffc script whitetreeopen{
+	void run(){
+		while(true){
+			Screen->ComboD[86] = 128;
+			Waitframe();
+		}
+	}
+}
+
+ffc script YouCantJustLeave{
+	void run(){
+		while(true){
+			if ( Link->Y > 152 && !Link->Item[5] ) {
+				Screen->Message(91);
+				WaitNoAction();
+				NoAction();
+				Link->InputUp = true;
+				Waitframe();
+				NoAction();
+				Link->InputUp = true;
+				Waitframe();
+				NoAction();
+				Link->InputUp = true;
+				Waitframe();
+				NoAction();
+				Link->InputUp = true;
+				Waitframe();
+				NoAction();
+				Link->InputUp = true;
+				Waitframe();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script GraveyardDungeon{
+	void run(){
+		while(true){
+			if ( RuleState[21] == 0 )
+				GV[GV_DungeonTime] ++;
+			Waitframe();
+		}
+	}
+}
+
+ffc script WaterDungeon{
+	void run(){
+		while(true){
+			if ( RuleState[21] == 0 )
+				GV[GV_DungeonTime] ++;
+			Waitframe();
+		}
+	}
+}
+
+ffc script EarthDungeon{
+	void run(){
+		while(true){
+			if ( RuleState[21] == 0 )
+				GV[GV_DungeonTime] ++;
+			Waitframe();
+		}
+	}
+}
+
+ffc script MoreDungeon{
+	void run(){
+		while(true){
+			if ( RuleState[21] == 0 )
+				GV[GV_DungeonTime] ++;
+			Waitframe();
+		}
+	}
+}
+
+ffc script Caves{
+	void run(){
+		while(true){
+			for (int i = 1; i <= Screen->NumLWeapons(); i++) {
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( wpn->ID == LW_BOMB ) {
+					if ( RuleState[8] == 0 && RuleActiveInit[8] == 0 ) //bombs in caves
+						RuleState[8] = 1;
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script VariableEnemy
+{
+	void run(int ghostID)
+	{
+		npc ghost=Ghost_InitAutoGhost(this, ghostID);
+		ghost->CollDetection=false;
+		ghost->DrawXOffset=1024;
+		
+		int realID;
+		npc realEnemy;
+		
+		if(!Link->Item[133] && !Link->Item[134] && !Link->Item[135])
+			realID=41;
+		else if( ( !Link->Item[133] && !Link->Item[134] ) || ( !Link->Item[133] && !Link->Item[135] ) || ( !Link->Item[134] && !Link->Item[135] ) )
+			realID=79;
+		else // Hard
+			realID=120;
+		
+		if(realID>0)
+		{
+			realEnemy=CreateNPCAt(realID, this->X, this->Y);
+			
+			// The spawner enemy will be the one to drop the item.
+			// This ensures correct behavior if it's carrying a special item.
+			ghost->ItemSet=realEnemy->ItemSet;
+			realEnemy->ItemSet=IS_NONE;
+			
+			while(EnemyIsAlive(realEnemy))
+			{
+				// Keep the positions the same so that
+				// the item drops in the right place.
+				ghost->X=realEnemy->X;
+				ghost->Y=realEnemy->Y;
+				ghost->Z=realEnemy->Z;
+				
+				Waitframe();
+			}
+		}
+		else
+			ghost->ItemSet=IS_NONE; // Just in case
+		
+		ghost->HP=-1000;
+	}
+	
+	bool EnemyIsAlive(npc enemy)
+	{
+		if(!enemy->isValid())
+			return false;
+		
+		if(enemy->HP<=0)
+			return false;
+		
+		return true;
+	}
+}
+
+ffc script Ghost_Zelda{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_KNOCKBACK);
+		Ghost_SetFlag(GHF_4WAY);
+		int counter = -1;
+		int haltcounter = 150 + Rand(90);
+		
+		int WarpingCounter = Rand(240) + 60;
+		int WarpingNum;
+		int SpawningCounter = 60;
+		int FireCounter = 60;
+		int FireNum;
+		
+		int attack;
+		while(true){
+			if ( haltcounter > 0 ) {
+				counter = Ghost_VariableWalk8(counter, 80, 8, 60, 0, 30);
+				if ( Ghost_Dir != DIR_UP && Ghost_Dir != DIR_RIGHT && Ghost_Dir != DIR_DOWN && Ghost_Dir != DIR_LEFT )
+					Ghost_Dir = Choose(DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT);
+			}
+			
+			if ( haltcounter == -32 ) { //attack
+				attack ++;
+				if ( attack > 4 )
+					attack = 1;
+				if ( attack == 1 || attack == 3 )
+					FireNonAngularEWeapon(EW_MAGIC, Ghost_X, Ghost_Y, Ghost_Dir, 250, ghost->WeaponDamage, 21, 32, EWF_ROTATE);
+				if ( attack == 2 ) {
+					Game->PlaySound(32);
+					for (int i = 1; i <= 24; i++) {
+						eweapon e = FireEWeapon(EW_MAGIC, Ghost_X, Ghost_Y, DegtoRad(360/24*i), 300, ghost->WeaponDamage, 89, 0, EWF_NO_COLLISION);
+						SetEWeaponLifespan(e, EWL_SLOW_TO_HALT, 4);
+						SetEWeaponDeathEffect(e, EWD_EXPLODE, ghost->WeaponDamage);
+					}
+				}
+				if ( attack == 4 ) {
+					int x = 16;
+					if ( Ghost_X < 120 )
+						x = 224;
+					eweapon e1 = CreateEWeaponAt(EW_SCRIPT1, Ghost_X, Ghost_Y);
+					e1->UseSprite(92);
+					e1->CollDetection = false;
+					e1->Misc[0] = ComboAt(x, 32);
+					e1->Misc[1] = Ghost_X;
+					e1->Misc[2] = Ghost_Y;
+					e1->Misc[3] = Angle(Ghost_X, Ghost_Y, ComboX(e1->Misc[0]), ComboY(e1->Misc[0]));
+					e1->Misc[4] = Distance(Ghost_X, Ghost_Y, ComboX(e1->Misc[0]), ComboY(e1->Misc[0])) / 22;
+					e1->Misc[5] = 90;
+					eweapon e2 = CreateEWeaponAt(EW_SCRIPT1, Ghost_X, Ghost_Y);
+					e2->UseSprite(92);
+					e2->CollDetection = false;
+					e2->Misc[0] = ComboAt(x, 80);
+					e2->Misc[1] = Ghost_X;
+					e2->Misc[2] = Ghost_Y;
+					e2->Misc[3] = Angle(Ghost_X, Ghost_Y, ComboX(e2->Misc[0]), ComboY(e2->Misc[0]));
+					e2->Misc[4] = Distance(Ghost_X, Ghost_Y, ComboX(e2->Misc[0]), ComboY(e2->Misc[0])) / 22;
+					e2->Misc[5] = 90;
+					eweapon e3 = CreateEWeaponAt(EW_SCRIPT1, Ghost_X, Ghost_Y);
+					e3->UseSprite(92);
+					e3->CollDetection = false;
+					e3->Misc[0] = ComboAt(x, 128);
+					e3->Misc[1] = Ghost_X;
+					e3->Misc[2] = Ghost_Y;
+					e3->Misc[3] = Angle(Ghost_X, Ghost_Y, ComboX(e3->Misc[0]), ComboY(e3->Misc[0]));
+					e3->Misc[4] = Distance(Ghost_X, Ghost_Y, ComboX(e3->Misc[0]), ComboY(e3->Misc[0])) / 22;
+					e3->Misc[5] = 90;
+				}
+			}
+			
+			for (int i = 1; i <= Screen->NumEWeapons(); i++) {
+				eweapon wpn = Screen->LoadEWeapon(i);
+				if ( wpn->ID == EW_SCRIPT1 ) {
+					wpn->Misc[1] = wpn->Misc[1] + VectorX(wpn->Misc[4], wpn->Misc[3]);
+					wpn->Misc[2] = wpn->Misc[2] + VectorY(wpn->Misc[4], wpn->Misc[3]);
+					if ( (ComboX(wpn->Misc[0]) == 16 && wpn->Misc[1] <= 16) || (ComboX(wpn->Misc[0]) == 224 && wpn->Misc[1] >= 224) ) {
+						wpn->Misc[1] = ComboX(wpn->Misc[0]);
+						wpn->Misc[2] = ComboY(wpn->Misc[0]);
+					}
+					wpn->X = wpn->Misc[1];
+					wpn->Y = wpn->Misc[2];
+					wpn->Misc[5] --;
+					if ( wpn->Misc[5] <= 0 ) {
+						int dir = DIR_LEFT;
+						if ( wpn->X < 120 )
+							dir = DIR_RIGHT;
+						FireNonAngularEWeapon(EW_MAGIC, wpn->X, wpn->Y, dir, 250, ghost->WeaponDamage, 21, 32, EWF_ROTATE);
+						wpn->DeadState = WDS_DEAD;
+					}
+				}
+			}
+			
+			if ( WarpingCounter == 0 && haltcounter > 0 && __Ghost_KnockbackCounter == 0 ) {
+				lweapon wpn = CreateLWeaponAt(LW_SPARKLE, Ghost_X, Ghost_Y);
+				wpn->UseSprite(91);
+				bool ok = false;
+				while(!ok){
+					Ghost_X = Rand(48, 192);
+					Ghost_Y = Rand(32, 128);
+					if ( Distance(Link->X, Link->Y, Ghost_X, Ghost_Y) > 52 )
+						ok = true;
+				}
+				lweapon wpn2 = CreateLWeaponAt(LW_SPARKLE, Ghost_X, Ghost_Y);
+				wpn2->UseSprite(90);
+				
+				WarpingNum --;
+				if ( WarpingNum > 0 )
+					WarpingCounter = 60;
+				else
+					WarpingCounter = Rand(150) + 600;
+			}
+			
+			if ( SpawningCounter == 0 ) {
+				Game->PlaySound(56);
+				int x;
+				int y;
+				bool ok = false;
+				while(!ok){
+					x = Rand(32, 208);
+					y = Rand(32, 128);
+					if ( Distance(Link->X, Link->Y, x, y) > 52 )
+						ok = true;
+				}
+				CreateNPCAt(Choose(43, 49, 54, 45, 53, 30), x, y);
+				
+				SpawningCounter = Rand(90) + 1080;
+			}
+			
+			if ( FireCounter == 0 ) {
+				int x;
+				int y;
+				bool ok = false;
+				while(!ok){
+					x = Rand(20, 220);
+					y = Rand(20, 140);
+					if ( Distance(Link->X, Link->Y, x, y) > 80 )
+						ok = true;
+				}
+				FireAimedEWeapon(EW_FIREBALL, x, y, 0, 200, ghost->WeaponDamage, -1, -1, 0);
+				
+				FireNum --;
+				if ( FireNum > 0 )
+					FireCounter = 10;
+				else
+					FireCounter = Rand(180) + 150;
+			}
+			
+			haltcounter --;
+			if ( haltcounter < -48 )
+				haltcounter = 150 + Rand(90);
+			
+			if ( WarpingCounter > 0 )
+				WarpingCounter --;
+			if ( WarpingNum == 0 )
+				WarpingNum = Rand(1, 6);
+			if ( SpawningCounter > 0 && Ghost_HP <= 125 )
+				SpawningCounter --;
+			if ( FireCounter > 0 && Ghost_HP <= 50 )
+				FireCounter --;
+			if ( FireNum == 0 )
+				FireNum = Rand(4, 8);
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script FinalBossBeat{
+	void run(){
+		while(this->Data!=1){
+			Waitframe();
+		}
+		if ( RuleState[40] != -1 ) {
+			Screen->Message(260);
+			Waitframe();
+		}
+		this->Data = 888;
+	}
+}
+
+ffc script GameBeat{
+	void run(){
+		Game->LKeys[Game->GetCurLevel()] ++;
+		Link->Item[123] = true;
+		Link->Item[153] = true;
+		for (int i = 1; i <= 40; i++) {
+			RuleState[i] = -1;
+			PlayerRules[i] = -1;
+		}
+		GV[GV_DungeonTime] = 0;
+		GV[GV_20EnemiesCount] = 0;
+	}
+}
+
+ffc script DifficultySelect{
+	void run(){
+		if ( GV[GV_Difficulty] != 0 ) {
+			this->Data = 888;
+			WaitNoAction();
+		}
+		
+		int selected = 2;
+		int SelectDifficulty[] = "-Select Difficulty-";
+		int NoRules[] = "No Rules";
+		int Standard[] = "Standard";
+		int Expert[] = "Expert";
+		int AllRules[] = "All Rules";
+		while(true){
+			if ( Link->PressUp ) {
+				Game->PlaySound(5);
+				selected --;
+			}
+			if ( Link->PressDown ) {
+				Game->PlaySound(5);
+				selected ++;
+			}
+			if ( selected < 1 )
+				selected = 4;
+			if ( selected > 4 )
+				selected = 1;
+			
+			if ( selected == 1 )
+				Screen->DrawTile(6, 16, 40, 39000, 14, 3, 0, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+			if ( selected == 2 )
+				Screen->DrawTile(6, 16, 40, 39060, 14, 3, 0, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+			if ( selected == 3 )
+				Screen->DrawTile(6, 16, 40, 39120, 14, 3, 0, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+			if ( selected == 4 )
+				Screen->DrawTile(6, 16, 40, 39180, 14, 3, 0, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+			
+			Screen->DrawString(2, 128, 16, FONT_Z1, 0x01, -1, TF_CENTERED, SelectDifficulty, OP_OPAQUE);
+			
+			Screen->DrawString(2, 128, 104, FONT_Z1, 0x01, -1, TF_CENTERED, NoRules, OP_OPAQUE);
+			Screen->DrawString(2, 128, 116, FONT_Z1, 0x01, -1, TF_CENTERED, Standard, OP_OPAQUE);
+			Screen->DrawString(2, 128, 128, FONT_Z1, 0x01, -1, TF_CENTERED, Expert, OP_OPAQUE);
+			Screen->DrawString(2, 128, 140, FONT_Z1, 0x01, -1, TF_CENTERED, AllRules, OP_OPAQUE);
+			
+			if ( selected == 1 )
+				Screen->DrawString(2, 128, 104, FONT_Z1, 0x06, -1, TF_CENTERED, NoRules, OP_OPAQUE);
+			if ( selected == 2 )
+				Screen->DrawString(2, 128, 116, FONT_Z1, 0x06, -1, TF_CENTERED, Standard, OP_OPAQUE);
+			if ( selected == 3 )
+				Screen->DrawString(2, 128, 128, FONT_Z1, 0x06, -1, TF_CENTERED, Expert, OP_OPAQUE);
+			if ( selected == 4 )
+				Screen->DrawString(2, 128, 140, FONT_Z1, 0x06, -1, TF_CENTERED, AllRules, OP_OPAQUE);
+			
+			if ( Link->PressA || Link->PressStart ) {
+				GV[GV_Difficulty] = selected;
+				if ( selected == 1 )
+					Link->Item[153] = true;
+				if ( selected == 4 ) {
+					for (int i = 1; i <= 40; i++) {
+						RuleState[i] = 0;
+						PlayerRules[i] = i;
+					}
+					GV[GV_RandomRuleRotation] = 33;
+					Game->Counter[CR_SCRIPT2] = 40;
+					GV[GV_20EnemiesCount] = 20;
+					GV[GV_InDungeon] = 1;
+					Link->HP -= 4;
+				}
+				if ( selected == 2 )
+					Game->Counter[CR_SCRIPT3] = 30;
+				if ( selected == 3 )
+					Game->Counter[CR_SCRIPT3] = 10;
+				WaitNoAction();
+				this->Data = 888;
+			}
+			
+			NoAction();
+			Waitframe();
+		}
+	}
+}
+
+ffc script LightsOut{
+	void run(){
+		int lastframecom;
+		while(true){
+			int com = ComboAt(Link->X+8, Link->Y+12);
+			
+			if ( com != lastframecom && (Screen->ComboD[com] == 936 || Screen->ComboD[com] == 937) ) {
+				Screen->ComboD[com] ++;
+				if ( Screen->ComboD[com] > 937 )
+					Screen->ComboD[com] = 936;
+				if ( com-48 >= 0 ) {
+					Screen->ComboD[com-48] ++;
+					if ( Screen->ComboD[com-48] > 937 )
+						Screen->ComboD[com-48] = 936;
+				}
+				if ( com-3 >= 0 && ComboX(com-3) >= 80 ) {
+					Screen->ComboD[com-3] ++;
+					if ( Screen->ComboD[com-3] > 937 )
+						Screen->ComboD[com-3] = 936;
+				}
+				if ( com+3 <= 175 && ComboX(com+3) <= 176 ) {
+					Screen->ComboD[com+3] ++;
+					if ( Screen->ComboD[com+3] > 937 )
+						Screen->ComboD[com+3] = 936;
+				}
+				if ( com+48 <= 175 ) {
+					Screen->ComboD[com+48] ++;
+					if ( Screen->ComboD[com+48] > 937 )
+						Screen->ComboD[com+48] = 936;
+				}
+			}
+			
+			if ( Screen->ComboD[37] == 936 && Screen->ComboD[40] == 936 && Screen->ComboD[43] == 936 && 
+			Screen->ComboD[85] == 936 && Screen->ComboD[88] == 936 && Screen->ComboD[91] == 936 && 
+			Screen->ComboD[133] == 936 && Screen->ComboD[136] == 936 && Screen->ComboD[139] == 936 ) {
+				Game->PlaySound(27);
+				Screen->TriggerSecrets();
+				Quit();
+			}
+			
+			lastframecom = com;
+			Waitframe();
+		}
+	}
+}
+
+ffc script ScriptedRule{
+	void run(int rule){
+		if ( Link->Item[153] || RuleState[rule] != -1 )
+			Quit();
+		if ( rule == 36 ) {
+			while(Link->Y > 144 || GV[GV_SecFrames] == 59){
+				Waitframe();
+			}
+			AddRule(rule);
+			Waitframe();
+			Quit();
+		}
+		if ( rule == 37 ) {
+			while(Link->Y < 16 || GV[GV_SecFrames] == 59){
+				Waitframe();
+			}
+			AddRule(rule);
+			Waitframe();
+			Quit();
+		}
+		if ( rule == 38 ) {
+			while(Link->X < 16 || GV[GV_SecFrames] == 59){
+				Waitframe();
+			}
+			AddRule(rule);
+			Waitframe();
+			Quit();
+		}
+		if ( rule == 39 ) {
+			while(Link->Y > 144 || GV[GV_SecFrames] == 59){
+				Waitframe();
+			}
+			AddRule(rule);
+			Waitframe();
+			Quit();
+		}
+		if ( rule == 40 ) {
+			Waitframes(20);
+			while(GV[GV_SecFrames] == 59){
+				Waitframe();
+			}
+			AddRule(rule);
+			Waitframe();
+			Quit();
+		}
+	}
+}
+
+ffc script GlobalRulesFFC{
+	void run(){
+		int StoodStill;
+		int BombsCounted;
+		int OctoRuleWait = 8;
+		
+		int ArmosCount;
+		for(int i=0; i<176; i++){
+			if ( Screen->ComboT[i] == CT_ARMOS )
+				ArmosCount ++;
+		}
+		while(true){
+			
+			for (int i = 1; i <= 40; i++) {
+				if ( RuleState[i] > 0 ) {
+					RuleState[i] --;
+					if ( RuleState[i] == 0 ) {
+						Game->PlayMIDI(0);
+						Screen->Message(BrokeMessage[i]);
+						WaitNoAction();
+						Link->HP = 0;
+						WaitNoAction();
+					}
+				}
+				if ( RuleActiveInit[i] > 0 )
+					RuleActiveInit[i] --;
+			}
+			
+			bool AddRandomRule;
+			if ( !Link->Item[153] && GV[GV_RandomRuleRotation] < 33 && Game->GetCurMap() != 6 ) { //timer script
+				GV[GV_SecFrames] ++;
+				if ( GV[GV_SecFrames] == 59 ) {
+					if ( Game->Counter[CR_SCRIPT3] == 1 && Game->Counter[CR_SCRIPT4] == 0 )
+						NoAction();
+				}
+				if ( GV[GV_SecFrames] == 60 ) {
+					GV[GV_SecFrames] = 0;
+					if ( Game->Counter[CR_SCRIPT3] > 0 ) {
+						Game->Counter[CR_SCRIPT3] --;
+						if ( Game->Counter[CR_SCRIPT3] == 0 && Game->Counter[CR_SCRIPT4] == 0 )
+							AddRandomRule = true;
+					}
+					else if ( Game->Counter[CR_SCRIPT4] > 0 ) {
+						Game->Counter[CR_SCRIPT4] --;
+						Game->Counter[CR_SCRIPT3] = 59;
+					}
+				}
+			}
+			if ( AddRandomRule )
+				AddRandomRule();
+			
+			if ( RuleState[1] == 0 && RuleActiveInit[1] == 0 ) { //no shallow water
+				if ( Screen->ComboT[ComboAt(Link->X+8, Link->Y+12)] == CT_SHALLOWWATER )
+					RuleState[1] = 1;
+			}
+			if ( RuleState[2] == 0 && RuleActiveInit[2] == 0 ) { //no flowers
+				if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 83 )
+					RuleState[2] = 1;
+			}
+			
+			if ( Game->Counter[CR_BOMBS] == Game->MCounter[CR_BOMBS] ) {
+				if ( RuleState[7] == 0 && RuleActiveInit[7] == 0 ) { //bombs maxed
+					RuleState[7] = 1;
+					RuleActiveInit[7] = 150;
+				}
+			}
+			
+			if ( RuleState[11] == 0 ) {
+				if ( Link->Action == LA_NONE )
+					StoodStill ++;
+				else
+					StoodStill = 0;
+				if ( StoodStill >= 240 )
+					RuleState[11] = 1; //stood still 4 secs
+			}
+			
+			if ( RuleState[12] == 0 ) {
+				if ( GV[GV_RainRuleStart] == 0 ) {
+					if ( Game->GetCurMap() == 1 )
+						GV[GV_RainRuleStart] = 1;
+				}
+				else {
+					if ( Game->GetCurMap() != 1 ) {
+						if ( GV[GV_Rain] < 0 ) { //not go inside if it rains
+							RuleState[12] = 1;
+							Game->ContinueDMap = 0;
+							Game->ContinueScreen = 0x45;
+							Game->LastEntranceDMap = 0;
+							Game->LastEntranceScreen = 0x45;
+						}
+					}
+				}
+			}
+			
+			if ( RuleState[16] == 0 ) {
+				if ( Link->PressL || Link->PressR ) //not press l or r
+					RuleState[16] = 1;
+				Link->PressL = false;
+				Link->InputL = false;
+				Link->PressR = false;
+				Link->InputR = false;
+			}
+			
+			if ( GV[GV_DungeonTime] >= 36000 ) { //in dungeon for 10 mins
+				RuleState[21] = 1;
+				GV[GV_DungeonTime] = 0;
+			}
+			
+			if ( RuleState[25] == 0 ) { //map while left or right
+				if ( Link->PressMap ) {
+					if ( Link->Dir == DIR_LEFT || Link->Dir == DIR_RIGHT ) {
+						RuleState[25] = 1;
+						Link->PressMap = false;
+						Link->InputMap = false;
+					}
+				}
+			}
+			
+			if ( RuleState[26] == 0 && RuleActiveInit[26] == 0 ) {
+				if ( Link->HP <= 12 ) //less than 1 heart
+					RuleState[26] = 1;
+			}
+			
+			if ( GV[GV_InDungeon] == 0 && Game->GetCurMap() >= 3 && Game->GetCurMap() <= 7 ) {
+				if ( RuleState[32] == 0 && GV[GV_20EnemiesCount] > 0 ) { //20 enemies before dungeon
+					RuleState[32] = 1;
+					Game->ContinueDMap = 0;
+					Game->ContinueScreen = 0x45;
+					Game->LastEntranceDMap = 0;
+					Game->LastEntranceScreen = 0x45;
+				}
+				else
+					GV[GV_InDungeon] = 1;
+			}
+			if ( GV[GV_InDungeon] == 1 && Game->GetCurMap() == 1 ) {
+				GV[GV_InDungeon] = 0;
+				if ( RuleState[32] == 0 ) {
+					GV[GV_20EnemiesCount] = 20;
+					GV[GV_20EnemiesDisplay] = 60;
+				}
+			}
+			
+			if ( RuleState[33] == 0 ) {
+				if ( GV[GV_NoSwordFrames] >= 1200 ) //sword once in 20 secs
+					RuleState[33] = 1;
+				GV[GV_NoSwordFrames] ++;
+			}
+			
+			if ( RuleState[37] == 0 ) {
+				if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 539 ) {
+					if ( Link->Dir == DIR_UP || Link->Dir == DIR_DOWN ) //black tiles
+						RuleState[37] = 1;
+				}
+			}
+			
+			if ( RuleState[36] == 0 ) {
+				if ( ArmosCount > 0 ) { //no armos unactivated
+					if ( (Link->X <= 2 && Link->InputLeft == true) || (Link->X >= 238 && Link->InputRight == true) || (Link->Y <= 2 && Link->InputUp == true) || (Link->Y >= 158 && Link->InputDown == true) )
+						RuleState[36] = 1;
+				}
+			}
+			
+			for (int i = 1; i <= Screen->NumItems(); i++) {
+				item itm = Screen->LoadItem(i);
+				if ( itm->ID == 150 ) {
+					if ( RuleState[5] == 0 ) //zora kill
+						RuleState[5] = 1;
+					itm->Y = -1000;
+				}
+				if ( itm->ID == 151 ) {
+					if ( RuleState[15] == 0 ) //keese kill
+						RuleState[15] = 1;
+					itm->Y = -1000;
+				}
+				if ( itm->ID == 152 ) {
+					if ( RuleState[39] == 0 ) //bombchu kill
+						RuleState[39] = 1;
+					itm->Y = -1000;
+				}
+			}
+			
+			for ( int i = 1; i <= Screen->NumEWeapons(); i++ ){
+				eweapon wpn = Screen->LoadEWeapon(i);
+				if ( wpn->ID == EW_ROCK ) {
+					if ( LinkCollision(wpn) && Link->Action == LA_GOTHURTLAND ) {
+						if ( RuleState[13] == 0 )
+							RuleState[13] = 2;
+					}
+				}
+				if ( wpn->ID == EW_BRANG ) {
+					if ( LinkCollision(wpn) && Link->Action == LA_GOTHURTLAND ) {
+						if ( RuleState[14] == 0 )
+							RuleState[14] = 2;
+					}
+				}
+			}
+			
+			for ( int i = 1; i <= Screen->NumLWeapons(); i++ ){
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( RuleState[18] == 0 && RuleActiveInit[18] == 0 ) { //touch your fire
+					if ( wpn->ID == LW_FIRE && Link->Action != LA_CASTING ) {
+						if ( RectCollision(wpn->X+2, wpn->Y+2, wpn->X+13, wpn->Y+13, Link->X+2, Link->Y+10, Link->X+13, Link->Y+13) )
+							RuleState[18] = 1;
+					}
+				}
+				if ( wpn->ID == LW_BOMB ) {
+					if ( wpn->Misc[0] == 0 ) {
+						wpn->Misc[0] = 1;
+						BombsCounted ++;
+					}
+					if ( BombsCounted > 1 ) {
+						if ( RuleState[20] == 0 ) //1 bomb per screen
+							RuleState[20] = 1;
+						else
+							BombsCounted = 1;
+					}
+				}
+				if ( wpn->ID == LW_SWORD ) {
+					if ( RuleState[31] == 0 && RuleActiveInit[31] == 0 ) { //slash direction
+						if ( Link->Dir != GV[GV_SwordDirection] )
+							RuleState[31] = 1;
+					}
+				}
+			}
+			
+			bool octorockOnScreen;
+			bool stalfosOnScreen;
+			for (int i = 1; i <= Screen->NumNPCs(); i++) {
+				npc enem=Screen->LoadNPC(i);
+				if ( enem->ID == 89 ) {
+					npc realZol=CreateNPCAt(43, enem->X, enem->Y);
+					enem->Y -=1000;
+					if ( RuleState[9] == 0 ) //gels into zols
+						RuleState[9] = 10;
+				}
+				
+				if ( enem->ID == 36 ) {
+					if ( enem->Misc[0] == 0 ) {
+						enem->Misc[0] = 1;
+						if ( RuleState[3] == 0 ) //no ghosts
+							RuleState[3] = 35;
+					}
+				}
+				
+				if ( enem->ID == 32 ) {
+					if ( enem->HP < enem->Misc[1] ) {
+						if ( RuleState[4] == 0 ) { //peahat
+							RuleState[4] = 1;
+						}
+					}
+				}
+				
+				if ( RuleState[17] == 0 ) {
+					if ( enem->Stun > 0 ) {
+						if ( enem->HP < enem->Misc[1] ) //dmg stunned enemies
+							RuleState[17] = 1;
+					}
+				}
+				
+				if ( enem->ID == 48 ) { //wallmaster
+					if ( RectCollision(enem->X+2, enem->Y+2, enem->X+13, enem->Y+13, 32, 32, 223, 143) && ( enem->Misc[0] == 0 || enem->Misc[0] == 2 ) )
+						enem->Misc[0] ++;
+					if ( !RectCollision(enem->X+2, enem->Y+2, enem->X+13, enem->Y+13, 32, 32, 223, 143) && ( enem->Misc[0] == 1 || enem->Misc[0] == 3 )  ) {
+						if ( enem->Misc[0] == 3 ) {
+							if ( RuleState[22] == 0 && RuleActiveInit[22] == 0 )
+								RuleState[22] = 1;
+						}
+						if ( enem->Misc[0] == 3 )
+							enem->Misc[0] = 0;
+						else
+							enem->Misc[0] = 2;
+					}
+				}
+				
+				if ( enem->ID == 22 || enem->ID == 20 || enem->ID == 23 || enem->ID == 21 )
+					octorockOnScreen = true;
+				if ( enem->ID == 41 || enem->ID == 79 || enem->ID == 120 )
+					stalfosOnScreen = true;
+				
+				if ( enem->ID == 37 ) {
+					if ( enem->Misc[0] == 0 ) {
+						enem->Misc[0] = 1;
+						ArmosCount --;
+					}
+				}
+				
+				if ( enem->HP <= 0 ) {
+					if ( enem->Misc[3] == 0 ) {
+						enem->Misc[3] = 1;
+						if ( GV[GV_20EnemiesCount] > 0 ) {
+							GV[GV_20EnemiesCount] --;
+							GV[GV_20EnemiesDisplay] = 60;
+						}
+					}
+				}
+				
+				enem->Misc[1] = enem->HP;
+			}
+			
+			if ( OctoRuleWait > 0 )
+				OctoRuleWait --;
+			else if ( RuleState[28] == 0 ) { //no octorock alive
+				if ( octorockOnScreen ) {
+					if ( (Link->X <= 2 && Link->InputLeft == true) || (Link->X >= 238 && Link->InputRight == true) || (Link->Y <= 2 && Link->InputUp == true) || (Link->Y >= 158 && Link->InputDown == true) ) {
+						RuleState[28] = 1;
+						NoAction();
+					}
+				}
+			}
+			
+			for (int i = 1; i <= Screen->NumNPCs(); i++) {
+				npc enem=Screen->LoadNPC(i);
+				if ( RuleState[30] == 0 && RuleActiveInit[30] == 0 ) { //stalfos before others
+					if ( stalfosOnScreen ) {
+						if ( enem->ID != 41 && enem->ID != 79 && enem->ID != 178 && enem->ID != 120 && enem->HP <= 0 )
+							RuleState[30] = 10;
+					}
+				}
+			}
+			
+			if ( Link->PressEx1 ) {
+				if ( RuleState[24] == 0 && EnemiesAlive() ) { //ex1 while enemies
+					RuleState[24] = 1;
+				}
+				else if ( !Link->Item[153] ) {
+					if ( Game->Counter[CR_SCRIPT2] == 0 ) {
+						Screen->Message(4);
+					}
+					else {
+						for (int i = 1; i <= Game->Counter[CR_SCRIPT2]; i++) {
+							int r = PlayerRules[i];
+							if ( r == 33 )
+								Screen->Message(82);
+							else if ( r == 34 )
+								Screen->Message(85);
+							else if ( r == 35 )
+								Screen->Message(89);
+							else
+								Screen->Message(AddedMessage[r]+1);
+							WaitNoAction();
+						}
+					}
+				}
+			}
+			
+			if ( !Link->Item[125] ) { //100% completion
+				if ( Link->MaxHP == 160 && GV[GV_ExtraTimesPickedUp] == 5 ) {
+					if ( Link->Item[23] && Link->Item[82] && Link->Item[129] && Link->Item[132] && Link->Item[64] && Link->Item[37] && Link->Item[6]
+					&& Link->Item[42] && Link->Item[122] ) {
+						Link->Item[125] = true;
+						Link->Item[126] = true;
+						Screen->Message(263);
+					}
+				}
+			}
+			
+			if ( GV[GV_20EnemiesDisplay] > 0 ) {
+				GV[GV_20EnemiesDisplay] --;
+				int xoffset;
+				if ( GV[GV_20EnemiesCount] < 10 )
+					xoffset = 4;
+				Screen->DrawInteger(6, Link->X+xoffset+1, Link->Y-12+1, FONT_Z1, 0x07, -1, -1, -1, GV[GV_20EnemiesCount], 0, OP_OPAQUE);
+				Screen->DrawInteger(6, Link->X+xoffset, Link->Y-12, FONT_Z1, 0x01, -1, -1, -1, GV[GV_20EnemiesCount], 0, OP_OPAQUE);
+			}
+			Waitframe();
+		}
+	}
+	bool EnemiesAlive(){
+		for(int i=Screen->NumNPCs(); i>=1; i--){
+			npc n = Screen->LoadNPC(i);
+			if(n->Type!=NPCT_PROJECTILE&&n->Type!=NPCT_FAIRY&&n->Type!=NPCT_TRAP&&n->Type!=NPCT_GUY){
+				if(!(n->MiscFlags&(1<<3)))
+					return true;
+			}
+		}
+		return false;
+	}
+}

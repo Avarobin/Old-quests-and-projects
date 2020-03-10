@@ -1,0 +1,35 @@
+Info
+
+Island Adventure is a completely different quest. It has nothing to do with Zelda. In every level you have to reach the goal. There are 100 levels!
+
+This quest is part of the Puzzle Adventures series. For Space Adventure, go here:
+
+Description
+
+Island Adventure is a completely different quest. It has nothing to do with Zelda. In every level you have to reach the goal. There are 100 levels!
+
+- Many many different puzzles, reaching from creative original puzzles to different kinds of block puzzles
+- You can save in any level
+- Selfmade tileset
+- A great custom boss at the end of the game
+
+Try this out! How many levels can YOU beat?
+
+Story
+
+No story.
+
+Tips and Cheats
+
+No cheats. If you need any help on a certain level, just ask in the help thread.
+http://www.purezc.net/forums/index.php?showtopic=56679
+
+You have to set up the Ex1-4 buttons, to control the raft. Set these up in the ZC player!
+
+aaa2 - Controllable Raft Script
+blackbishop89 - Blue/Red Block Script
+MoscowModder - Various important Scripts
+Bjorn Lynne - Various midis
+Radien - Some tiles from his DoR tileset
+
+I made the palette and many of the tiles in this quest myself.

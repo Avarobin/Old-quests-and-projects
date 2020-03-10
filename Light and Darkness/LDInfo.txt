@@ -1,0 +1,197 @@
+genre: dungeon romper
+
+credits
+
+undersun
+st forest
+hyrule field theme nicklegends
+i only wish espilan
+"Dragons of light and darkness"
+
+mooshs npc script
+moving platform by Mero
+enemy returner by justin
+
+shane treasure chest tiles
+
+
+
+
+
+Memory
+Multi-tasking
+Knowledge
+Patience
+Attention
+Problem-solving
+Organization
+This dungeon has one of the 3 thingies you need to get to the 4th area. Can already get it after the first dungeon but is required after the third dungeon.
+
+Fear Factory Cloud Fortress robot item, introduction - it talks to you
+Laser puzzles like blocks 5 etc
+You deactivate the death laser machine and then go fight the boss (crazy owner of the fortress) who wanted to use it to destroy the world because he is crazy
+
+In a cave in a deadend 4 pots 1 sign, 1 prize 3 "something bad will happen"
+
+The order-cave downstairs puzzles: 4 octorocks order and a maze-path
+
+Enchanted forest glowing mystery mushrooms that send out a hintlight when hit by sword
+
+Eon Ruins like Water Pyramid first screen
+
+Witch hut, she has one of the thingies you need for the 4th area. Tells you about something she would like to have that existed in the past.
+
+Past bombable wall not marked hcp
+
+The paralysing horror isnt encountered in person by link until after level 3. then link finds out the elder has been kidnapped.
+then the paralysing horrors come and steal links sword (because of its power of light)
+
+On top of the tower of darkness link finds the dragon of darkness k.o. and the paralysing horrors have aquired the dark power.
+Link must defeat them and then same thing like tower of light.
+
+
+
+
+//"There's a theory that if someone is ever able to 
+
+//[...]. We've
+//Doesnt finish the sentence. Next time he doesnt even start it.
+
+//If you truly love something, you can make anything happen. Let your dreams become real and give your hopes a meaning.
+
+//My brother... my poor brother was a young child when they first came. It was cold. Nobody could move. My brother was crying.
+//They took him. I wish I could have saved him then, but maybe it's not too late! Please, find my brother.
+
+//With every meeting, a parting is sure to follow.
+
+
+
+
+
+Items
+
+A: Bow and Arrows - Link has this from the beginning
+A: Magic Leaf - Nival Shrine
+P: Bomb Bag - At the end of the Ice Cavern.
+A: Clawshot - Eon Ruins
+A: Shadow Amulet - In the Gloomrone Village
+A: Motu's Bell - Skeleton Pit
+P: Ladder - From goron elder
+A: Robot - Cloud Fortress
+
+Magic leaf requires magic to shoot a whirlwind that pushes enemies, items and bombs until they hit a solid object.
+Also removes snow. Can push projectile of a (mini)boss to kill him. Also pushes flying prisms in eon ruins.
+
+Clawshot is used to grapple onto certain objects and grab items from afar. Also (steals an item from enemies?) and stuns them.
+Also pulls flying prisms.
+
+Motu's Bell turns Link into a skeleton. Drains magic in skeleton form. Can talk with other skeletons and swim over lava. (more)
+As skeleton Link is immune to damage, so getting hit takes magic instead. Press A to swing a bone, B to throw a bone,
+R to turn back into Link.
+
+Robot is controllable and flies over pits, water, lava. Can use push-beam to push blocks. (more)
+It teleports out and back into links inventory after pressing R while controlling it or leaving the screen.
+A as robot shoots a laser beam. B switches control between robot and Link.
+
+10 Shells Foriver Town - Small Shield
+5 Shells Hyrule Field - Hylia Shield
+3 Shells Snowfall Mountain - Heartworth Ring
+10 Shells Nival Shrine - 
+3 Shells Enchanted Forest Present - 
+10 Shells Eon Ruins - 
+5 Shells Gloomrone Village - 
+10 Shells Skeleton Pit - 
+10 Shells Cloud Fortress - 
+
+
+
+
+Enemies
+
+Barrier Stone
+Is tied to another enemy. Appears somewhere when the other enemy would receive damage and shields it.
+Disappears when the other enemy isn't being attacked for a bit. Eon Ruins
+
+Ropes poison Link slowing him down. Snake zischen touch sfx. After 2 seconds the poison explodes dealing damage.
+
+Stalfos that fall into bones that have no collision and are only destroyed by bomb.
+
+
+
+
+
+intro town
+get to know zelda
+mayor quest done -> home
+night
+triforce halls dungeon
+zelda is different
+story
+back to home
+uncle tells link zelda is missing and tommy went searching for her
+begin quest
+
+The final enemy is Corz, the heart of light and darkness. His ultimate goal is to get rid of life to restore nature's perfect balance.
+Long ago 3 legendary heroes have defeated him and shattered him into 2 pieces. (light and darkness)
+They did not know that 2 of them sealed one part of the heart each and one sealed the key to its power into their own body.
+Link is the descendant of the one who sealed the key.
+Zelda is the descendant of the one who sealed the heart of light.
+Dexter is the descendant of the one who sealed the heart of darkness.
+Corz would be able to be revived if all 3 of them came together, but some more requirements are needed.
+Zelda, who is being mind controlled by Corz, tells Link to get the dragon's powers and the 4 amulets. (this happens in the teaser quest)
+Dexter is behind all the bad stuff that's been happening in the areas of the land.
+Dexter is not really evil. His name is actually Dex. He and Zelda are being manipulated by Corz who wants to resurrect himself.
+At the end Dex is really sorry and wants Link to kill him because he thinks that he is to blame for everything.
+But Link and Zelda accept him as a friend, just like their 3 hero ancestors were friends.
+
+Zelda says Link needs the power of the dragons, but when getting the power say the power is dangerous.
+
+
+So link got the powers of light and darkness empowering his sword and uses the pendants to get back to the balance halls.
+Zelda telepathically tells Link to come to the chamber. She is kept hostage by Dexter. The Balance Halls appear to be the final dungeon.
+In the chamber Dexter tells Link all the things he did and that he has a plan and now wants to kill Link.
+After Link beat Dexter Zelda interferes. Zeldas and Dexters plan succeeds. The key inside Link reveals Corz from Zelda and Dexter.
+The balance halls explode and Link ends up in the Chaos Realm.
+The dragons come and tell Link that the alternate realm and the real world are becoming one. Our enemy is Corz the heart of light and darkness.
+Descendants, revived, etc. Now find Corz and defeat it. The actual final dungeon starts.
+
+
+
+12 hearts max
+Start with 3
+Nival Shrine, Eon Ruins, Skeleton Pit, Cloud Fortress, 4 hearts
+Get 5 with heart pieces: 4*5=20 hcps
+
+1 hcp first minigame
+1 hcp foriver shop
+1 hcp cave with order-puzzles
+4 hcps in the 4 main dungeons
+
+
+
+
+
+____Script information____
+
+Placed Flag 98: Block trigger
+Inherent Flag 99: Door
+Placed Flag 99: Prevent sidewarp overwrite
+
+Screen Flag
+General Use 1: Prevent the enemy returner script
+
+Screen->D[7]: Used for enemy returner script
+
+Item->Misc[]
+15: in leafwind
+
+EWeapons->Misc[]
+3-15: used by ghost.zh
+
+Enemy->Misc[]
+8: in leafwind for autoghosted enemies
+9-14: MAYBE used by ghost.zh
+15: used by ghost.zh
+
+Link->Misc[]
+0: Link HP before cutscenes

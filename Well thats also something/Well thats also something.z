@@ -1,0 +1,794 @@
+import "std.zh"
+import "string.zh"
+import "Well thats also something\ghost.zh"
+
+bool NaviCutscene = true;
+
+int NaviHeartNotice = 180;
+bool HeartsReduced = false;
+bool ReduceHearts = false;
+bool knowAboutPushBush = false;
+bool eyeDead = false;
+bool knowAboutBossDoor = false;
+bool ohnomonster = false;
+bool terror = false;
+int hammerhatch = 600;
+int hammerlight = 0;
+
+ffc script Message {
+    void run(int m){
+        Screen->Message(m);
+        Waitframe();
+    }
+}
+
+item script ItemMessage {
+    void run(int m){
+        Screen->Message(m);
+    }
+}
+
+item script Hammer {
+    void run(){
+        hammerlight = 120;
+    }
+}
+
+item script heart {
+    void run(){
+        if ( Link->Item[124] )
+            Link->HP += 4;
+        else
+            Link->HP += 16;
+        if ( Link->HP >= Link->MaxHP )
+            Link->HP = Link->MaxHP;
+    }
+}
+
+ffc script CoolWalking {
+    void run(){
+        int random;
+        int timer = Rand(20, 30);
+        while(true){
+            if ( Link->Item[124] )
+                Quit();
+            random = Rand(1, 4);
+            if ( random == 1 && timer == 0 ) {
+                Link->InputUp = false;
+                Link->InputRight = false;
+                Link->InputDown = true;
+                Link->InputLeft = false;
+                timer = Rand(20, 30);
+            }
+            if ( random == 2 && timer == 0 ) {
+                Link->InputUp = true;
+                Link->InputRight = false;
+                Link->InputDown = false;
+                Link->InputLeft = false;
+                timer = Rand(20, 30);
+            }
+            if ( random == 3 && timer == 0 ) {
+                Link->InputUp = false;
+                Link->InputRight = false;
+                Link->InputDown = false;
+                Link->InputLeft = true;
+                timer = Rand(20, 30);
+            }
+            if ( random == 4 && timer == 0 ) {
+                Link->InputUp = false;
+                Link->InputRight = true;
+                Link->InputDown = false;
+                Link->InputLeft = false;
+                timer = Rand(20, 30);
+            }
+            timer --;
+            Waitframe();
+        }
+    }
+}
+
+ffc script WarpPuzzle {
+    void run(){
+        int timer = 360;
+        while(true){
+            if ( ComboAt(Link->X+8, Link->Y+12) == 40 || ComboAt(Link->X+8, Link->Y+12) == 56 || ComboAt(Link->X+8, Link->Y+12) == 72 || ComboAt(Link->X+8, Link->Y+12) == 88 )
+                Link->X -= 48;
+            if ( Link->Action == LA_DROWNING && Screen->State[ST_SECRET] == false ) {
+                Game->PlaySound(27);
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+            }
+            timer --;
+            if ( timer == 0 ) {
+                Game->PlaySound(Rand(62, 63));
+                Screen->Message(25);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script PushBush {
+    void run(){
+        if ( knowAboutPushBush == true )
+            Quit();
+        while(ComboAt(Link->X+8, Link->Y+12) != 82 && ComboAt(Link->X+8, Link->Y+12) != 83 && ComboAt(Link->X+8, Link->Y+12) != 84 ) {
+            Waitframe();
+        }
+        knowAboutPushBush = true;
+        Game->PlaySound(Rand(62, 63));
+        Screen->Message(28);
+    }
+}
+
+ffc script Bossdoor {
+    void run(){
+        if ( knowAboutBossDoor == true )
+            Quit();
+        while(Link->Y > 94 || Link->X >= 192 ) {
+            Waitframe();
+        }
+        knowAboutBossDoor = true;
+        Game->PlaySound(Rand(62, 63));
+        Screen->Message(29);
+    }
+}
+
+ffc script OhNoMonster {
+    void run(){
+        if ( ohnomonster == true )
+            Quit();
+        while(Link->Y <= 126) {
+            Waitframe();
+        }
+        ohnomonster = true;
+        Game->PlaySound(Rand(62, 63));
+        Screen->Message(35);
+    }
+}
+
+ffc script Terror {
+    void run(){
+        if ( terror == true )
+            Quit();
+        while(Link->Y < 72 || Link->Y > 96) {
+            Waitframe();
+        }
+        terror = true;
+        Game->PlaySound(Rand(62, 63));
+        Screen->Message(41);
+    }
+}
+
+ffc script BossKeyWarp {
+    void run(){
+        while(Link->X > 96) {
+            Waitframe();
+        }
+        Link->X += 64;
+        Waitframe();
+        this->Data = 888;
+        Waitframe();
+    }
+}
+
+ffc script BossKeyWarp2 {
+    void run(){
+        while(true){
+            if (Link->X <= 96) {
+                Link->X += 64;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script JokeRoom {
+    void run(){
+        while(ComboAt(Link->X+8, Link->Y+12) != 86) {
+            Waitframe();
+        }
+        this->Vx = 1.5;
+        this->Vy = -0.2;
+        while(ComboAt(Link->X+8, Link->Y+12) != 87) {
+            NoAction();
+            Link->InputRight = true;
+            Waitframe();
+        }
+        Screen->ComboD[86] = 80;
+        Waitframes(40);
+        Screen->Message(43);
+        Waitframe();
+        Waitframes(65);
+        Game->PlayMIDI(4);
+        Screen->ComboD[79] = 43;
+        Screen->ComboD[95] = 43;
+        Screen->ComboD[111] = 43;
+        Waitframes(30);
+        Screen->ComboD[78] = 43;
+        Screen->ComboD[94] = 43;
+        Screen->ComboD[110] = 43;
+        Waitframes(30);
+        Screen->ComboD[77] = 43;
+        Screen->ComboD[93] = 43;
+        Screen->ComboD[109] = 43;
+        Waitframes(30);
+        Screen->ComboD[76] = 43;
+        Screen->ComboD[92] = 43;
+        Screen->ComboD[108] = 43;
+        Waitframes(30);
+        Screen->ComboD[75] = 43;
+        Screen->ComboD[91] = 43;
+        Screen->ComboD[107] = 43;
+        Waitframes(30);
+        Screen->ComboD[74] = 43;
+        Screen->ComboD[90] = 43;
+        Screen->ComboD[106] = 43;
+        Waitframes(30);
+        Screen->ComboD[73] = 43;
+        Screen->ComboD[89] = 43;
+        Screen->ComboD[105] = 43;
+        Waitframes(30);
+        Link->HP = 0;
+    }
+}
+
+ffc script Mayor {
+    void run(){
+        if ( eyeDead == true )
+            Quit();
+        while(ComboAt(Link->X+8, Link->Y+12) != 82) {
+            Waitframe();
+        }
+        Game->PlayMIDI(4);
+        Screen->ComboD[81] = 400;
+        Screen->ComboD[23] = 356;
+        Screen->ComboD[24] = 357;
+    }
+}
+
+ffc script MayorEye {
+    void run(int radx, int rady, int speedx, int speedy){
+        int timer = 520;
+        while(Screen->ComboD[81] != 400) {
+            Waitframe();
+        }
+        Waitframes(20);
+        this->Vx = -1;
+        while(this->X > 112) {
+            Waitframe();
+        }
+        this->Vx = 0;
+
+        int cx = this->X;
+        int cy = this->Y;
+        int degx = 0;
+        int degy = 0;
+        bool ck = Max(speedx, speedy) == speedx;
+        while(true) {
+            degx = (degx + speedx) % 360;
+            degy = (degy + speedy) % 360;
+            if(ck) {
+                this->X = cx + radx * Cos(degx);
+                this->Y = cy + rady * Sin(degy);
+            }
+            else {
+                this->X = cx + radx * Sin(degx);
+                this->Y = cy + rady * Cos(degy);
+            }
+            if ( timer == 0 ) {
+                eyeDead = true;
+                Game->PlayMIDI(2);
+                Screen->ComboD[81] = 393;
+                Screen->ComboD[23] = 369;
+                Screen->ComboD[24] = 371;
+                this->Data = 406;
+                Waitframe();
+                Quit();
+            }
+            timer--;
+            Waitframe();
+        }
+    }
+}
+
+ffc script shoot {
+    void run(){
+        while(Screen->ComboD[81] != 400) {
+            Waitframe();
+        }
+        int shoot = 180;
+        while (true){
+            shoot --;
+            if (shoot <= 180 && (shoot % 4 == 0 || shoot+1 % 4 == 0)) {
+                Game->PlaySound(40);
+                eweapon ew = Screen->CreateEWeapon(EW_FIREBALL);
+                ew->X = this->X;
+                ew->Y = this->Y;
+                ew->Angular = true;
+                ew->Angle = DegtoRad(Rand(360));
+                ew->Dir = RadianAngleDir8(WrapAngle(ew->Angle));
+                ew->Step = 120;
+                ew->Damage = 2;
+            }
+            if ( shoot == 0 )
+                shoot = 180;
+            while(Screen->ComboD[81] != 400) {
+                Waitframe();
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script NoAction {
+    void run(){
+        while(true){
+            NoAction();
+            Waitframe();
+        }
+    }
+}
+
+ffc script NaviCutscene {
+    void run(){
+        int state = 0;
+        Game->PlaySound(61);
+        while(true){
+            if ( state == 0 && this->Vx == 0 && this->Vy == 0 ) {
+                state = 1;
+                Game->PlaySound(62);
+                Waitframes(60);
+                Game->PlaySound(63);
+                Screen->Message(17);
+                Waitframes(10);
+                this->Vx = 0.25;
+                this->Vy = 0.5;
+            }
+            if ( state == 1 && this->Vx == 0 && this->Vy == 0 ) {
+                NaviCutscene = false;
+                Screen->ComboD[15] = 889;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script NaviCutsceneTrigger {
+    void run(){
+        while(true){
+            if ( Link->Y <= 112 && NaviCutscene == true )
+                this->Data = 888;
+            if ( NaviHeartNotice > 0 )
+                NaviHeartNotice ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script NaviGoodbye {
+    void run(){
+        bool bye = false;
+        while(true){
+            if ( Link->Y <= 128 && bye == false ) {
+                this->Data = 892;
+                this->Vx = 0.5;
+                this->Vy = -0.5;
+                while(this->Vx != 0){
+                    WaitNoAction();
+                }
+                this->Vx = 1;
+                this->Vy = -1;
+                this->Ax = 0.02;
+                this->Ay = -0.2;
+                Game->PlaySound(63);
+                Screen->Message(47);
+                WaitNoAction();
+                Game->PlaySound(61);
+                bye = true;
+            }
+            Waitframe();
+        }
+    }
+}
+
+global script active {
+    void run(){
+        StartGhostZH();
+
+        int dropRand = 0;
+        hammerlight = 0;
+        while(true){
+            UpdateGhostZH1();
+
+            dropRand = Rand(0, 4);
+            for (int i = 1; i <= Screen->NumItems(); i++) {
+                item droppeditem = Screen->LoadItem(i);
+                if ( droppeditem->ID == 123 ) {
+                    item dropitem = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 2, 2, 2, 2));
+                    SetItemPickup(dropitem, IP_TIMEOUT, true);
+                    if ( dropRand == 4 ) {
+                        Game->PlaySound(64);
+                        item dropitem1 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 2, 2, 2, 2));
+                        SetItemPickup(dropitem1, IP_TIMEOUT, true);
+                        dropitem1->X = droppeditem->X+Rand(-4, 4);
+                        dropitem1->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem1->Jump = 4.5;
+                        item dropitem2 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 2, 2, 2, 2));
+                        SetItemPickup(dropitem2, IP_TIMEOUT, true);
+                        dropitem2->X = droppeditem->X+Rand(-4, 4);
+                        dropitem2->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem2->Jump = 5;
+                        item dropitem3 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 2, 2, 2, 2));
+                        SetItemPickup(dropitem3, IP_TIMEOUT, true);
+                        dropitem3->X = droppeditem->X+Rand(-4, 4);
+                        dropitem3->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem3->Jump = 5.5;
+                        item dropitem4 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 0, 2, 2, 2));
+                        SetItemPickup(dropitem4, IP_TIMEOUT, true);
+                        dropitem4->X = droppeditem->X+Rand(-4, 4);
+                        dropitem4->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem4->Jump = 6;
+                        item dropitem5 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 0, 0, 2, 2));
+                        SetItemPickup(dropitem5, IP_TIMEOUT, true);
+                        dropitem5->X = droppeditem->X+Rand(-4, 4);
+                        dropitem5->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem5->Jump = 6.5;
+                        item dropitem6 = Screen->CreateItem(Choose(0, 0, 0, 0, 0, 0, 0, 0, 0, 2));
+                        SetItemPickup(dropitem6, IP_TIMEOUT, true);
+                        dropitem6->X = droppeditem->X+Rand(-4, 4);
+                        dropitem6->Y = droppeditem->Y+Rand(-4, 4);
+                        dropitem6->Jump = 7;
+                    }
+                    dropitem->X = droppeditem->X;
+                    dropitem->Y = droppeditem->Y;
+                    droppeditem->Y = -1600;
+                    dropitem->Jump = 4;
+                }
+            }
+
+            if ( ReduceHearts == true && HeartsReduced == false ) {
+                if ( Link->HP > 48 )
+                    Link->HP = 48;
+                Link->MaxHP = 48;
+                HeartsReduced = true;
+            }
+            if ( Link->Item[6] && NaviHeartNotice > 0 ) {
+                NaviHeartNotice --;
+            }
+            if ( NaviHeartNotice == 0 && HeartsReduced == false ) {
+                Game->PlaySound(Rand(62, 63));
+                ReduceHearts = true;
+                Screen->Message(21);
+            }
+
+            if ( Link->Item[57] && hammerhatch > 0 )
+                hammerhatch --;
+            if ( hammerhatch == 0 && Link->Item[57] ) {
+                Game->PlaySound(66);
+                Link->Item[57] = false;
+                Link->Item[54] = true;
+                Screen->Message(40);
+            }
+
+            if ( hammerlight == 100 )
+                Game->PlaySound(67);
+            if ( hammerlight > 0 && hammerlight < 100 ) {
+                Screen->Rectangle(6, 0, 0, 256, 176, 1, 1, 0, 0, 0, true, 128);
+            }
+            if ( hammerlight > 0 )
+            hammerlight --;
+
+            Waitdraw();
+            UpdateGhostZH2();
+            Waitframe();
+        }
+    }
+}
+
+ffc script EnemyA{
+    void run(int enemyID){
+        npc ghost = Ghost_InitAutoGhost(this, enemyID);
+
+        eweapon wpn;
+        Ghost_SetFlag(GHF_NORMAL);
+        int walkCounter = 0;
+        while(true){
+            walkCounter = Ghost_HaltingWalk4(walkCounter, 50, 6, 0, 0, 4, 48);
+            if ( walkCounter == 16 ) {
+                if ( Ghost_Dir == DIR_UP )
+                    wpn = FireEWeapon(EW_ARROW, Ghost_X, Ghost_Y, 3*PI/2, 150, 2, 19, 0, EWF_ROTATE);
+                if ( Ghost_Dir == DIR_RIGHT )
+                    wpn = FireEWeapon(EW_ARROW, Ghost_X, Ghost_Y, 0, 150, 2, 19, 0, EWF_ROTATE);
+                if ( Ghost_Dir == DIR_DOWN )
+                    wpn = FireEWeapon(EW_ARROW, Ghost_X, Ghost_Y, PI/2, 150, 2, 19, 0, EWF_ROTATE);
+                if ( Ghost_Dir == DIR_LEFT )
+                    wpn = FireEWeapon(EW_ARROW, Ghost_X, Ghost_Y, PI, 150, 2, 19, 0, EWF_ROTATE);
+                SetEWeaponMovement(wpn, EWM_SINE_WAVE, 8, 15);
+                Ghost_Jump = 3;
+                Game->PlaySound(65);
+            }
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+ffc script EnemyB{
+    void run(int enemyID){
+        npc ghost = Ghost_InitAutoGhost(this, enemyID);
+
+        Ghost_SetFlag(GHF_KNOCKBACK);
+        Ghost_SetFlag(GHF_IGNORE_ALL_TERRAIN);
+        while(true){
+            Ghost_MoveTowardLink(0.35, 0);
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+ffc script EnemyC{
+    void run(int enemyID){
+        npc ghost = Ghost_InitAutoGhost(this, enemyID);
+
+        eweapon wpn;
+        Ghost_SetFlag(GHF_NORMAL);
+        Ghost_SetFlag(GHF_4WAY);
+        int walkCounter = 0;
+        while(true){
+            walkCounter = Ghost_HaltingWalk4(walkCounter, 80, 6, 0, 0, 6, 48);
+            if ( walkCounter == 16 ) {
+                if ( Ghost_Dir == DIR_DOWN )
+                    wpn = FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, 3*PI/2, 250, 2, 18, 0, 0);
+                if ( Ghost_Dir == DIR_LEFT )
+                    wpn = FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, 0, 250, 2, 18, 0, 0);
+                if ( Ghost_Dir == DIR_UP )
+                    wpn = FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, PI/2, 250, 2, 18, 0, 0);
+                if ( Ghost_Dir == DIR_RIGHT )
+                    wpn = FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, PI, 250, 2, 18, 0, 0);
+                Game->PlaySound(51);
+            }
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+ffc script EnemyD{
+    void run(int enemyID){
+        npc ghost = Ghost_InitAutoGhost(this, enemyID);
+
+        eweapon wpn;
+        eweapon wpn2;
+        eweapon wpn3;
+        eweapon wpn4;
+        Ghost_SetFlag(GHF_NORMAL);
+        Ghost_SetFlag(GHF_4WAY);
+        int walkCounter = 0;
+        while(true){
+            walkCounter = Ghost_HaltingWalk4(walkCounter, 50, 6, 0, 0, 6, 48);
+            if ( walkCounter == 16 ) {
+                wpn = FireEWeapon(EW_FIRE, Ghost_X, Ghost_Y, 3*PI/2, 250, 2, 35, 0, 0);
+                SetEWeaponDeathEffect(wpn, EWD_EXPLODE, 2);
+                SetEWeaponMovement(wpn, EWM_THROW, -1, EWMF_DIE);
+                wpn2 = FireEWeapon(EW_FIRE, Ghost_X, Ghost_Y, 0, 250, 2, 35, 0, 0);
+                SetEWeaponDeathEffect(wpn2, EWD_EXPLODE, 2);
+                SetEWeaponMovement(wpn2, EWM_THROW, -1, EWMF_DIE);
+                wpn3 = FireEWeapon(EW_FIRE, Ghost_X, Ghost_Y, PI/2, 250, 2, 35, 0, 0);
+                SetEWeaponDeathEffect(wpn3, EWD_EXPLODE, 2);
+                SetEWeaponMovement(wpn3, EWM_THROW, -1, EWMF_DIE);
+                wpn4 = FireEWeapon(EW_FIRE, Ghost_X, Ghost_Y, PI, 250, 2, 35, 0, 0);
+                SetEWeaponDeathEffect(wpn4, EWD_EXPLODE, 2);
+                SetEWeaponMovement(wpn4, EWM_THROW, -1, EWMF_DIE);
+            }
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+ffc script EnemyE{
+    void run(int enemyID){
+        npc ghost = Ghost_InitAutoGhost(this, enemyID);
+
+        eweapon wpn;
+        eweapon wpn2;
+        eweapon wpn3;
+        eweapon wpn4;
+        Ghost_SetFlag(GHF_SET_DIRECTION);
+        Ghost_TileWidth = 2;
+        Ghost_TileHeight = 2;
+        int walkCounter = 0;
+        while(true){
+            if ( Ghost_HP >= 32 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 20, 4, 0, 0, 40);
+            else if ( Ghost_HP >= 28 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 30, 4, 0, 0, 38);
+            else if ( Ghost_HP >= 20 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 40, 4, 0, 0, 36);
+            else if ( Ghost_HP >= 14 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 50, 4, 0, 0, 34);
+            else if ( Ghost_HP >= 8 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 60, 4, 0, 0, 32);
+            else if ( Ghost_HP >= 4 )
+                walkCounter = Ghost_VariableWalk8(walkCounter, 65, 4, 0, 0, 30);
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+float Choose(float a, float b, float c, float d, float e, float f, float g) {
+  int r = Rand(6);
+  if (r==0) return a;
+  else if (r==1) return b;
+  else if (r==2) return c;
+  else if (r==3) return d;
+  else if (r==4) return e;
+  else if (r==5) return f;
+  else return g;
+}
+
+float Choose(float a, float b, float c, float d, float e, float f, float g, float h) {
+  int r = Rand(7);
+  if (r==0) return a;
+  else if (r==1) return b;
+  else if (r==2) return c;
+  else if (r==3) return d;
+  else if (r==4) return e;
+  else if (r==5) return f;
+  else if (r==6) return g;
+  else return h;
+}
+
+float Choose(float a, float b, float c, float d, float e, float f, float g, float h, float i) {
+  int r = Rand(8);
+  if (r==0) return a;
+  else if (r==1) return b;
+  else if (r==2) return c;
+  else if (r==3) return d;
+  else if (r==4) return e;
+  else if (r==5) return f;
+  else if (r==6) return g;
+  else if (r==7) return h;
+  else return i;
+}
+
+float Choose(float a, float b, float c, float d, float e, float f, float g, float h, float i, float j) {
+  int r = Rand(9);
+  if (r==0) return a;
+  else if (r==1) return b;
+  else if (r==2) return c;
+  else if (r==3) return d;
+  else if (r==4) return e;
+  else if (r==5) return f;
+  else if (r==6) return g;
+  else if (r==7) return h;
+  else if (r==8) return i;
+  else return j;
+}
+
+ffc script Parabolic{
+    void run(int radx, int rady, int speedx, int speedy) {
+        int cx = this->X;
+        int cy = this->Y;
+        int degx = 0;
+        int degy = 0;
+        bool ck = Max(speedx, speedy) == speedx;
+        while(true) {
+            degx = (degx + speedx) % 360;
+            degy = (degy + speedy) % 360;
+            if(ck) {
+                this->X = cx + radx * Cos(degx);
+                this->Y = cy + rady * Sin(degy);
+            }
+            else {
+                this->X = cx + radx * Sin(degx);
+                this->Y = cy + rady * Cos(degy);
+            }
+            Waitframe();
+        }
+    }
+}
+
+const int NPC_THREEOFAKIND = 41;
+const int T_THREEOFAKIND = 102;
+ 
+ffc script ENE_ThreeOfAKind {
+  void run() {
+    npc n1 = CreateNPCAt(NPC_THREEOFAKIND, this->X,this->Y);
+    npc n2 = CreateNPCAt(NPC_THREEOFAKIND, this->X + 64,this->Y);
+    npc n3 = CreateNPCAt(NPC_THREEOFAKIND, this->X - 64,this->Y);
+    int originaltile = T_THREEOFAKIND;
+    int s1 = 0;
+    int s2 = 1;
+    int s3 = 2;
+    int stun1 = 0;
+    int stun2 = 0;
+    int stun3 = 0;
+    int frame = 59;
+    bool swork = true;
+    bool swork2 = true;
+    bool swork3 = true;
+    while(n1->isValid() && n2->isValid() && n3->isValid()) {
+      frame++;
+      // Rotate symbols
+      if (frame == 60) {
+        frame = 0;
+        if (swork) {
+          s1 = ((s1+1) % 4);
+          n1->OriginalTile = T_THREEOFAKIND + s1;
+         
+        }
+        if (swork2) {
+          s2 = ((s2+1) % 4);
+          n2->OriginalTile = T_THREEOFAKIND + s2;
+        }
+        if (swork3) {
+          s3 = ((s3+1) % 4);
+          n3->OriginalTile = T_THREEOFAKIND + s3;
+        }
+      }
+      bool done = stun1>0 && stun2>0 && stun3>0 && s1==s2 && s2==s3;
+      bool done2 = stun1>0 && stun2>0 && stun3>0 && (s1!=s2 || s2!=s3);
+     
+ 
+      // Turn off a damaged one
+      if (n1->CollDetection && n1->HP < 255) {
+        n1->HP = 255;
+        n1->CollDetection = false;
+        swork = false;
+        stun1 = 480;
+        n1->Stun = 480;
+ 
+      }
+      else if (stun1 > 0) {
+        stun1--;
+        if (done2){stun1-50;}
+        if (stun1 <= 0) {
+          if (done) { n1->HP = 0; n2->HP = 0; n3->HP = 0; continue; }
+          swork = true;
+          n1->CollDetection = true;
+          n1->HP = 255;
+          n1->Stun = 0;
+        }
+      }
+      if (n2->CollDetection && n2->HP < 255) {
+        n2->HP = 255;
+        n2->CollDetection = false;
+        swork2 = false;
+        n2->Stun = 480;
+     stun2 = 480;
+      }
+      else if (stun2 > 0) {
+        stun2--;
+        if (done2){stun2-50;}
+        if (stun2 <= 0) {
+          if (done) { n1->HP = 0; n2->HP = 0; n3->HP = 0; continue; }
+          n2->HP = 255;
+          n2->CollDetection = true;
+          swork2 = true;
+          n2->Stun = 0;
+        }
+      }
+      if (n3->CollDetection && n3->HP < 255) {
+        n3->HP = 255;
+        n3->CollDetection = false;
+        swork3 = false;
+        n3->Stun = 480;
+      stun3 = 480;
+      }
+      else if (stun3 > 0) {
+        stun3--;
+     if (done2){stun3-50;}
+        if (stun3 <= 0) {
+          if (done) { n1->HP = 0; n2->HP = 0; n3->HP = 0; continue; }
+          n3->HP = 255;
+          n3->CollDetection = true;
+          swork3 = true;
+          n3->Stun = 0;
+        }
+      }
+      Waitframe();
+    }
+  Screen->TriggerSecrets();
+  Screen->State[ST_SECRET] = true;
+  Game->PlaySound(SFX_SECRET);
+  }
+}

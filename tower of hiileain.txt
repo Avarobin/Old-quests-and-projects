@@ -1,0 +1,43 @@
+Get boomerang
+Get sword
+Speak to man to open Tower
+Tower of Hiilea 1st visit: Purple Aura (goddess statues), open next dungeon
+Deepshade Shrine
+Speak to man to get ability to release amulet power
+Tower of Hiilea 2nd visit: place 1st amulet, choose path, get superpower, Green Aura (spikes), open next dungeon
+Dry Ruins
+Tower of Hiilea 3rd visit: place 2nd amulet, Yellow Aura (wall merge), open next dungeon
+Wet Palace
+Tower of Hiilea 4th visit: place 3rd amulet, Red Aura (dark blocks), open next dungeon
+Dark Tomb
+Tower of Hiilea 5th visit: place 4th amulet
+
+variable1 = SwordSlashingBool: für feuerball shooter script
+variable2 = PowerToRelease: ob link die kraft für amulett aktivieren hat
+variable3 = GoodPowerOrBadPower: 1 = good, 2 = bad
+variable4 = numberOfSetAmulets: wie viele amulette gesetzt sind
+variable5 = hiileaGoodLuckWithDungeon2MessageBool
+variable6 = firstDexterFinishedBool
+variable7 = DexterWarpOutX
+variable8 = DexterWarpOutY
+variable9 = DexterWarpInX
+variable10 = DexterWarpInY
+
+Credits
+
+SquareSoft - Final Fantasy graphics
+Joe123 - Final Fantasy tileset
+nicklegends - Insomnia (music used for the Tower of Hiilea main theme)
+NewJourneysFire - Beta testing
+
+ffc script BossWarpScript{
+    void run(){
+        while(true){
+            npc boss = Screen->LoadNPC(1);
+            if ( boss->HP <= 100 ) {
+                this->Data = 51; //autowarp combo
+            }
+            Waitframe();
+        }
+    }
+}

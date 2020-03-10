@@ -1,0 +1,2450 @@
+import "std.zh"
+
+const int abprall = 8;
+int required = 0;
+bool movingDown = true;
+bool movingRight = false;
+bool movingLeft = false;
+bool levelFinished = false;
+int comboNrA = 0;
+int comboNrB = 0;
+int dead = 0;
+int abprallToLeft = 0;
+int abprallToRight = 0;
+int waved = 0;
+int enemyOneX = 0;
+int enemyOneY = 0;
+int enemyTwoX = 0;
+int enemyTwoY = 0;
+int enemyThreeX = 0;
+int enemyThreeY = 0;
+int enemyFourX = 0;
+int enemyFourY = 0;
+int enemyFiveX = 0;
+int enemyFiveY = 0;
+int enemySixX = 0;
+int enemySixY = 0;
+int enemySevenX = 0;
+int enemySevenY = 0;
+int enemyEightX = 0;
+int enemyEightY = 0;
+int enemyNineX = 0;
+int enemyNineY = 0;
+int enemyTenX = 0;
+int enemyTenY = 0;
+int starOneX = 0;
+int starOneY = 0;
+int starTwoX = 0;
+int starTwoY = 0;
+int starThreeX = 0;
+int starThreeY = 0;
+int starFourX = 0;
+int starFourY = 0;
+int starFiveX = 0;
+int starFiveY = 0;
+
+ffc script BallScript{
+    void run(){
+        int score = 0;
+        int bonustimer = 0;
+        Game->Counter[CR_SCRIPT5] = 100;
+
+        if ( Game->Counter[CR_SCRIPT1] == 0 )
+            Game->Counter[CR_SCRIPT1] ++;
+
+        required = 0;
+        movingDown = true;
+        movingRight = false;
+        movingLeft = false;
+        levelFinished = false;
+        comboNrA = 0;
+        comboNrB = 0;
+        dead = 0;
+        abprallToLeft = 0;
+        abprallToRight = 0;
+        waved = 0;
+        Screen->Wavy = 0;
+        enemyOneX = 0;
+        enemyOneY = 0;
+        enemyTwoX = 0;
+        enemyTwoY = 0;
+        enemyThreeX = 0;
+        enemyThreeY = 0;
+        enemyFourX = 0;
+        enemyFourY = 0;
+        enemyFiveX = 0;
+        enemyFiveY = 0;
+        enemySixX = 0;
+        enemySixY = 0;
+        enemySevenX = 0;
+        enemySevenY = 0;
+        enemyEightX = 0;
+        enemyEightY = 0;
+        enemyNineX = 0;
+        enemyNineY = 0;
+        enemyTenX = 0;
+        enemyTenY = 0;
+        starOneX = 0;
+        starOneY = 0;
+        starTwoX = 0;
+        starTwoY = 0;
+        starThreeX = 0;
+        starThreeY = 0;
+        starFourX = 0;
+        starFourY = 0;
+        starFiveX = 0;
+        starFiveY = 0;
+
+        for(int i=0; i<=175; i++){
+            if ( Screen->ComboD[i] == 5 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 5;
+            }
+            if ( Screen->ComboD[i] == 6 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 6;
+            }
+            if ( Screen->ComboD[i] == 7 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 7;
+            }
+            if ( Screen->ComboD[i] == 9 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 9;
+            }
+            if ( Screen->ComboD[i] == 10 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 10;
+            }
+            if ( Screen->ComboD[i] == 11 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 11;
+            }
+            if ( Screen->ComboD[i] == 46 ) {
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                Screen->ComboD[i] = 0;
+                this->Data = 46;
+            }
+        }
+        Screen->Message(2);
+        Waitframes(120);
+
+        for(int i=0; i<=175; i++){
+            if ( Screen->ComboD[i] == 48 )
+                Screen->ComboD[i] = 196;
+        }
+
+        Screen->Message(3);
+        while(true){
+            if ( bonustimer == 60 && levelFinished == false ) {
+                if ( Game->Counter[CR_SCRIPT5] != 0 )
+                    Game->Counter[CR_SCRIPT5] --;
+                bonustimer = 0;
+                Screen->Message(0);
+            }
+
+            score = Game->Counter[CR_SCRIPT3];
+            if ( Game->Counter[CR_SCRIPT4] < score )
+                Game->Counter[CR_SCRIPT4] = score;
+
+            if ( movingDown == true ) {
+                if ( levelFinished == false ) {
+                    this->Vy = 1;
+                }
+                else if ( levelFinished == true ) {
+                    this->Vy = 0;
+                }
+            }
+            else if ( movingDown == false ) {
+                if ( levelFinished == false ) {
+                    this->Vy = -1;
+                }
+                else if ( levelFinished == true ) {
+                    this->Vy = 0;
+                }
+            }
+
+            if ( levelFinished == false && abprallToLeft != 0 ) {
+                movingLeft = true;
+                movingRight = false;
+                this->Vx = -1;
+                if ( abprallToLeft != 0 )
+                    abprallToLeft --;
+            }
+            else if ( levelFinished == false && abprallToRight != 0 ) {
+                movingRight = true;
+                movingLeft = false;
+                this->Vx = 1;
+                if ( abprallToRight != 0 )
+                    abprallToRight --;
+            }
+            else if ( levelFinished == false && Link->InputRight == true && Link->InputLeft == false ) {
+                movingRight = true;
+                movingLeft = false;
+                if ( abprallToLeft == 0 && abprallToRight == 0 )
+                    this->Vx = 1;
+            }
+            else if ( levelFinished == false && Link->InputLeft == true && Link->InputRight == false ) {
+                movingLeft = true;
+                movingRight = false;
+                if ( abprallToLeft == 0 && abprallToRight == 0 )
+                    this->Vx = -1;
+            }
+            else {
+                movingLeft = false;
+                movingRight = false;
+                this->Vx = 0;
+            }
+
+            if ( waved > 0 && waved != 240 ) {
+                if ( waved == 1 )
+                    Game->PlaySound(67);
+                if ( waved == 1 && Screen->Wavy == 0 )
+                    Screen->Wavy = 240;
+                waved ++;
+            }
+            if ( waved == 180 || ( Screen->Wavy == 0 && waved != 0 ) ) {
+                Game->PlaySound(68);
+                Screen->Wavy = 0;
+                waved = 0;
+            }
+
+            if ( levelFinished == false && ( RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyOneX, enemyOneY, enemyOneX+15, enemyOneY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyTwoX, enemyTwoY, enemyTwoX+15, enemyTwoY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyThreeX, enemyThreeY, enemyThreeX+15, enemyThreeY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyFourX, enemyFourY, enemyFourX+15, enemyFourY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyFiveX, enemyFiveY, enemyFiveX+15, enemyFiveY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemySixX, enemySixY, enemySixX+15, enemySixY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemySevenX, enemySevenY, enemySevenX+15, enemySevenY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyEightX, enemyEightY, enemyEightX+15, enemyEightY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyNineX, enemyNineY, enemyNineX+15, enemyNineY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, enemyTenX, enemyTenY, enemyTenX+15, enemyTenY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, starOneX, starOneY, starOneX+15, starOneY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, starTwoX, starTwoY, starTwoX+15, starTwoY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, starThreeX, starThreeY, starThreeX+15, starThreeY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, starFourX, starFourY, starFourX+15, starFourY+15) == true ||
+            RectCollision(this->X+4, this->Y+4, this->X+4, this->Y+4, starFiveX, starFiveY, starFiveX+15, starFiveY+15) == true ) ) {
+                Game->PlaySound(61);
+                this->Data = 176;
+                dead = 1;
+            }
+
+            if ( levelFinished == false && movingDown == true && ( Screen->isSolid(this->X+1, this->Y+8) == true || Screen->isSolid(this->X+6, this->Y+8) == true ) ) {
+                comboNrA = ComboAt(this->X+1, this->Y+8);
+                comboNrB = ComboAt(this->X+6, this->Y+8);
+
+                if ( Screen->ComboD[comboNrA] == 12 ) { //if redblock at A
+                    movingDown = false;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 12 ) { //if redblock at B
+                    movingDown = false;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 13 ) { //if greenblock at A
+                    movingDown = false;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 13 ) { //if greenblock at B
+                    movingDown = false;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 14 ) { //if blueblock at A
+                    movingDown = false;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 14 ) { //if blueblock at B
+                    movingDown = false;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 16 ) { //if orangeblock at A
+                    movingDown = false;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 16 ) { //if orangeblock at B
+                    movingDown = false;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 17 ) { //if yellowblock at A
+                    movingDown = false;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 17 ) { //if yellowblock at B
+                    movingDown = false;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 18 ) { //if purpleblock at A
+                    movingDown = false;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 18 ) { //if purpleblock at B
+                    movingDown = false;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 28 ) { //if crackredblock at A
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 28 ) { //if crackredblock at B
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 29 ) { //if crackgreenblock at A
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 29 ) { //if crackgreenblock at B
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 30 ) { //if crackblueblock at A
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 30 ) { //if crackblueblock at B
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 32 ) { //if crackorangeblock at A
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 32 ) { //if crackorangeblock at B
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 33 ) { //if crackyellowblock at A
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 33 ) { //if crackyellowblock at B
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 34 ) { //if crackpurpleblock at A
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 34 ) { //if crackpurpleblock at B
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = false;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 20 || Screen->ComboD[comboNrB] == 20 ) { //if redchanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                }
+                if ( Screen->ComboD[comboNrA] == 21 || Screen->ComboD[comboNrB] == 21 ) { //if greenchanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                }
+                if ( Screen->ComboD[comboNrA] == 22 || Screen->ComboD[comboNrB] == 22 ) { //if bluechanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                }
+                if ( Screen->ComboD[comboNrA] == 24 || Screen->ComboD[comboNrB] == 24 ) { //if orangechanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                }
+                if ( Screen->ComboD[comboNrA] == 25 || Screen->ComboD[comboNrB] == 25 ) { //if yellowchanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                }
+                if ( Screen->ComboD[comboNrA] == 26 || Screen->ComboD[comboNrB] == 26 ) { //if purplechanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                }
+                if ( Screen->ComboD[comboNrA] == 44 || Screen->ComboD[comboNrB] == 44 ) { //if whitechanger at A or B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                }
+                if ( Screen->ComboD[comboNrA] == 36 ) { //if red onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrA] = 120;
+                }
+                if ( Screen->ComboD[comboNrB] == 36 ) { //if red onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrB] = 120;
+                }
+                if ( Screen->ComboD[comboNrA] == 37 ) { //if green onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrA] = 128;
+                }
+                if ( Screen->ComboD[comboNrB] == 37 ) { //if green onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrB] = 128;
+                }
+                if ( Screen->ComboD[comboNrA] == 38 ) { //if blue onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrA] = 136;
+                }
+                if ( Screen->ComboD[comboNrB] == 38 ) { //if blue onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrB] = 136;
+                }
+                if ( Screen->ComboD[comboNrA] == 40 ) { //if orange onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrA] = 144;
+                }
+                if ( Screen->ComboD[comboNrB] == 40 ) { //if orange onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrB] = 144;
+                }
+                if ( Screen->ComboD[comboNrA] == 41 ) { //if yellow onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrA] = 152;
+                }
+                if ( Screen->ComboD[comboNrB] == 41 ) { //if yellow onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrB] = 152;
+                }
+                if ( Screen->ComboD[comboNrA] == 42 ) { //if purple onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrA] = 160;
+                }
+                if ( Screen->ComboD[comboNrB] == 42 ) { //if purple onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrB] = 160;
+                }
+                if ( Screen->ComboD[comboNrA] == 45 ) { //if white onetimechanger at A
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrA] = 184;
+                }
+                if ( Screen->ComboD[comboNrB] == 45 ) { //if white onetimechanger at B
+                    movingDown = false;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrB] = 184;
+                }
+                if ( Screen->ComboD[comboNrA] == 8 || Screen->ComboD[comboNrB] == 8 ) { //if skull at A or B
+                    movingDown = false;
+                    Game->PlaySound(61);
+                    this->Data = 176;
+                    dead = 1;
+                }
+                if ( Screen->ComboT[comboNrA] == CT_SCRIPT2 || Screen->ComboT[comboNrB] == CT_SCRIPT2 ) { //if wall (script2 combotype) at A or B
+                    movingDown = false;
+                    Game->PlaySound(63);
+                }
+                if ( Screen->ComboD[comboNrA] == 15 || Screen->ComboD[comboNrB] == 15 ) { //if waveblock at A or B
+                    movingDown = false;
+                    Game->PlaySound(63);
+                    waved = 1;
+                }
+                if ( Screen->ComboD[comboNrA] == 204 ) { //if closedeyeblock at A
+                    movingDown = false;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrA] = 212;
+                }
+                if ( Screen->ComboD[comboNrB] == 204 ) { //if closedeyeblock at B
+                    movingDown = false;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrB] = 212;
+                }
+            }
+            if ( levelFinished == false && movingDown == false && ( Screen->isSolid(this->X+1, this->Y-1) == true || Screen->isSolid(this->X+6, this->Y-1) == true ) ) {
+                comboNrA = ComboAt(this->X+1, this->Y-1);
+                comboNrB = ComboAt(this->X+6, this->Y-1);
+
+                if ( Screen->ComboD[comboNrA] == 12 ) { //if redblock at A
+                    movingDown = true;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 12 ) { //if redblock at B
+                    movingDown = true;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 13 ) { //if greenblock at A
+                    movingDown = true;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 13 ) { //if greenblock at B
+                    movingDown = true;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 14 ) { //if blueblock at A
+                    movingDown = true;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 14 ) { //if blueblock at B
+                    movingDown = true;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 16 ) { //if orangeblock at A
+                    movingDown = true;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 16 ) { //if orangeblock at B
+                    movingDown = true;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 17 ) { //if yellowblock at A
+                    movingDown = true;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 17 ) { //if yellowblock at B
+                    movingDown = true;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 18 ) { //if purpleblock at A
+                    movingDown = true;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 18 ) { //if purpleblock at B
+                    movingDown = true;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 28 ) { //if crackredblock at A
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 28 ) { //if crackredblock at B
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 29 ) { //if crackgreenblock at A
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 29 ) { //if crackgreenblock at B
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 30 ) { //if crackblueblock at A
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 30 ) { //if crackblueblock at B
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 32 ) { //if crackorangeblock at A
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 32 ) { //if crackorangeblock at B
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 33 ) { //if crackyellowblock at A
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 33 ) { //if crackyellowblock at B
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 34 ) { //if crackpurpleblock at A
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 34 ) { //if crackpurpleblock at B
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        movingDown = true;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 20 || Screen->ComboD[comboNrB] == 20 ) { //if redchanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                }
+                if ( Screen->ComboD[comboNrA] == 21 || Screen->ComboD[comboNrB] == 21 ) { //if greenchanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                }
+                if ( Screen->ComboD[comboNrA] == 22 || Screen->ComboD[comboNrB] == 22 ) { //if bluechanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                }
+                if ( Screen->ComboD[comboNrA] == 24 || Screen->ComboD[comboNrB] == 24 ) { //if orangechanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                }
+                if ( Screen->ComboD[comboNrA] == 25 || Screen->ComboD[comboNrB] == 25 ) { //if yellowchanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                }
+                if ( Screen->ComboD[comboNrA] == 26 || Screen->ComboD[comboNrB] == 26 ) { //if purplechanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                }
+                if ( Screen->ComboD[comboNrA] == 44 || Screen->ComboD[comboNrB] == 44 ) { //if whitechanger at A or B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                }
+                if ( Screen->ComboD[comboNrA] == 36 ) { //if red onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrA] = 120;
+                }
+                if ( Screen->ComboD[comboNrB] == 36 ) { //if red onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrB] = 120;
+                }
+                if ( Screen->ComboD[comboNrA] == 37 ) { //if green onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrA] = 128;
+                }
+                if ( Screen->ComboD[comboNrB] == 37 ) { //if green onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrB] = 128;
+                }
+                if ( Screen->ComboD[comboNrA] == 38 ) { //if blue onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrA] = 136;
+                }
+                if ( Screen->ComboD[comboNrB] == 38 ) { //if blue onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrB] = 136;
+                }
+                if ( Screen->ComboD[comboNrA] == 40 ) { //if orange onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrA] = 144;
+                }
+                if ( Screen->ComboD[comboNrB] == 40 ) { //if orange onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrB] = 144;
+                }
+                if ( Screen->ComboD[comboNrA] == 41 ) { //if yellow onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrA] = 152;
+                }
+                if ( Screen->ComboD[comboNrB] == 41 ) { //if yellow onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrB] = 152;
+                }
+                if ( Screen->ComboD[comboNrA] == 42 ) { //if purple onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrA] = 160;
+                }
+                if ( Screen->ComboD[comboNrB] == 42 ) { //if purple onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrB] = 160;
+                }
+                if ( Screen->ComboD[comboNrA] == 45 ) { //if white onetimechanger at A
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrA] = 184;
+                }
+                if ( Screen->ComboD[comboNrB] == 45 ) { //if white onetimechanger at B
+                    movingDown = true;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrB] = 184;
+                }
+                if ( Screen->ComboD[comboNrA] == 8 || Screen->ComboD[comboNrB] == 8 ) { //if skull at A or B
+                    movingDown = true;
+                    Game->PlaySound(61);
+                    this->Data = 176;
+                    dead = 1;
+                }
+                if ( Screen->ComboT[comboNrA] == CT_SCRIPT2 || Screen->ComboT[comboNrB] == CT_SCRIPT2 ) { //if wall (script2 combotype) at A or B
+                    movingDown = true;
+                    Game->PlaySound(63);
+                }
+                if ( Screen->ComboD[comboNrA] == 15 || Screen->ComboD[comboNrB] == 15 ) { //if waveblock at A or B
+                    movingDown = true;
+                    Game->PlaySound(63);
+                    waved = 1;
+                }
+                if ( Screen->ComboD[comboNrA] == 204 ) { //if closedeyeblock at A
+                    movingDown = true;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrA] = 212;
+                }
+                if ( Screen->ComboD[comboNrB] == 204 ) { //if closedeyeblock at B
+                    movingDown = true;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrB] = 212;
+                }
+            }
+            if ( levelFinished == false && movingRight == true && ( Screen->isSolid(this->X+8, this->Y+1) == true || Screen->isSolid(this->X+8, this->Y+6) == true ) ) {
+                comboNrA = ComboAt(this->X+8, this->Y+1);
+                comboNrB = ComboAt(this->X+8, this->Y+6);
+
+                if ( Screen->ComboD[comboNrA] == 12 ) { //if redblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 12 ) { //if redblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 13 ) { //if greenblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 13 ) { //if greenblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 14 ) { //if blueblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 14 ) { //if blueblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 16 ) { //if orangeblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 16 ) { //if orangeblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 17 ) { //if yellowblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 17 ) { //if yellowblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 18 ) { //if purpleblock at A
+                    abprallToLeft = abprall;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 18 ) { //if purpleblock at B
+                    abprallToLeft = abprall;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 28 ) { //if crackredblock at A
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 28 ) { //if crackredblock at B
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 29 ) { //if crackgreenblock at A
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 29 ) { //if crackgreenblock at B
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 30 ) { //if crackblueblock at A
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 30 ) { //if crackblueblock at B
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 32 ) { //if crackorangeblock at A
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 32 ) { //if crackorangeblock at B
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 33 ) { //if crackyellowblock at A
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 33 ) { //if crackyellowblock at B
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 34 ) { //if crackpurpleblock at A
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 34 ) { //if crackpurpleblock at B
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToLeft = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 20 || Screen->ComboD[comboNrB] == 20 ) { //if redchanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                }
+                if ( Screen->ComboD[comboNrA] == 21 || Screen->ComboD[comboNrB] == 21 ) { //if greenchanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                }
+                if ( Screen->ComboD[comboNrA] == 22 || Screen->ComboD[comboNrB] == 22 ) { //if bluechanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                }
+                if ( Screen->ComboD[comboNrA] == 24 || Screen->ComboD[comboNrB] == 24 ) { //if orangechanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                }
+                if ( Screen->ComboD[comboNrA] == 25 || Screen->ComboD[comboNrB] == 25 ) { //if yellowchanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                }
+                if ( Screen->ComboD[comboNrA] == 26 || Screen->ComboD[comboNrB] == 26 ) { //if purplechanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                }
+                if ( Screen->ComboD[comboNrA] == 44 || Screen->ComboD[comboNrB] == 44 ) { //if whitechanger at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                }
+                if ( Screen->ComboD[comboNrA] == 36 ) { //if red onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrA] = 120;
+                }
+                if ( Screen->ComboD[comboNrB] == 36 ) { //if red onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrB] = 120;
+                }
+                if ( Screen->ComboD[comboNrA] == 37 ) { //if green onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrA] = 128;
+                }
+                if ( Screen->ComboD[comboNrB] == 37 ) { //if green onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrB] = 128;
+                }
+                if ( Screen->ComboD[comboNrA] == 38 ) { //if blue onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrA] = 136;
+                }
+                if ( Screen->ComboD[comboNrB] == 38 ) { //if blue onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrB] = 136;
+                }
+                if ( Screen->ComboD[comboNrA] == 40 ) { //if orange onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrA] = 144;
+                }
+                if ( Screen->ComboD[comboNrB] == 40 ) { //if orange onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrB] = 144;
+                }
+                if ( Screen->ComboD[comboNrA] == 41 ) { //if yellow onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrA] = 152;
+                }
+                if ( Screen->ComboD[comboNrB] == 41 ) { //if yellow onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrB] = 152;
+                }
+                if ( Screen->ComboD[comboNrA] == 42 ) { //if purple onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrA] = 160;
+                }
+                if ( Screen->ComboD[comboNrB] == 42 ) { //if purple onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrB] = 160;
+                }
+                if ( Screen->ComboD[comboNrA] == 45 ) { //if white onetimechanger at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrA] = 184;
+                }
+                if ( Screen->ComboD[comboNrB] == 45 ) { //if white onetimechanger at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrB] = 184;
+                }
+                if ( Screen->ComboD[comboNrA] == 8 || Screen->ComboD[comboNrB] == 8 ) { //if skull at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(61);
+                    this->Data = 176;
+                    dead = 1;
+                }
+                if ( Screen->ComboT[comboNrA] == CT_SCRIPT2 || Screen->ComboT[comboNrB] == CT_SCRIPT2 ) { //if wall (script2 combotype) at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(63);
+                }
+                if ( Screen->ComboD[comboNrA] == 15 || Screen->ComboD[comboNrB] == 15 ) { //if waveblock at A or B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(63);
+                    waved = 1;
+                }
+                if ( Screen->ComboD[comboNrA] == 204 ) { //if closedeyeblock at A
+                    abprallToLeft = abprall;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrA] = 212;
+                }
+                if ( Screen->ComboD[comboNrB] == 204 ) { //if closedeyeblock at B
+                    abprallToLeft = abprall;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrB] = 212;
+                }
+            }
+            if ( levelFinished == false && movingLeft == true && ( Screen->isSolid(this->X-1, this->Y+1) == true || Screen->isSolid(this->X-1, this->Y+6) == true ) ) {
+                comboNrA = ComboAt(this->X-1, this->Y+1);
+                comboNrB = ComboAt(this->X-1, this->Y+6);
+
+                if ( Screen->ComboD[comboNrA] == 12 ) { //if redblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 12 ) { //if redblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 13 ) { //if greenblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 13 ) { //if greenblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 14 ) { //if blueblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 14 ) { //if blueblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 16 ) { //if orangeblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 16 ) { //if orangeblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 17 ) { //if yellowblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 17 ) { //if yellowblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 18 ) { //if purpleblock at A
+                    abprallToRight = abprall;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 18 ) { //if purpleblock at B
+                    abprallToRight = abprall;
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(61);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 28 ) { //if crackredblock at A
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 28 ) { //if crackredblock at B
+                    if ( this->Data == 5 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 120;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 29 ) { //if crackgreenblock at A
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 29 ) { //if crackgreenblock at B
+                    if ( this->Data == 6 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 128;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 30 ) { //if crackblueblock at A
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 30 ) { //if crackblueblock at B
+                    if ( this->Data == 7 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 136;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 32 ) { //if crackorangeblock at A
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 32 ) { //if crackorangeblock at B
+                    if ( this->Data == 9 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 144;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 33 ) { //if crackyellowblock at A
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 33 ) { //if crackyellowblock at B
+                    if ( this->Data == 10 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 152;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 34 ) { //if crackpurpleblock at A
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrA] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrB] == 34 ) { //if crackpurpleblock at B
+                    if ( this->Data == 11 || this->Data == 46 ) {
+                        Game->PlaySound(65);
+                        required --;
+                        Game->Counter[CR_SCRIPT3] += 10;
+                        Screen->ComboD[comboNrB] = 160;
+                    }
+                    else {
+                        Game->PlaySound(63);
+                        abprallToRight = abprall;
+                    }
+                }
+                if ( Screen->ComboD[comboNrA] == 20 || Screen->ComboD[comboNrB] == 20 ) { //if redchanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                }
+                if ( Screen->ComboD[comboNrA] == 21 || Screen->ComboD[comboNrB] == 21 ) { //if greenchanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                }
+                if ( Screen->ComboD[comboNrA] == 22 || Screen->ComboD[comboNrB] == 22 ) { //if bluechanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                }
+                if ( Screen->ComboD[comboNrA] == 24 || Screen->ComboD[comboNrB] == 24 ) { //if orangechanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                }
+                if ( Screen->ComboD[comboNrA] == 25 || Screen->ComboD[comboNrB] == 25 ) { //if yellowchanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                }
+                if ( Screen->ComboD[comboNrA] == 26 || Screen->ComboD[comboNrB] == 26 ) { //if purplechanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                }
+                if ( Screen->ComboD[comboNrA] == 44 || Screen->ComboD[comboNrB] == 44 ) { //if whitechanger at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                }
+                if ( Screen->ComboD[comboNrA] == 36 ) { //if red onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrA] = 120;
+                }
+                if ( Screen->ComboD[comboNrB] == 36 ) { //if red onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 5;
+                    Screen->ComboD[comboNrB] = 120;
+                }
+                if ( Screen->ComboD[comboNrA] == 37 ) { //if green onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrA] = 128;
+                }
+                if ( Screen->ComboD[comboNrB] == 37 ) { //if green onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 6;
+                    Screen->ComboD[comboNrB] = 128;
+                }
+                if ( Screen->ComboD[comboNrA] == 38 ) { //if blue onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrA] = 136;
+                }
+                if ( Screen->ComboD[comboNrB] == 38 ) { //if blue onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 7;
+                    Screen->ComboD[comboNrB] = 136;
+                }
+                if ( Screen->ComboD[comboNrA] == 40 ) { //if orange onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrA] = 144;
+                }
+                if ( Screen->ComboD[comboNrB] == 40 ) { //if orange onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 9;
+                    Screen->ComboD[comboNrB] = 144;
+                }
+                if ( Screen->ComboD[comboNrA] == 41 ) { //if yellow onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrA] = 152;
+                }
+                if ( Screen->ComboD[comboNrB] == 41 ) { //if yellow onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 10;
+                    Screen->ComboD[comboNrB] = 152;
+                }
+                if ( Screen->ComboD[comboNrA] == 42 ) { //if purple onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrA] = 160;
+                }
+                if ( Screen->ComboD[comboNrB] == 42 ) { //if purple onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 11;
+                    Screen->ComboD[comboNrB] = 160;
+                }
+                if ( Screen->ComboD[comboNrA] == 45 ) { //if white onetimechanger at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrA] = 184;
+                }
+                if ( Screen->ComboD[comboNrB] == 45 ) { //if white onetimechanger at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(62);
+                    this->Data = 46;
+                    Screen->ComboD[comboNrB] = 184;
+                }
+                if ( Screen->ComboD[comboNrA] == 8 || Screen->ComboD[comboNrB] == 8 ) { //if skull at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(61);
+                    this->Data = 176;
+                    dead = 1;
+                }
+                if ( Screen->ComboT[comboNrA] == CT_SCRIPT2 || Screen->ComboT[comboNrB] == CT_SCRIPT2 ) { //if wall (script2 combotype) at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(63);
+                }
+                if ( Screen->ComboD[comboNrA] == 15 || Screen->ComboD[comboNrB] == 15 ) { //if waveblock at A or B
+                    abprallToRight = abprall;
+                    Game->PlaySound(63);
+                    waved = 1;
+                }
+                if ( Screen->ComboD[comboNrA] == 204 ) { //if closedeyeblock at A
+                    abprallToRight = abprall;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrA] = 212;
+                }
+                if ( Screen->ComboD[comboNrB] == 204 ) { //if closedeyeblock at B
+                    abprallToRight = abprall;
+                    Game->PlaySound(71);
+                    Screen->ComboD[comboNrB] = 212;
+                }
+            }
+
+            if ( levelFinished == false && Link->PressA == true ) {
+                Game->PlaySound(65);
+                this->Data = 176;
+                dead = 1;
+            }
+
+            if ( levelFinished == true && dead == 0 && Game->Counter[CR_SCRIPT5] != 0 ) {
+                Game->PlaySound(69);
+                Game->Counter[CR_SCRIPT5] --;
+                Game->Counter[CR_SCRIPT3] ++;
+            }
+            bonustimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script GoalScript{
+    void run(){
+        int extrawait = 0;
+        for(int i=0; i<=175; i++){
+            if ( Screen->ComboT[i] == CT_SCRIPT1 )
+                required ++;
+        }
+        Waitframes(120);
+        while(true){
+            extrawait = Game->Counter[CR_SCRIPT5];
+
+            if ( Link->PressB == true ) {
+                Game->PlaySound(66);
+                levelFinished = true;
+                Game->Counter[CR_SCRIPT3] = 0;
+                Game->Save();
+                Game->End();
+            }
+
+            if ( dead == 1 ) {
+                Game->PlaySound(19);
+                levelFinished = true;
+                Waitframes(60);
+                Game->Counter[CR_SCRIPT2] ++;
+                Game->Counter[CR_SCRIPT3] = 0;
+                this->Data = 173;
+            }
+            else if ( required == 0 ) {
+                Game->PlaySound(64);
+                levelFinished = true;
+                Waitframes(120+extrawait);
+                Game->Counter[CR_SCRIPT1] ++;
+                this->Data = 172;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script EnemyScript{
+    void run(){
+        int thisEnemy = 0;
+        Waitframes(120);
+        for(int i=0; i<=175; i++){
+            if ( Screen->ComboD[i] == 23 && this->X == 0 && this->Y == 0 ) {
+                Screen->ComboD[i] = 0;
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                this->Data = 23;
+                if ( enemyOneX == 0 && enemyOneY == 0 ) {
+                    enemyOneX = this->X;
+                    enemyOneY = this->Y;
+                    thisEnemy = 1;
+                }
+                else if ( enemyTwoX == 0 && enemyTwoY == 0 ) {
+                    enemyTwoX = this->X;
+                    enemyTwoY = this->Y;
+                    thisEnemy = 2;
+                }
+                else if ( enemyThreeX == 0 && enemyThreeY == 0 ) {
+                    enemyThreeX = this->X;
+                    enemyThreeY = this->Y;
+                    thisEnemy = 3;
+                }
+                else if ( enemyFourX == 0 && enemyFourY == 0 ) {
+                    enemyFourX = this->X;
+                    enemyFourY = this->Y;
+                    thisEnemy = 4;
+                }
+                else if ( enemyFiveX == 0 && enemyFiveY == 0 ) {
+                    enemyFiveX = this->X;
+                    enemyFiveY = this->Y;
+                    thisEnemy = 5;
+                }
+                else if ( enemySixX == 0 && enemySixY == 0 ) {
+                    enemySixX = this->X;
+                    enemySixY = this->Y;
+                    thisEnemy = 6;
+                }
+                else if ( enemySevenX == 0 && enemySevenY == 0 ) {
+                    enemySevenX = this->X;
+                    enemySevenY = this->Y;
+                    thisEnemy = 7;
+                }
+                else if ( enemyEightX == 0 && enemyEightY == 0 ) {
+                    enemyEightX = this->X;
+                    enemyEightY = this->Y;
+                    thisEnemy = 8;
+                }
+                else if ( enemyNineX == 0 && enemyNineY == 0 ) {
+                    enemyNineX = this->X;
+                    enemyNineY = this->Y;
+                    thisEnemy = 9;
+                }
+                else if ( enemyTenX == 0 && enemyTenY == 0 ) {
+                    enemyTenX = this->X;
+                    enemyTenY = this->Y;
+                    thisEnemy = 10;
+                }
+                this->Vx = 0.5;
+            }
+            else if ( Screen->ComboD[i] == 31 && this->X == 0 && this->Y == 0 ) {
+                Screen->ComboD[i] = 0;
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                this->Data = 31;
+                if ( enemyOneX == 0 && enemyOneY == 0 ) {
+                    enemyOneX = this->X;
+                    enemyOneY = this->Y;
+                    thisEnemy = 1;
+                }
+                else if ( enemyTwoX == 0 && enemyTwoY == 0 ) {
+                    enemyTwoX = this->X;
+                    enemyTwoY = this->Y;
+                    thisEnemy = 2;
+                }
+                else if ( enemyThreeX == 0 && enemyThreeY == 0 ) {
+                    enemyThreeX = this->X;
+                    enemyThreeY = this->Y;
+                    thisEnemy = 3;
+                }
+                else if ( enemyFourX == 0 && enemyFourY == 0 ) {
+                    enemyFourX = this->X;
+                    enemyFourY = this->Y;
+                    thisEnemy = 4;
+                }
+                else if ( enemyFiveX == 0 && enemyFiveY == 0 ) {
+                    enemyFiveX = this->X;
+                    enemyFiveY = this->Y;
+                    thisEnemy = 5;
+                }
+                else if ( enemySixX == 0 && enemySixY == 0 ) {
+                    enemySixX = this->X;
+                    enemySixY = this->Y;
+                    thisEnemy = 6;
+                }
+                else if ( enemySevenX == 0 && enemySevenY == 0 ) {
+                    enemySevenX = this->X;
+                    enemySevenY = this->Y;
+                    thisEnemy = 7;
+                }
+                else if ( enemyEightX == 0 && enemyEightY == 0 ) {
+                    enemyEightX = this->X;
+                    enemyEightY = this->Y;
+                    thisEnemy = 8;
+                }
+                else if ( enemyNineX == 0 && enemyNineY == 0 ) {
+                    enemyNineX = this->X;
+                    enemyNineY = this->Y;
+                    thisEnemy = 9;
+                }
+                else if ( enemyTenX == 0 && enemyTenY == 0 ) {
+                    enemyTenX = this->X;
+                    enemyTenY = this->Y;
+                    thisEnemy = 10;
+                }
+                this->Vy = 0.5;
+            }
+            else if ( Screen->ComboD[i] == 39 && this->X == 0 && this->Y == 0 ) {
+                Screen->ComboD[i] = 0;
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                this->Data = 39;
+                if ( enemyOneX == 0 && enemyOneY == 0 ) {
+                    enemyOneX = this->X;
+                    enemyOneY = this->Y;
+                    thisEnemy = 1;
+                }
+                else if ( enemyTwoX == 0 && enemyTwoY == 0 ) {
+                    enemyTwoX = this->X;
+                    enemyTwoY = this->Y;
+                    thisEnemy = 2;
+                }
+                else if ( enemyThreeX == 0 && enemyThreeY == 0 ) {
+                    enemyThreeX = this->X;
+                    enemyThreeY = this->Y;
+                    thisEnemy = 3;
+                }
+                else if ( enemyFourX == 0 && enemyFourY == 0 ) {
+                    enemyFourX = this->X;
+                    enemyFourY = this->Y;
+                    thisEnemy = 4;
+                }
+                else if ( enemyFiveX == 0 && enemyFiveY == 0 ) {
+                    enemyFiveX = this->X;
+                    enemyFiveY = this->Y;
+                    thisEnemy = 5;
+                }
+                else if ( enemySixX == 0 && enemySixY == 0 ) {
+                    enemySixX = this->X;
+                    enemySixY = this->Y;
+                    thisEnemy = 6;
+                }
+                else if ( enemySevenX == 0 && enemySevenY == 0 ) {
+                    enemySevenX = this->X;
+                    enemySevenY = this->Y;
+                    thisEnemy = 7;
+                }
+                else if ( enemyEightX == 0 && enemyEightY == 0 ) {
+                    enemyEightX = this->X;
+                    enemyEightY = this->Y;
+                    thisEnemy = 8;
+                }
+                else if ( enemyNineX == 0 && enemyNineY == 0 ) {
+                    enemyNineX = this->X;
+                    enemyNineY = this->Y;
+                    thisEnemy = 9;
+                }
+                else if ( enemyTenX == 0 && enemyTenY == 0 ) {
+                    enemyTenX = this->X;
+                    enemyTenY = this->Y;
+                    thisEnemy = 10;
+                }
+                this->Vx = -0.5;
+            }
+            else if ( Screen->ComboD[i] == 47 && this->X == 0 && this->Y == 0 ) {
+                Screen->ComboD[i] = 0;
+                this->X = ComboX(i);
+                this->Y = ComboY(i);
+                this->Data = 47;
+                if ( enemyOneX == 0 && enemyOneY == 0 ) {
+                    enemyOneX = this->X;
+                    enemyOneY = this->Y;
+                    thisEnemy = 1;
+                }
+                else if ( enemyTwoX == 0 && enemyTwoY == 0 ) {
+                    enemyTwoX = this->X;
+                    enemyTwoY = this->Y;
+                    thisEnemy = 2;
+                }
+                else if ( enemyThreeX == 0 && enemyThreeY == 0 ) {
+                    enemyThreeX = this->X;
+                    enemyThreeY = this->Y;
+                    thisEnemy = 3;
+                }
+                else if ( enemyFourX == 0 && enemyFourY == 0 ) {
+                    enemyFourX = this->X;
+                    enemyFourY = this->Y;
+                    thisEnemy = 4;
+                }
+                else if ( enemyFiveX == 0 && enemyFiveY == 0 ) {
+                    enemyFiveX = this->X;
+                    enemyFiveY = this->Y;
+                    thisEnemy = 5;
+                }
+                else if ( enemySixX == 0 && enemySixY == 0 ) {
+                    enemySixX = this->X;
+                    enemySixY = this->Y;
+                    thisEnemy = 6;
+                }
+                else if ( enemySevenX == 0 && enemySevenY == 0 ) {
+                    enemySevenX = this->X;
+                    enemySevenY = this->Y;
+                    thisEnemy = 7;
+                }
+                else if ( enemyEightX == 0 && enemyEightY == 0 ) {
+                    enemyEightX = this->X;
+                    enemyEightY = this->Y;
+                    thisEnemy = 8;
+                }
+                else if ( enemyNineX == 0 && enemyNineY == 0 ) {
+                    enemyNineX = this->X;
+                    enemyNineY = this->Y;
+                    thisEnemy = 9;
+                }
+                else if ( enemyTenX == 0 && enemyTenY == 0 ) {
+                    enemyTenX = this->X;
+                    enemyTenY = this->Y;
+                    thisEnemy = 10;
+                }
+                this->Vy = -0.5;
+            }
+        }
+        while(true){
+            if ( thisEnemy == 1 ) {
+                enemyOneX = this->X;
+                enemyOneY = this->Y;
+            }
+            else if ( thisEnemy == 2 ) {
+                enemyTwoX = this->X;
+                enemyTwoY = this->Y;
+            }
+            else if ( thisEnemy == 3 ) {
+                enemyThreeX = this->X;
+                enemyThreeY = this->Y;
+            }
+            else if ( thisEnemy == 4 ) {
+                enemyFourX = this->X;
+                enemyFourY = this->Y;
+            }
+            else if ( thisEnemy == 5 ) {
+                enemyFiveX = this->X;
+                enemyFiveY = this->Y;
+            }
+            else if ( thisEnemy == 6 ) {
+                enemySixX = this->X;
+                enemySixY = this->Y;
+            }
+            else if ( thisEnemy == 7 ) {
+                enemySevenX = this->X;
+                enemySevenY = this->Y;
+            }
+            else if ( thisEnemy == 8 ) {
+                enemyEightX = this->X;
+                enemyEightY = this->Y;
+            }
+            else if ( thisEnemy == 9 ) {
+                enemyNineX = this->X;
+                enemyNineY = this->Y;
+            }
+            else if ( thisEnemy == 10 ) {
+                enemyTenX = this->X;
+                enemyTenY = this->Y;
+            }
+
+            if ( this->Vx == 0.5 && Screen->isSolid(this->X+16, this->Y) == true ) {
+                this->Vx = 0;
+                Waitframes(60);
+                this->Vx = -0.5;
+            }
+            if ( this->Vx == -0.5 && Screen->isSolid(this->X-1, this->Y) == true ) {
+                this->Vx = 0;
+                Waitframes(60);
+                this->Vx = 0.5;
+            }
+            if ( this->Vy == 0.5 && Screen->isSolid(this->X, this->Y+16) == true ) {
+                this->Vy = 0;
+                Waitframes(60);
+                this->Vy = -0.5;
+            }
+            if ( this->Vy == -0.5 && Screen->isSolid(this->X, this->Y-1) == true ) {
+                this->Vy = 0;
+                Waitframes(60);
+                this->Vy = 0.5;
+            }
+
+            if ( levelFinished == true ) {
+                this->Vx = 0;
+                this->Vy = 0;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script ShootingstarScript{
+    void run(int thisStar){
+        Waitframes(120+Rand(400));
+        if ( levelFinished == true ) {
+            Quit();
+        }
+
+        Game->PlaySound(72);
+        this->X = Rand(240);
+        if ( this->X < 16 )
+            this->X = 16;
+        this->Y = -16;
+        this->Vx = Choose(-0.2, -0.1, 0, 0.1, 0.2);
+        this->Vy = 1.5;
+        this->Data = 175;
+        while(true){
+            if ( levelFinished == true ) {
+                this->Vx = 0;
+                this->Vy = 0;
+                Quit();
+            }
+
+            if ( this->Y >= 176 ) {
+                this->Vx = 0;
+                this->Vy = 0;
+                Waitframes(Rand(300));
+                if ( levelFinished == true ) {
+                    this->Vx = 0;
+                    this->Vy = 0;
+                    Quit();
+                }
+                Game->PlaySound(72);
+                this->X = Rand(240);
+                if ( this->X < 16 )
+                    this->X = 16;
+                this->Y = -16;
+                this->Vx = Choose(-0.2, -0.1, 0, 0.1, 0.2);
+                this->Vy = 1.5;
+            }
+
+            if ( thisStar == 1 ) {
+                starOneX = this->X;
+                starOneY = this->Y;
+            }
+            else if ( thisStar == 2 ) {
+                starTwoX = this->X;
+                starTwoY = this->Y;
+            }
+            else if ( thisStar == 3 ) {
+                starThreeX = this->X;
+                starThreeY = this->Y;
+            }
+            else if ( thisStar == 4 ) {
+                starFourX = this->X;
+                starFourY = this->Y;
+            }
+            else if ( thisStar == 5 ) {
+                starFiveX = this->X;
+                starFiveY = this->Y;
+            }
+
+            if ( levelFinished == true ) {
+                this->Vx = 0;
+                this->Vy = 0;
+                Quit();
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script EndScript{
+    void run(){
+        while(true){
+            if ( Link->PressB == true ) {
+                Game->PlaySound(66);
+                levelFinished = true;
+                Game->Counter[CR_SCRIPT3] = 0;
+                Game->Save();
+                Game->End();
+            }
+            Waitframe();
+        }
+    }
+}
+
+global script avtiveglobalescript{
+    void run(){
+        while(true){
+            Link->InputStart = false;
+            Link->InputMap = false;
+            Waitframe();
+        }
+    }
+}

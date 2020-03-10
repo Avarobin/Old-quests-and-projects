@@ -1,0 +1,60 @@
+---Things to keep in mind for every screen---
+
+Use Layer 3 as background.
+Flag 16 and 17 are used by switches and barriers
+Damage Combo Sensitivity should be 5 for fog.
+
+---Item pickup script---
+
+D0: message
+D1: 0 = normal, 1 = links wind powerup, 2 = link defense powerup
+
+---Signpost---
+
+Has to be placed as an FFC on top of the talkable object.
+
+D0: message
+D1: 0 = from south only, 1 = from any direction
+
+---Chests---
+
+Use them the regular way. No FFC needs to be placed. Only 1 chest per screen.
+Since the chests have to be Boss Chests, there should be no boss keys.
+
+---Switches---
+
+Place one or more switch combos on the screen. No FFC needs to be placed.
+When all switches are triggered, it triggers screen secrets. Triggering only some switches resets them after leaving the screen.
+Switches have inherent flag 16, barriers have inherent flag 17.
+Don't place too many switches on a screen. Every switch combo makes use of one of the 32 FFC slots.
+
+---Red & Blue Barriers & Switches---
+
+Same as switches, pretty much. Only ever place down Red Switches, Red Barriers (Up) and Blue Barriers (Down).
+Triggering a Red/Blue switch changes the state of Red & Blue on all screens on the map.
+
+---Wind Shooter---
+
+Place it on the screen as an FFC.
+If D3 is not 0, "Run Script at Screen Init" should be checked. Otherwise it doesn't matter if its checked or not.
+
+D0: 0 = down, 1 = right, 2 = up, 3 = left
+D1: frames between each shot
+D2: initial delay
+D3: 0 = normal, 1 = turn on when secrets are triggered, 2 = turn off when secrets are triggered
+
+---Torches and Mirrors---
+
+These combos can be placed without any limits. Don't make them pushable.
+The combo cycling for the torches is scripted.
+
+---Fog---
+
+No limits here either. Damage combo sensitity should be 5.
+Place down the walkable combo.
+
+---Torch Puzzle---
+
+Placing this on a screen allows for a torch puzzle which triggers screen secrets when solved.
+
+D0: 0 = light all non-relighting torches, 1 = unlight all non-relighting torches

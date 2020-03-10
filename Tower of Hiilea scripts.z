@@ -1,0 +1,2189 @@
+import "std.zh"
+import "FFCscripthiilea.zh"
+
+int heartPieces = 0;
+bool talkInformation = false;
+bool gotCaveKey = false;
+bool gotEgg = false;
+bool gotCrystal = false;
+int hatchTime = 0;
+bool hiileaFirstMessage = 0;
+bool towerFirstFloorOpen = true;
+bool hiileaDivinestatueMessage = false;
+bool hiileaMorpherMessage = false;
+bool hiileaSkullMessage = false;
+bool hiileaGoodLuckWithDungeon1Message = false;
+bool willkommenZuruck = false;
+
+int auraType = 0;
+bool gotPurpleAuraFirstTime = false;
+bool gotGreenAuraFirstTime = false;
+bool gotYellowAuraFirstTime = false;
+bool gotRedAuraFirstTime = false;
+bool insideDominion = false;
+int jardenStatueX = 0;
+int jardenStatueY = 0;
+bool travelToDominion = false;
+bool travelToReal = false;
+
+bool evilPathTrigger = false;
+bool firstDungeonOpened = false;
+bool secondDungeonOpened = false;
+bool thirdDungeonOpened = false;
+bool fourthDungeonOpened = false;
+
+int variable1 = 0;
+int variable2 = 0;
+int variable3 = 0;
+int variable4 = 0;
+int variable5 = 0;
+int variable6 = 0;
+int variable7 = 0;
+int variable8 = 0;
+int variable9 = 0;
+int variable10 = 0;
+int variable11 = 0;
+int variable12 = 0;
+int variable13 = 0;
+int variable14 = 0;
+int variable15 = 0;
+int variable16 = 0;
+int variable17 = 0;
+int variable18 = 0;
+int variable19 = 0;
+int variable20 = 0;
+int variable21 = 0;
+int variable22 = 0;
+int variable23 = 0;
+int variable24 = 0;
+int variable25 = 0;
+int variable26 = 0;
+int variable27 = 0;
+int variable28 = 0;
+int variable29 = 0;
+int variable30 = 0;
+int variable31 = 0;
+int variable32 = 0;
+int variable33 = 0;
+int variable34 = 0;
+int variable35 = 0;
+int variable36 = 0;
+int variable37 = 0;
+int variable38 = 0;
+int variable39 = 0;
+int variable40 = 0;
+int variable41 = 0;
+int variable42 = 0;
+int variable43 = 0;
+int variable44 = 0;
+int variable45 = 0;
+int variable46 = 0;
+int variable47 = 0;
+int variable48 = 0;
+int variable49 = 0;
+int variable50 = 0;
+int variable51 = 0;
+int variable52 = 0;
+int variable53 = 0;
+int variable54 = 0;
+int variable55 = 0;
+int variable56 = 0;
+int variable57 = 0;
+int variable58 = 0;
+int variable59 = 0;
+int variable60 = 0;
+int variable61 = 0;
+int variable62 = 0;
+int variable63 = 0;
+int variable64 = 0;
+int variable65 = 0;
+int variable66 = 0;
+int variable67 = 0;
+int variable68 = 0;
+int variable69 = 0;
+int variable70 = 0;
+
+ffc script AuraReset{
+    void run(){
+        auraType = 0;
+    }
+}
+
+item script MessageItem{
+    void run(int m){
+        while(true){
+            Screen->Message(m);
+            Waitframe();
+        }
+    }
+}
+
+item script swordItem{
+    void run(){
+        while(true){
+            variable1 = 1;
+            Waitframe();
+        }
+    }
+}
+
+item script MessageHCP{
+    void run(){
+        while(true){
+            if ( heartPieces == 0 )
+                heartPieces = 1;
+            else if ( heartPieces == 1 )
+                heartPieces = 2;
+            else if ( heartPieces == 2 )
+                heartPieces = 3;
+            else if ( heartPieces == 3 )
+                heartPieces = 4;
+            if ( heartPieces == 1 ) {
+                Screen->Message(41);
+            }
+            else if ( heartPieces == 2 ) {
+                Screen->Message(42);
+            }
+            else if ( heartPieces == 3 ) {
+                Screen->Message(43);
+            }
+            else if ( heartPieces == 4 ) {
+                heartPieces = 0;
+                Screen->Message(44);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script IntroCutscene{
+    void run(){
+        while(true){
+            Link->Dir = DIR_UP;
+            Link->InputUp = false;
+            Link->InputDown = false;
+            Link->InputLeft = false;
+            Link->InputRight = false;
+            Waitframe();
+        }
+    }
+}
+
+ffc script LanguageSelect{
+    void run(){
+        while(true){
+            if ( Link->PressLeft == true ) {
+                Game->PlaySound(63);
+                Link->Item[123] = true;
+                Waitframes(60);
+                this->Data = 51;
+            }
+            if ( Link->PressRight == true ) {
+                Game->PlaySound(63);
+                Link->Item[124] = true;
+                Waitframes(60);
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script PathSelect{
+    void run(){
+        while(true){
+            if ( Link->PressLeft == true ) {
+                Game->PlaySound(63);
+                towerFirstFloorOpen = true;
+                variable3 = 1;
+                variable4 = 1;
+                Waitframes(60);
+                this->Data = 51;
+            }
+            if ( Link->PressRight == true ) {
+                Game->PlaySound(63);
+                Game->PlayMIDI(0);
+                Link->Item[127] = true;
+                Link->Item[128] = true;
+                Link->Item[138] = false;
+                Link->Item[139] = false;
+                towerFirstFloorOpen = true;
+                variable3 = 2;
+                variable4 = 1;
+                evilPathTrigger = true;
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+                Waitframes(60);
+                this->Data = 50;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Language{
+    void run(){
+        while(true){
+            if ( Link->Item[123] && this->Data == 32 ) {
+                this->Data = 46;
+            }
+            if ( Link->Item[124] && this->Data == 33 ) {
+                this->Data = 47;
+            }
+            if ( Link->Item[123] && ( this->Data == 33 || this->Data == 30 || this->Data == 34 ) ) {
+                this->Data = 3;
+            }
+            if ( Link->Item[124] && ( this->Data == 30 || this->Data == 34 || this->Data == 32 ) ) {
+                this->Data = 3;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Path{
+    void run(){
+        while(true){
+            if ( variable3 == 1 && this->Data == 72 ) {
+                this->Data = 74;
+            }
+            if ( variable3 == 2 && this->Data == 73 ) {
+                this->Data = 75;
+            }
+            if ( variable3 == 1 && ( this->Data == 73 || this->Data == 30 || this->Data == 34 ) ) {
+                this->Data = 3;
+            }
+            if ( variable3 == 2 && ( this->Data == 30 || this->Data == 34 || this->Data == 72 ) ) {
+                this->Data = 3;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script talkInformationMessage{
+    void run(){
+        while(true){
+            if ( talkInformation == false ) {
+                talkInformation = true;
+                Screen->Message(46);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script blockPermSecrets{
+    void run(){
+        int thisCombo = this->Data;
+        while(!Screen->State[ST_SECRET]){
+            if(this->Data != thisCombo) Screen->State[ST_SECRET] = true;
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaFirstMessage{
+    void run(){
+        while(true){
+            if ( hiileaFirstMessage == false && Link->Y <= 120 ) {
+                hiileaFirstMessage = true;
+                Screen->Message(166);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaDivinestatueMessage{
+    void run(){
+        while(true){
+            if ( hiileaDivinestatueMessage == false && Link->X >= 32 ) {
+                hiileaDivinestatueMessage = true;
+                Screen->Message(164);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaMorpherMessage{
+    void run(){
+        while(true){
+            if ( hiileaMorpherMessage == false && Link->X <= 208 ) {
+                hiileaMorpherMessage = true;
+                Screen->Message(175);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaSkullMessage{
+    void run(){
+        while(true){
+            if ( hiileaSkullMessage == false && Link->X <= 208 ) {
+                hiileaSkullMessage = true;
+                Screen->Message(206);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaGoodLuckWithDungeon1{
+    void run(){
+        while(true){
+            if ( hiileaGoodLuckWithDungeon1Message == false && Screen->State[ST_SECRET] ) {
+                WaitNoAction(); WaitNoAction();
+                hiileaGoodLuckWithDungeon1Message = true;
+                Screen->Message(207);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script hiileaGoodLuckWithDungeon2{
+    void run(){
+        while(true){
+            if ( variable5 == 0 && Screen->State[ST_SECRET] ) {
+                WaitNoAction(); WaitNoAction();
+                variable5 = 1;
+                if ( evilPathTrigger == false )
+                    Screen->Message(254);
+                else if ( evilPathTrigger == true )
+                    Screen->Message(256);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script towerFirstFloorOpen{
+    void run(){
+        if ( towerFirstFloorOpen == false && RectCollision(Link->X, Link->Y, Link->X+15, Link->Y+15, 128, 64, 143, 79) == true ) {
+            Screen->ComboD[53] ++;
+            Screen->ComboD[54] ++;
+            Screen->ComboD[55] ++;
+            Screen->ComboD[56] ++;
+            Screen->ComboD[57] ++;
+            Screen->ComboD[58] ++;
+            Screen->ComboD[69] ++;
+            Screen->ComboD[74] ++;
+            Screen->ComboD[85] ++;
+            Screen->ComboD[90] ++;
+            Screen->ComboD[101] ++;
+            Screen->ComboD[106] ++;
+            Screen->ComboD[117] ++;
+            Screen->ComboD[118] ++;
+            Screen->ComboD[119] ++;
+            Screen->ComboD[120] ++;
+            Screen->ComboD[121] ++;
+            Screen->ComboD[122] ++;
+        }
+    }
+}
+
+ffc script VideoDungeon1open{
+    void run(){
+        while(true){
+            if ( firstDungeonOpened == false && Screen->State[ST_SECRET] ) {
+                firstDungeonOpened = true;
+                towerFirstFloorOpen = false;
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script VideoDungeon2open{
+    void run(){
+        while(true){
+            if ( secondDungeonOpened == false && Screen->State[ST_SECRET] ) {
+                secondDungeonOpened = true;
+                towerFirstFloorOpen = false;
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script VideoScript{
+    void run(){
+        while(true){
+            Link->SwordJinx = 2;
+            Link->ItemJinx = 2;
+            Link->InputUp = false;
+            Link->InputDown = false;
+            Link->InputLeft = false;
+            Link->InputRight = false;
+            Waitframe();
+        }
+    }
+}
+
+ffc script FliegenderDungeon1OpenZauber{
+    void run(){
+        while(true){
+            if ( RectCollision(this->X+2, this->Y+2, this->X+14, this->Y+14, 160+2, 80+2, 160+14, 80+14) == true ) {
+               this->Data = 3;
+               this->Y += 32;
+               Game->PlaySound(27);
+               SetLayerComboD(1, 96, 0);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script FliegenderDungeon2OpenZauber{
+    void run(){
+        while(true){
+            if ( RectCollision(this->X+2, this->Y+2, this->X+14, this->Y+14, 96+2, 80+2, 96+14, 80+14) == true ) {
+               this->Data = 3;
+               this->Y += 32;
+               Game->PlaySound(27);
+               SetLayerComboD(1, 86, 0);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Sound{
+    void run(int s){
+        Game->PlaySound(s);
+    }
+}
+
+ffc script WillkommenZuruck{
+    void run(){
+        if ( willkommenZuruck == false && Screen->State[ST_SECRET] ) {
+            willkommenZuruck = true;
+            Screen->Message(161);
+        }
+    }
+}
+
+ffc script MarioEyeScript{
+    void run(){
+        bool isDestroyed = false;
+        if ( Screen->State[ST_SECRET] )
+            isDestroyed = true;
+        int currentDirection = 0;
+        int recoverTimer = 0;
+        int confuseCounter = 0;
+        int clockDirection = 0; //1 = clockwise, 2 = counterclockwise
+        int statuesEnderCounter = 0;
+        while(true){
+            if ( currentDirection != 1 && isDestroyed == false && RectCollision(Link->X+2, Link->Y+10, Link->X+14, Link->Y+14, this->X+2, 0, this->X+14, this->Y+14) == true ) {
+                if ( currentDirection == 4 ) {
+                    if ( clockDirection == 1 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 1;
+                    }
+                }
+                else if ( currentDirection == 2 ) {
+                    if ( clockDirection == 2 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 2;
+                    }
+                }
+                currentDirection = 1;
+                recoverTimer = 0;
+                Screen->ComboD[ComboAt(this->X, this->Y)] = 1581;
+            }
+            if ( currentDirection != 2 && isDestroyed == false && RectCollision(Link->X+2, Link->Y+10, Link->X+14, Link->Y+14, this->X+2, this->Y+2, 255, this->Y+14) == true ) {
+                if ( currentDirection == 1 ) {
+                    if ( clockDirection == 1 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 1;
+                    }
+                }
+                else if ( currentDirection == 3 ) {
+                    if ( clockDirection == 2 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 2;
+                    }
+                }
+                currentDirection = 2;
+                recoverTimer = 0;
+                Screen->ComboD[ComboAt(this->X, this->Y)] = 1582;
+            }
+            if ( currentDirection != 3 && isDestroyed == false && RectCollision(Link->X+2, Link->Y+10, Link->X+14, Link->Y+14, this->X+2, this->Y+2, this->X+14, 175) == true ) {
+                if ( currentDirection == 2 ) {
+                    if ( clockDirection == 1 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 1;
+                    }
+                }
+                else if ( currentDirection == 4 ) {
+                    if ( clockDirection == 2 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 2;
+                    }
+                }
+                currentDirection = 3;
+                recoverTimer = 0;
+                Screen->ComboD[ComboAt(this->X, this->Y)] = 1583;
+            }
+            if ( currentDirection != 4 && isDestroyed == false && RectCollision(Link->X+2, Link->Y+10, Link->X+14, Link->Y+14, 0, this->Y+2, this->X+14, this->Y+14) == true ) {
+                if ( currentDirection == 3 ) {
+                    if ( clockDirection == 1 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 1;
+                    }
+                }
+                else if ( currentDirection == 1 ) {
+                    if ( clockDirection == 2 )
+                        confuseCounter ++;
+                    else {
+                        confuseCounter = 0;
+                        clockDirection = 2;
+                    }
+                }
+                currentDirection = 4;
+                recoverTimer = 0;
+                Screen->ComboD[ComboAt(this->X, this->Y)] = 1584;
+            }
+
+            if ( statuesEnderCounter >= 60 && !Screen->State[ST_SECRET] ) {
+                Game->PlaySound(27);
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+                npc instaDeathEnemy = CreateNPCAt(177, this->X, this->Y);
+            }
+
+            if ( statuesEnderCounter >= 1 && !Screen->State[ST_SECRET] )
+                statuesEnderCounter ++;
+
+            if ( confuseCounter >= 7 && isDestroyed == false ) {
+                Game->PlaySound(77);
+                isDestroyed = true;
+                if ( clockDirection == 1 && currentDirection == 1 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1586;
+                if ( clockDirection == 1 && currentDirection == 2 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1587;
+                if ( clockDirection == 1 && currentDirection == 3 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1588;
+                if ( clockDirection == 1 && currentDirection == 4 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1589;
+                if ( clockDirection == 2 && currentDirection == 1 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1590;
+                if ( clockDirection == 2 && currentDirection == 2 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1591;
+                if ( clockDirection == 2 && currentDirection == 3 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1592;
+                if ( clockDirection == 2 && currentDirection == 4 )
+                    Screen->ComboD[ComboAt(this->X, this->Y)] = 1593;
+                statuesEnderCounter = 1;
+            }
+
+            if ( recoverTimer >= 60 && isDestroyed == false ) {
+                recoverTimer = 0;
+                confuseCounter = 0;
+                clockDirection = 0;
+            }
+            if ( currentDirection != 0 && isDestroyed == false )
+                recoverTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script FireballShooter{
+    void run(){
+        bool noShoot = false;
+        while(true){
+            if ( variable1 == 1 && noShoot == false ) {
+                eweapon fireball= CreateEWeaponAt(EW_FIREBALL, this->X, this->Y);
+                fireball->Damage = 1;
+                fireball->Angular = true;
+                fireball->Angle = DegtoRad(Angle(this->X,this->Y,Link->X,Link->Y));
+                fireball->Dir = RadianAngleDir8(WrapAngle(fireball->Angle));
+                fireball->Step = 150;
+                Game->PlaySound(40);
+                noShoot = true;
+            }
+            if ( variable1 != 1 && noShoot == true )
+                noShoot = false;
+            Waitframe();
+        }
+    }
+}
+
+ffc script BosskeypuzzleLevel1{
+    void run(){
+        int trigger1 = 0;
+        int trigger2 = 0;
+        int trigger3 = 0;
+        int trigger4 = 0;
+        bool end = false;
+        while(true){
+            if ( trigger1 == 0 ) {
+                if ( Screen->ComboD[34] == 1315 )
+                    trigger1 = 1;
+                else if ( Screen->ComboD[44] == 1315 )
+                    trigger1 = 2;
+                else if ( Screen->ComboD[130] == 1315 )
+                    trigger1 = 3;
+                else if ( Screen->ComboD[140] == 1315 )
+                    trigger1 = 4;
+            }
+            else if ( trigger2 == 0 ) {
+                if ( Screen->ComboD[34] == 1315 && trigger1 != 1 )
+                    trigger2 = 1;
+                else if ( Screen->ComboD[44] == 1315 && trigger1 != 2 )
+                    trigger2 = 2;
+                else if ( Screen->ComboD[130] == 1315 && trigger1 != 3 )
+                    trigger2 = 3;
+                else if ( Screen->ComboD[140] == 1315 && trigger1 != 4 )
+                    trigger2 = 4;
+            }
+            else if ( trigger3 == 0 ) {
+                if ( Screen->ComboD[34] == 1315 && trigger1 != 1 && trigger2 != 1 )
+                    trigger3 = 1;
+                else if ( Screen->ComboD[44] == 1315 && trigger1 != 2 && trigger2 != 2 )
+                    trigger3 = 2;
+                else if ( Screen->ComboD[130] == 1315 && trigger1 != 3 && trigger2 != 3 )
+                    trigger3 = 3;
+                else if ( Screen->ComboD[140] == 1315 && trigger1 != 4 && trigger2 != 4 )
+                    trigger3 = 4;
+            }
+            else if ( trigger4 == 0 ) {
+                if ( Screen->ComboD[34] == 1315 && trigger1 != 1 && trigger2 != 1 && trigger3 != 1 )
+                    trigger4 = 1;
+                else if ( Screen->ComboD[44] == 1315 && trigger1 != 2 && trigger2 != 2 && trigger3 != 2 )
+                    trigger4 = 2;
+                else if ( Screen->ComboD[130] == 1315 && trigger1 != 3 && trigger2 != 3 && trigger3 != 3 )
+                    trigger4 = 3;
+                else if ( Screen->ComboD[140] == 1315 && trigger1 != 4 && trigger2 != 4 && trigger3 != 4 )
+                    trigger4 = 4;
+            }
+            else if ( trigger1 == 2 && trigger2 == 1 && trigger3 == 4 && trigger4 == 3 ) {
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+            }
+            else if ( end == false ) {
+                Waitframes(60);
+                Game->PlaySound(78);
+                end = true;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script StatuemazePuzzleMover{
+    void run(){
+        int positionStep = 0;
+        while(true){
+            if ( Screen->ComboD[115] == 1313 && Screen->State[ST_SECRET] == false && positionStep == 0 ) {
+                this->X = 48;
+                this->Y = 112;
+                this->Data = 1580;
+                this->Vx = 1;
+                this->Vy = -1;
+                positionStep = 1;
+            }
+            if ( positionStep == 1 && this->X == 64 && this->Y == 96 ) {
+                this->Vx = 0;
+                this->Vy = 0;
+                WaitNoAction(60);
+                this->Vx = 1;
+                positionStep = 2;
+            }
+            if ( positionStep == 2 && this->X == 104 && this->Y == 96 ) {
+                this->Vx = 0;
+                this->Vy = 1;
+                positionStep = 3;
+            }
+            if ( positionStep == 3 && this->X == 104 && this->Y == 128 ) {
+                this->Vx = 1;
+                this->Vy = 0;
+                positionStep = 4;
+            }
+            if ( positionStep == 4 && this->X == 200 && this->Y == 128 ) {
+                this->Vx = 0;
+                this->Vy = -1;
+                positionStep = 5;
+            }
+            if ( positionStep == 5 && this->X == 200 && this->Y == 64 ) {
+                this->Vx = -1;
+                this->Vy = 0;
+                positionStep = 6;
+            }
+            if ( positionStep == 6 && this->X == 104 && this->Y == 64 ) {
+                this->Vx = 0;
+                this->Vy = 1;
+                positionStep = 7;
+            }
+            if ( positionStep == 7 && this->X == 104 && this->Y == 96 ) {
+                this->Vx = 1;
+                this->Vy = 0;
+                positionStep = 8;
+            }
+            if ( positionStep == 8 && this->X == 152 && this->Y == 96 ) {
+                this->Vx = 0;
+                this->Vy = -1;
+                positionStep = 9;
+            }
+            if ( positionStep == 9 && this->X == 152 && this->Y == 40 ) {
+                this->Vy = 0;
+                WaitNoAction(60);
+                this->Vx = -1;
+                this->Vy = -1.75;
+                Waitframes(120);
+                if ( Screen->State[ST_SECRET] == false )
+                    Screen->ComboD[115] = 1312;
+                this->Vx = 0;
+                this->Vy = 0;
+                this->X = 0;
+                this->Y = 0;
+                this->Data = 3;
+                positionStep = 0;
+            }
+
+            if ( positionStep != 0 )
+                NoAction();
+            Waitframe();
+        }
+    }
+}
+
+ffc script StatuemazePuzzleScript{
+    void run(){
+        bool wrongWay = false;
+        while(true){
+            if ( Screen->State[ST_SECRET] == false && wrongWay == false ) {
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1563 ) {
+                    wrongWay = true;
+                    Game->PlaySound(78);
+                    Screen->ComboD[7] = 774; Screen->ComboD[8] = 774;
+                    Screen->ComboD[23] = 852; Screen->ComboD[24] = 853;
+                }
+
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1567 ) {
+                    Screen->ComboD[71] = 0;
+                    Screen->ComboD[86] = 0;
+                    Screen->ComboD[87] = 0;
+                    Screen->ComboD[72] = 1563;
+                    Screen->ComboD[101] = 1563;
+                    Screen->ComboD[118] = 1563;
+                    Screen->ComboD[119] = 1563;
+                    Screen->ComboD[104] = 0;
+                    Screen->ComboD[89] = 0;
+                    Screen->ComboD[90] = 0;
+                    Screen->ComboD[57] = 0;
+                    Screen->ComboD[58] = 0;
+                    Screen->ComboD[75] = 1563;
+                }
+
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1571 ) {
+                    Game->PlaySound(27);
+                    Screen->TriggerSecrets();
+                    Screen->State[ST_SECRET] = true;
+                }
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script templeBossmusic{
+    void run(int m){
+        while(true){
+            if ( Screen->State[ST_SECRET] == false )
+                Game->PlayMIDI(11);
+            else
+                Game->PlayMIDI(m);
+            Waitframe();
+        }
+    }
+}
+
+ffc script cornerGlyphs{
+    void run(int glyphPosition){
+        if ( glyphPosition == 1 ) {
+            if ( variable4 >= 1 )
+                this->Data = 1245;
+        }
+        else if ( glyphPosition == 2 ) {
+            if ( variable4 >= 2 )
+                this->Data = 1245;
+        }
+        else if ( glyphPosition == 3 ) {
+            if ( variable4 >= 3 )
+                this->Data = 1245;
+        }
+        else if ( glyphPosition == 4 ) {
+            if ( variable4 >= 4 )
+                this->Data = 1245;
+        }
+    }
+}
+
+ffc script mainGlyph{
+    void run(){
+        while(true){
+            if ( RectCollision(Link->X, Link->Y, Link->X+15, Link->Y+15, this->X+15, this->Y+15, this->X+16, this->Y+16) == true ) {
+                if ( variable2 == 1 ) { //has power to release
+                    if ( variable4 == 0 ) //there is no set amulet yet
+                        this->Data = 51;
+                    else if ( variable4 == 1 && NumTriforcePieces() >= 2 ) {
+                        if ( variable3 == 1 )
+                            this->Data = 51;
+                        else if ( variable3 == 2 )
+                            this->Data = 50;
+                    }
+                    else if ( variable4 == 2 && NumTriforcePieces() >= 3 ) {
+                        if ( variable3 == 1 )
+                            this->Data = 51;
+                        else if ( variable3 == 2 )
+                            this->Data = 50;
+                    }
+                    else if ( variable4 == 3 && NumTriforcePieces() >= 4 ) {
+                        if ( variable3 == 1 )
+                            this->Data = 51;
+                        else if ( variable3 == 2 )
+                            this->Data = 50;
+                    }
+                }
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script stopToWarp{
+    void run(int delay){
+        while(true){
+            if ( this->Vx == 0 && this->Vy == 0 ) {
+                Waitframes(delay);
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script waveThenMessageThenWarp{
+    void run(int m){
+        Screen->Wavy = 30;
+        while(true){
+            if ( Screen->Wavy == 0 ) {
+                Waitframes(60);
+                Screen->Message(m);
+                Waitframes(60);
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script jardenSprite{
+    void run(){
+        if ( Link->Item[37] )
+            this->Data += 2;
+        else if ( Link->Item[8] )
+            this->Data ++;
+    }
+}
+
+ffc script toFirstDexterCutsceneWarp{
+    void run(){
+        while(true){
+            if ( variable6 == 0 && Link->X <= 216 ) {
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script firstDexterCutscene{
+    void run(){
+        Link->Dir = DIR_LEFT;
+        for ( int i = 0; i < 175; i++ ) {
+            if ( GetLayerComboD(1, i) == 2204 || GetLayerComboD(1, i) == 2205 )
+                SetLayerComboD(1, i, 0);
+        }
+        Waitframes(60);
+        Game->PlayMIDI(12);
+        this->Data = 1936;
+        this->X = 128;
+        this->Y = 64;
+        variable7 = -1;
+        variable8 = -1;
+        variable9 = 128;
+        variable10 = 64;
+        this->Vy = 0.5;
+        while(true){
+            if ( this->Y == 96 && this->Data == 1936 ) {
+                this->Data = 1931;
+                this->Vy = 0;
+                if ( evilPathTrigger == false )
+                    Screen->Message(259);
+                else if ( evilPathTrigger == true )
+                    Screen->Message(283);
+                Waitframe();
+                SetLayerComboD(1, 17, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 18, 2204);
+                Waitframe();
+                SetLayerComboD(1, 19, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 20, 2204);
+                Waitframe();
+                SetLayerComboD(1, 21, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 22, 2204);
+                Waitframe();
+                SetLayerComboD(1, 23, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 24, 2204);
+                Waitframe();
+                SetLayerComboD(1, 25, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 26, 2204);
+                Waitframe();
+                SetLayerComboD(1, 27, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 28, 2204);
+                Waitframe();
+                SetLayerComboD(1, 29, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 30, 2204);
+                Waitframe();
+                SetLayerComboD(1, 46, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 62, 2204);
+                Waitframe();
+                SetLayerComboD(1, 78, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 94, 2204);
+                Waitframe();
+                SetLayerComboD(1, 110, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 126, 2204);
+                Waitframe();
+                SetLayerComboD(1, 142, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 158, 2204);
+                Waitframe();
+                SetLayerComboD(1, 157, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 156, 2204);
+                Waitframe();
+                SetLayerComboD(1, 155, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 154, 2204);
+                Waitframe();
+                SetLayerComboD(1, 153, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 152, 2204);
+                Waitframe();
+                SetLayerComboD(1, 151, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 150, 2204);
+                Waitframe();
+                SetLayerComboD(1, 149, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 148, 2204);
+                Waitframe();
+                SetLayerComboD(1, 147, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 146, 2204);
+                Waitframe();
+                SetLayerComboD(1, 145, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 129, 2204);
+                Waitframe();
+                SetLayerComboD(1, 113, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 97, 2204);
+                Waitframe();
+                SetLayerComboD(1, 81, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 65, 2204);
+                Waitframe();
+                SetLayerComboD(1, 49, 2204);
+                Waitframe();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 33, 2204);
+                Waitframes(60);
+                Screen->Message(287);
+                Waitframe();
+                this->Data = 51;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script dextersWarpOut{
+    void run(){
+        this->Flags[FFCF_OVERLAY] = true;
+        this->Flags[FFCF_ETHEREAL] = true;
+        variable7 = 0;
+        variable8 = 0;
+        variable9 = 0;
+        variable10 = 0;
+        while(true){
+            if ( variable7 > 0 && variable8 > 0 && this->Data == 3 ) {
+                Game->PlaySound(79);
+                this->Data = 1736;
+                this->X = variable7;
+                this->Y = variable8;
+            }
+            if ( this->Data == 1738 ) {
+                this->Data = 3;
+                this->X = 0;
+                this->Y = 0;
+                if ( variable9 != 0 && variable10 != 0 ) {
+                   variable7 = -1;
+                   variable8 = -1;
+                }
+                else {
+                   variable7 = 0;
+                   variable8 = 0;
+                }
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script dextersWarpIn{
+    void run(){
+        this->Flags[FFCF_OVERLAY] = true;
+        this->Flags[FFCF_ETHEREAL] = true;
+        variable7 = 0;
+        variable8 = 0;
+        variable9 = 0;
+        variable10 = 0;
+        while(true){
+            if ( variable7 == -1 && variable8 == -1 && variable9 != 0 && variable10 != 0 && this->Data == 3 ) {
+                Game->PlaySound(79);
+                this->Data = 1740;
+                this->X = variable9;
+                this->Y = variable10;
+            }
+            if ( this->Data == 1742 ) {
+                this->Data = 3;
+                this->X = 0;
+                this->Y = 0;
+                variable7 = 0;
+                variable8 = 0;
+                variable9 = 0;
+                variable10 = 0;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script DexterBossScript{
+    void run(int m){
+        while(Screen->NumNPCs()==0) Waitframe();
+        int waitForWarpingCounter = 0;
+        waitForWarpingCounter = Rand(240) + 60;
+        int pos1x = 0;
+        int pos1y = 0;
+        bool trueOrFalse = false;
+        int oldDexterX = 0;
+        int oldDexterY = 0;
+        while(true){
+            npc dexter = Screen->LoadNPC(1);
+            if ( waitForWarpingCounter == 0 && variable7 == 0 && variable8 == 0 && variable9 == 0 && variable10 == 0 ) {
+                pos1x = Rand(40, 215);
+                pos1y = Rand(40, 135);
+                while(trueOrFalse == false ){
+                    pos1x = Rand(40, 215);
+                    pos1y = Rand(40, 135);
+                    trueOrFalse = true;
+                    if ( Distance(Link->X, Link->Y, pos1x, pos1y) < 48 )
+                        trueOrFalse = false;
+                    if ( Screen->ComboF[ComboAt(pos1x, pos1y)] == 98 )
+                        trueOrFalse = false;
+                }
+                pos1x = ComboX(ComboAt(pos1x, pos1y));
+                pos1y = ComboY(ComboAt(pos1x, pos1y));
+                variable7 = dexter->X;
+                variable8 = dexter->Y;
+                variable9 = pos1x;
+                variable10 = pos1y;
+                dexter->X = variable9;
+                dexter->Y = variable10;
+                waitForWarpingCounter = Choose(0, Rand(240) + 60, Rand(240) + 60);
+            }
+            if ( m == 288 && dexter->HP <= 100 ) {
+                variable6 = 1;
+                Game->PlayMIDI(0);
+                this->X = dexter->X;
+                this->Y = dexter->Y;
+                if ( dexter->Dir == DIR_DOWN )
+                    this->Data = 1928;
+                if ( dexter->Dir == DIR_UP )
+                    this->Data = 1929;
+                if ( dexter->Dir == DIR_LEFT )
+                    this->Data = 1930;
+                if ( dexter->Dir == DIR_RIGHT )
+                    this->Data = 1931;
+                dexter->X = 1000;
+                dexter->Y = 1000;
+                SetLayerComboD(1, 17, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 18, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 19, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 20, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 21, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 22, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 23, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 24, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 25, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 26, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 27, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 28, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 29, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 30, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 46, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 62, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 78, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 94, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 110, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 126, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 142, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 158, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 157, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 156, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 155, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 154, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 153, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 152, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 151, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 150, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 149, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 148, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 147, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 146, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 145, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 129, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 113, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 97, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 81, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 65, 0);
+                WaitNoAction();
+                SetLayerComboD(1, 49, 0);
+                WaitNoAction();
+                Game->PlaySound(13);
+                SetLayerComboD(1, 33, 0);
+                WaitNoAction(60);
+                Screen->Message(m);
+                WaitNoAction();
+                npc dexter = Screen->LoadNPC(1);
+                variable7 = this->X;
+                variable8 = this->Y;
+                this->Data = 3;
+                this->X = 0;
+                this->Y = 0;
+                WaitNoAction(30);
+                this->Data = 51;
+            }
+            if ( waitForWarpingCounter > 0 )
+                waitForWarpingCounter --;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Undercombos{
+    void run(){
+        int skullTilesTimer = 0;
+        int skullTilesState = 0;
+        for ( int i = 0; i < 175; i++ ) {
+            if ( GetLayerComboD(1, i) == 1437 || GetLayerComboD(1, i) == 1438 || GetLayerComboD(1, i) == 1439 || GetLayerComboD(1, i) == 1441 || GetLayerComboD(1, i) == 1442 || GetLayerComboD(1, i) == 1443 )
+                SetLayerComboD(1, i, 0);
+        }
+        while(true){
+            for ( int i = 0; i < 175; i++ ) {
+                if ( Screen->ComboD[i] == 1433 ) {
+                    Game->PlaySound(65);
+                    Screen->ComboD[i] ++;
+                }
+                if ( Screen->ComboD[i] == 1436 )
+                    SetLayerComboD(1, i, 1437);
+                if ( Screen->ComboD[i] == 41 )
+                    SetLayerComboD(1, i, 1438);
+                if ( Screen->ComboD[i] == 1229 )
+                    SetLayerComboD(1, i, 1439);
+                if ( GetLayerComboD(1, i) == 1436 && Screen->ComboD[i] == 1432 )
+                    SetLayerComboD(1, i, 0);
+                if ( GetLayerComboD(1, i) == 41 && Screen->ComboD[i] == 40 )
+                    SetLayerComboD(1, i, 0);
+                if ( GetLayerComboD(1, i) == 1229 && Screen->ComboD[i] == 1228 )
+                    SetLayerComboD(1, i, 0);
+            }
+            if ( Screen->ComboD[15] == 44 ) {
+                for ( int i = 0; i < 175; i++ ) {
+                    if ( evilPathTrigger == true && Screen->ComboD[i] == 1164 )
+                        Screen->ComboD[i] = 1165;
+                    if ( evilPathTrigger == true && Screen->ComboD[i] == 1264 )
+                        Screen->ComboD[i] = 1265;
+                    if ( evilPathTrigger == true && Screen->ComboD[i] == 443 )
+                        Screen->ComboD[i] = 447;
+                }
+            }
+
+            if ( ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1160 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1161 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1162 ) && auraType != 0 && insideDominion == false && travelToReal == false && travelToDominion == false ) {
+                Game->PlaySound(76); //skull deactivation
+                auraType = 0;
+            }
+            if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1160 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1161 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] == 1162 ) {
+                if ( skullTilesTimer < 12 )
+                    skullTilesTimer ++;
+            }
+            else if ( skullTilesTimer > 0 )
+                skullTilesTimer --;
+            if ( skullTilesTimer == 0 && skullTilesState != 0 ) {
+                for ( int i = 0; i < 175; i++ ) {
+                    if ( Screen->ComboD[i] == 1161 || Screen->ComboD[i] == 1162 )
+                        Screen->ComboD[i] = 1160;
+                }
+                skullTilesState = 0;
+            }
+            if ( skullTilesTimer == 4 && skullTilesState != 1 ) {
+                for ( int i = 0; i < 175; i++ ) {
+                    if ( Screen->ComboD[i] == 1160 || Screen->ComboD[i] == 1162 )
+                        Screen->ComboD[i] = 1161;
+                }
+                skullTilesState = 1;
+            }
+            if ( skullTilesTimer == 8 && skullTilesState != 2 ) {
+                for ( int i = 0; i < 175; i++ ) {
+                    if ( Screen->ComboD[i] == 1160 || Screen->ComboD[i] == 1161 )
+                        Screen->ComboD[i] = 1162;
+                }
+                skullTilesState = 2;
+            }
+
+            Waitframe();
+        }
+    }
+}
+
+ffc script skullRoomFix{
+    void run(){
+        while(true){
+            if ( Screen->ComboD[38] == 0 )
+                Screen->ComboD[38] = 1160;
+            if ( Screen->ComboD[39] == 0 )
+                Screen->ComboD[39] = 1160;
+            if ( Screen->ComboD[40] == 0 )
+                Screen->ComboD[40] = 1160;
+            if ( Screen->ComboD[41] == 0 )
+                Screen->ComboD[41] = 1160;
+            if ( Screen->ComboD[54] == 0 )
+                Screen->ComboD[54] = 1160;
+            if ( Screen->ComboD[55] == 0 )
+                Screen->ComboD[55] = 1160;
+            if ( Screen->ComboD[56] == 0 )
+                Screen->ComboD[56] = 1160;
+            if ( Screen->ComboD[57] == 0 )
+                Screen->ComboD[57] = 1160;
+            Waitframe();
+        }
+    }
+}
+
+ffc script SparkleAura1{
+    void run(){
+    this->Flags[FFCF_OVERLAY] = true;
+    this->Flags[FFCF_ETHEREAL] = true;
+
+    int sparkleTimer = 0;
+    int requiredSparkleTimer = 0;
+    bool sparkleCreated = false;
+
+        while(true){
+            while(auraType == 0){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+            while(Screen->ComboD[15] == 45){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+
+            if ( sparkleCreated == true && this->Data == 3 ) {
+                sparkleCreated = false;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+            }
+
+            if ( requiredSparkleTimer == 0 )
+                requiredSparkleTimer = 10 + Rand(60);
+
+            if ( sparkleTimer >= requiredSparkleTimer && sparkleCreated == false ) {
+                if ( insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                    this->X = Link->X - Rand(18) + Rand(18);
+                    this->Y = Link->Y - Rand(18) + Rand(18);
+                }
+                else {
+                    this->X = jardenStatueX - Rand(18) + Rand(18);
+                    this->Y = jardenStatueY - Rand(18) + Rand(18);
+                }
+                if ( auraType == 1 )
+                    this->Data = 1528;
+                else if ( auraType == 2 )
+                    this->Data = 1532;
+                else if ( auraType == 3 )
+                    this->Data = 1536;
+                else if ( auraType == 4 )
+                    this->Data = 1540;
+                sparkleCreated = true;
+            }
+
+            sparkleTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script SparkleAura2{
+    void run(){
+    this->Flags[FFCF_OVERLAY] = true;
+    this->Flags[FFCF_ETHEREAL] = true;
+
+    int sparkleTimer = 0;
+    int requiredSparkleTimer = 0;
+    bool sparkleCreated = false;
+
+        while(true){
+            while(auraType == 0){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+            while(Screen->ComboD[15] == 45){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+
+            if ( sparkleCreated == true && this->Data == 3 ) {
+                sparkleCreated = false;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+            }
+
+            if ( requiredSparkleTimer == 0 )
+                requiredSparkleTimer = 10 + Rand(60);
+
+            if ( sparkleTimer >= requiredSparkleTimer && sparkleCreated == false ) {
+                if ( insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                    this->X = Link->X - Rand(18) + Rand(18);
+                    this->Y = Link->Y - Rand(18) + Rand(18);
+                }
+                else {
+                    this->X = jardenStatueX - Rand(18) + Rand(18);
+                    this->Y = jardenStatueY - Rand(18) + Rand(18);
+                }
+                if ( auraType == 1 )
+                    this->Data = 1530;
+                else if ( auraType == 2 )
+                    this->Data = 1534;
+                else if ( auraType == 3 )
+                    this->Data = 1538;
+                else if ( auraType == 4 )
+                    this->Data = 1542;
+                sparkleCreated = true;
+            }
+
+            sparkleTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script SparkleAura3{
+    void run(){
+    this->Flags[FFCF_OVERLAY] = true;
+    this->Flags[FFCF_ETHEREAL] = true;
+
+    int sparkleTimer = 0;
+    int requiredSparkleTimer = 0;
+    bool sparkleCreated = false;
+
+        while(true){
+            while(auraType == 0){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+            while(Screen->ComboD[15] == 45){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+
+            if ( sparkleCreated == true && this->Data == 3 ) {
+                sparkleCreated = false;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+            }
+
+            if ( requiredSparkleTimer == 0 )
+                requiredSparkleTimer = 10 + Rand(60);
+
+            if ( sparkleTimer >= requiredSparkleTimer && sparkleCreated == false ) {
+                if ( insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                    this->X = Link->X - Rand(18) + Rand(18);
+                    this->Y = Link->Y - Rand(18) + Rand(18);
+                }
+                else {
+                    this->X = jardenStatueX - Rand(18) + Rand(18);
+                    this->Y = jardenStatueY - Rand(18) + Rand(18);
+                }
+                if ( auraType == 1 )
+                    this->Data = 1544;
+                else if ( auraType == 2 )
+                    this->Data = 1548;
+                else if ( auraType == 3 )
+                    this->Data = 1552;
+                else if ( auraType == 4 )
+                    this->Data = 1556;
+                sparkleCreated = true;
+            }
+
+            sparkleTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script SparkleAura4{
+    void run(){
+    this->Flags[FFCF_OVERLAY] = true;
+    this->Flags[FFCF_ETHEREAL] = true;
+
+    int sparkleTimer = 0;
+    int requiredSparkleTimer = 0;
+    bool sparkleCreated = false;
+
+        while(true){
+            while(auraType == 0){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+            while(Screen->ComboD[15] == 45){
+                this->Data = 3;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+                sparkleCreated = false;
+                Waitframe();
+            }
+
+            if ( sparkleCreated == true && this->Data == 3 ) {
+                sparkleCreated = false;
+                sparkleTimer = 0;
+                requiredSparkleTimer = 0;
+            }
+
+            if ( requiredSparkleTimer == 0 )
+                requiredSparkleTimer = 10 + Rand(60);
+
+            if ( sparkleTimer >= requiredSparkleTimer && sparkleCreated == false ) {
+                if ( insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                    this->X = Link->X - Rand(18) + Rand(18);
+                    this->Y = Link->Y - Rand(18) + Rand(18);
+                }
+                else {
+                    this->X = jardenStatueX - Rand(18) + Rand(18);
+                    this->Y = jardenStatueY - Rand(18) + Rand(18);
+                }
+                if ( auraType == 1 )
+                    this->Data = 1546;
+                else if ( auraType == 2 )
+                    this->Data = 1550;
+                else if ( auraType == 3 )
+                    this->Data = 1554;
+                else if ( auraType == 4 )
+                    this->Data = 1558;
+                sparkleCreated = true;
+            }
+
+            sparkleTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Signpost{
+    void run(int m,int input){
+        int loc = ComboAt(this->X,this->Y);
+        while(true){
+            while(!AgainstComboBase(loc) || !SelectPressInput(input)) Waitframe();
+            SetInput(input,false); Link->SwordJinx = 5; Link->ItemJinx = 5;
+            if ( m == 52 && gotCaveKey == false ) { //mann des schlussels
+                Screen->Message(m);
+                Waitframe();
+                gotCaveKey = true;
+                item cavekey = Screen->CreateItem(9);
+                SetItemPickup(cavekey, IP_HOLDUP, true);
+                cavekey->X = Link->X;
+                cavekey->Y = Link->Y;
+                WaitNoAction();
+                Screen->Message(56);
+                WaitNoAction();
+            }
+            else if ( m == 52 && gotCaveKey == true ) //mann des schlussels
+                Screen->Message(56);
+            else if ( m == 176 ) { //purple aura
+                if ( auraType != 1 && insideDominion == false ) {
+                    Game->PlaySound(73);
+                    auraType = 1;
+                    if ( gotPurpleAuraFirstTime == false ) {
+                        gotPurpleAuraFirstTime = true;
+                        item auradummy = Screen->CreateItem(143);
+                        SetItemPickup(auradummy, IP_HOLDUP, true);
+                        auradummy->X = Link->X;
+                        auradummy->Y = Link->Y;
+                    }
+                }
+            }
+            else if ( m == 179 ) { //green aura
+                if ( auraType != 2 && insideDominion == false ) {
+                    Game->PlaySound(73);
+                    auraType = 2;
+                    if ( gotGreenAuraFirstTime == false ) {
+                        gotGreenAuraFirstTime = true;
+                        item auradummy = Screen->CreateItem(144);
+                        SetItemPickup(auradummy, IP_HOLDUP, true);
+                        auradummy->X = Link->X;
+                        auradummy->Y = Link->Y;
+                    }
+                }
+            }
+            else if ( m == 201 ) { //yellow aura
+                if ( auraType != 3 && insideDominion == false ) {
+                    Game->PlaySound(73);
+                    auraType = 3;
+                    if ( gotYellowAuraFirstTime == false ) {
+                        gotYellowAuraFirstTime = true;
+                        item auradummy = Screen->CreateItem(145);
+                        SetItemPickup(auradummy, IP_HOLDUP, true);
+                        auradummy->X = Link->X;
+                        auradummy->Y = Link->Y;
+                    }
+                }
+            }
+            else if ( m == 204 ) { //red aura
+                if ( auraType != 4 && insideDominion == false ) {
+                    Game->PlaySound(73);
+                    auraType = 4;
+                    if ( gotRedAuraFirstTime == false ) {
+                        gotRedAuraFirstTime = true;
+                        item auradummy = Screen->CreateItem(146);
+                        SetItemPickup(auradummy, IP_HOLDUP, true);
+                        auradummy->X = Link->X;
+                        auradummy->Y = Link->Y;
+                    }
+                }
+            }
+            else if ( m == 133 ) { //old man
+                if ( Screen->State[ST_SECRET] == true ) {
+                    if ( NumTriforcePieces() >= 1 ) {
+                        if ( variable2 == 0 ) { //link does not have the power to release
+                            Screen->Message(218);
+                            Waitframe();
+                            variable2 = 1;
+                            item releasepower = Screen->CreateItem(147);
+                            SetItemPickup(releasepower, IP_HOLDUP, true);
+                            releasepower->X = Link->X;
+                            releasepower->Y = Link->Y;
+                            WaitNoAction();
+                            Screen->Message(248);
+                            WaitNoAction();
+                        }
+                        else {
+                            if ( variable4 == 0 ) //number of set amulets = 0
+                                Screen->Message(248);
+                            else {
+                                if ( variable3 == 1 ) //good power released
+                                    Screen->Message(249);
+                                else if ( variable3 == 2 ) //bad power released
+                                    Screen->Message(251);
+                            }
+                        }
+                    }
+                    else
+                        Screen->Message(161);
+                }
+                else if ( Link->Item[36] ) {
+                    Screen->Message(135);
+                    Waitframe();
+                    Screen->State[ST_SECRET] = true;
+                    WaitNoAction();
+                    this->Data = 51;
+                }
+                else
+                    Screen->Message(m);
+            }
+            else
+                Screen->Message(m);
+            Waitframe();
+        }
+    }
+    bool AgainstComboBase(int loc){
+        return Link->Z == 0 && (Link->Dir == DIR_UP && Link->Y == ComboY(loc)+8 && Abs(Link->X-ComboX(loc)) < 8);
+    }
+}
+//!!These functions should only be included in your script file once!!
+bool SelectPressInput(int input){
+    if(input == 0) return Link->PressA;
+    else if(input == 1) return Link->PressB;
+    else if(input == 2) return Link->PressL;
+    else if(input == 3) return Link->PressR;
+}
+void SetInput(int input, bool state){
+    if(input == 0) Link->InputA = state;
+    else if(input == 1) Link->InputB = state;
+    else if(input == 2) Link->InputL = state;
+    else if(input == 3) Link->InputR = state;
+}
+
+ffc script SignpostShop{
+    void run(int messageA, int itemToSell, int price){
+        int loc = ComboAt(this->X,this->Y);
+        this->Flags[FFCF_OVERLAY] = true;
+        if ( itemToSell == 129 && gotEgg == false ) {
+            this->Data = 64;
+        }
+        else if ( itemToSell == 8 ) {
+            this->Data = 68;
+        }
+        else if ( itemToSell == 17 && gotCrystal == false ) {
+            this->Data = 69;
+        }
+        else if ( itemToSell == 69 ) {
+            this->Data = 70;
+        }
+        else if ( itemToSell == 29 ) {
+            this->Data = 65;
+        }
+        else if ( itemToSell == 30 ) {
+            this->Data = 66;
+        }
+        else
+            this->Data = 67;
+        while(true){
+            if ( AgainstComboBase(this->X, this->Y) )
+                this->Flags[FFCF_OVERLAY] = false;
+            else
+                this->Flags[FFCF_OVERLAY] = true;
+            if ( AgainstComboBase(this->X, this->Y) && Link->PressA ) {
+                if ( this->Data != 67 ) {
+                    Link->InputA = false;
+                    Screen->Message(messageA);
+                }
+                else {
+                    Link->InputA = false;
+                    Screen->Message(85); //out of stock
+                }
+            }
+            if ( AgainstComboBase(this->X, this->Y) && Link->PressR && this->Data != 67 ) {
+                Link->InputR = false;
+                if ( Game->Counter[CR_RUPEES] >= price ) { //if enough rupees
+                    if ( itemToSell == 129 ) { //if item to sell is egg
+                        gotEgg = true;
+                        this->Data = 67;
+                        item happyItem = Screen->CreateItem(itemToSell);
+                        SetItemPickup(happyItem, IP_HOLDUP, true);
+                        happyItem->X = Link->X;
+                        happyItem->Y = Link->Y;
+                        Game->DCounter[CR_RUPEES] -= price;
+                        WaitNoAction();
+                    }
+                    else if ( itemToSell == 8 ) { //if item to sell is magic shield
+                        if ( !Link->Item[37] ) {
+                            if ( !Link->Item[8] ) {
+                                item happyItem = Screen->CreateItem(itemToSell);
+                                SetItemPickup(happyItem, IP_HOLDUP, true);
+                                happyItem->X = Link->X;
+                                happyItem->Y = Link->Y;
+                                Game->DCounter[CR_RUPEES] -= price;
+                                WaitNoAction();
+                            }
+                            else
+                                Screen->Message(82); //already have this shield
+                        }
+                        else
+                            Screen->Message(83); //already have the better shield
+                    }
+                    else if ( itemToSell == 17 ) { //if item to sell is crystal
+                        gotCrystal = true;
+                        this->Data = 67;
+                        item happyItem = Screen->CreateItem(itemToSell);
+                        SetItemPickup(happyItem, IP_HOLDUP, true);
+                        happyItem->X = Link->X;
+                        happyItem->Y = Link->Y;
+                        Game->DCounter[CR_RUPEES] -= price;
+                        WaitNoAction();
+                    }
+                    else if ( itemToSell == 29 || itemToSell == 30 ) { //if item to sell is potion
+                        if ( !Link->Item[29] && !Link->Item[30] ) {
+                            item happyItem = Screen->CreateItem(itemToSell);
+                            SetItemPickup(happyItem, IP_HOLDUP, true);
+                            happyItem->X = Link->X;
+                            happyItem->Y = Link->Y;
+                            Game->DCounter[CR_RUPEES] -= price;
+                            WaitNoAction();
+                        }
+                        else
+                            Screen->Message(90); //already have a potion
+                    }
+                    else { //no speciale item to sell. do normale shop action
+                        item happyItem = Screen->CreateItem(itemToSell);
+                        SetItemPickup(happyItem, IP_HOLDUP, true);
+                        happyItem->X = Link->X;
+                        happyItem->Y = Link->Y;
+                        Game->DCounter[CR_RUPEES] -= price;
+                        WaitNoAction();
+                    }
+                }
+                else
+                    Screen->Message(81); //not enough rupees
+            }
+            else if ( AgainstComboBase(this->X, this->Y) && Link->PressR && this->Data == 67 ) {
+                Link->InputR = false;
+                Screen->Message(85); //out of stock
+            }
+            Waitframe();
+        }
+    }
+    bool AgainstComboBase(int thisX, int thisY){
+        return Link->Z == 0 && (Link->Dir == DIR_UP && Link->Y == thisY+16 && Abs(Link->X-thisX) < 8);
+    }
+}
+
+ffc script SignpostDextriaShop{
+    void run(int messageA, int infoMessage, int price){
+        int loc = ComboAt(this->X,this->Y);
+        while(true){
+            if ( AgainstComboBase(this->X, this->Y) && Link->PressA ) {
+                Link->InputA = false;
+                Screen->Message(messageA);
+            }
+            if ( AgainstComboBase(this->X, this->Y) && Link->PressR ) {
+                Link->InputR = false;
+                if ( Game->Counter[CR_RUPEES] >= price ) { //if enough rupees
+                    Game->DCounter[CR_RUPEES] -= price;
+                    Screen->Message(infoMessage);
+                }
+                else
+                    Screen->Message(216); //not enough rupees
+            }
+            Waitframe();
+        }
+    }
+    bool AgainstComboBase(int thisX, int thisY){
+        return Link->Z == 0 && (Link->Dir == DIR_UP && Link->Y == thisY+8 && Abs(Link->X-thisX) < 8);
+    }
+}
+
+global script Active{
+    void run(){
+        auraType = 0;
+        insideDominion = false;
+        travelToDominion = false;
+        travelToReal = false;
+        Link->Invisible = false;
+        Link->CollDetection = true;
+
+        int ouchTimer = 0;
+        int targetPositionX = 0;
+        int targetPositionY = 0;
+        int objectPositionX = 0;
+        int objectPositionY = 0;
+        int xspace;
+        int yspace;
+        float numofsteps = 0;
+        float xmove = 0;
+        float ymove = 0;
+
+        if (Link->Item[130]) {
+            if ( Link->HP < Link->MaxHP ) {
+                Game->PlaySound(22);
+                Link->HP = Link->MaxHP;
+            }
+        }
+        while(true){
+            if ( CountFFCsRunning(10) == 0 ) {
+                RunFFCScript(10, 0);
+                RunFFCScript(14, 0);
+                RunFFCScript(15, 0);
+                RunFFCScript(16, 0);
+                RunFFCScript(17, 0);
+                Waitframe();
+            }
+
+            if ( travelToDominion == true || insideDominion == true || travelToReal == true ) {
+                Link->SwordJinx = 1;
+                Link->ItemJinx = 1;
+            }
+
+            if ( Link->Item[8] == true && Link->Item[125] == false )
+                Link->Item[125] = true;
+            else if ( Link->Item[8] == false && Link->Item[125] == true )
+                Link->Item[125] = false;
+            if ( Link->Item[37] == true && Link->Item[126] == false )
+                Link->Item[126] = true;
+            else if ( Link->Item[37] == false && Link->Item[126] == true )
+                Link->Item[126] = false;
+
+            if ( auraType == 1 && GetLayerComboD(2, ComboAt(Link->X+8, Link->Y+12)) == 1524 && insideDominion == false && travelToDominion == false && travelToReal == false && ( Link->PressA == true || Link->PressB == true ) ) {
+                Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+                Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+                if ( Link->Item[37] )
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1562;
+                else if ( Link->Item[8] )
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1561;
+                else
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1560;
+                Link->Invisible = true;
+                Link->CollDetection = false;
+                jardenStatueX = Link->X;
+                jardenStatueY = Link->Y;
+                objectPositionX = Link->X;
+                objectPositionY = Link->Y;
+                targetPositionX = ComboX(FirstComboOf(1512, 0));
+                targetPositionY = ComboY(FirstComboOf(1512, 0));
+                travelToDominion = true;
+            }
+
+            if ( insideDominion == true && Link->Action == LA_GOTHURTLAND )
+                ouchTimer ++;
+
+            if ( insideDominion == true && ( Link->PressA == true || Link->PressB == true || ouchTimer >= 5  ) ) {
+                ouchTimer = 0;
+                Link->X = ComboX(ComboAt(Link->X+8, Link->Y+12));
+                Link->Y = ComboY(ComboAt(Link->X+8, Link->Y+12));
+                Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1512;
+                Link->CollDetection = false;
+                objectPositionX = Link->X;
+                objectPositionY = Link->Y;
+                targetPositionX = jardenStatueX;
+                targetPositionY = jardenStatueY;
+                insideDominion = false;
+                travelToReal = true;
+            }
+
+            if ( travelToDominion == true && RectCollision(objectPositionX+4, objectPositionY+4, objectPositionX+12, objectPositionY+12, targetPositionX+4, targetPositionY+4, targetPositionX+12, targetPositionY+12) == true ) { //if the object arrived the dominion statue take it's position
+                Game->PlaySound(70); //dominion control
+                Link->X = targetPositionX;
+                Link->Y = targetPositionY;
+                Link->CollDetection = true;
+                Screen->ComboD[ComboAt(targetPositionX, targetPositionY)] = 0;
+                travelToDominion = false;
+                insideDominion = true;
+            }
+
+            if ( travelToReal == true && RectCollision(objectPositionX+4, objectPositionY+4, objectPositionX+12, objectPositionY+12, targetPositionX+4, targetPositionY+4, targetPositionX+12, targetPositionY+12) == true ) { //if the object arrived the jarden statue take it's position
+                Game->PlaySound(72); //dominion cancel
+                Link->X = targetPositionX;
+                Link->Y = targetPositionY;
+                Link->Invisible = false;
+                Link->Dir = DIR_DOWN;
+                Link->CollDetection = true;
+                Screen->ComboD[ComboAt(targetPositionX, targetPositionY)] = 0;
+                travelToReal = false;
+            }
+
+            if ( travelToDominion == true || travelToReal == true ) { //if the object traveles to a target, move it and draw it and freeze link
+                xspace = Sign(objectPositionX - targetPositionX) * (objectPositionX - targetPositionX);
+                yspace = Sign(objectPositionY - targetPositionY) * (objectPositionY - targetPositionY);
+                numofsteps = Distance(objectPositionX, objectPositionY, targetPositionX, targetPositionY) / 3;
+                xmove = xspace/numofsteps;
+                ymove = yspace/numofsteps;
+                if(objectPositionX > targetPositionX) objectPositionX -= xmove;
+                if(objectPositionX < targetPositionX) objectPositionX += xmove;
+                if(objectPositionY > targetPositionY) objectPositionY -= ymove;
+                if(objectPositionY < targetPositionY) objectPositionY += ymove;
+                Screen->FastCombo(3, objectPositionX, objectPositionY, 1525, 2, OP_OPAQUE);
+                NoAction();
+            }
+
+            if ( insideDominion == true ) { //when inside dominion, prevent from leaving screen and draw the dominion on link
+                if ( Link->X < 32 )
+                    Link->X = 32;
+                if ( Link->Y < 24 )
+                    Link->Y = 24;
+                if ( Link->X > 208 )
+                    Link->X = 208;
+                if ( Link->Y > 128 )
+                    Link->Y = 128;
+
+                if ( Link->InputUp || Link->InputRight || Link->InputDown || Link->InputLeft )
+                    Screen->FastCombo(3, Link->X, Link->Y, 1513, 2, OP_OPAQUE);
+                else
+                    Screen->FastCombo(3, Link->X, Link->Y, 1514, 2, OP_OPAQUE);
+            }
+
+            if ( auraType == 2 ) {
+                if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y-4)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y-4)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y-4)] == 1610 || Screen->ComboD[ComboAt(Link->X-8, Link->Y-4)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y-4)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y-4)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y-4)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y-4)] == 1610 || Screen->ComboD[ComboAt(Link->X+8, Link->Y-4)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y-4)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y-4)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y-4)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y-4)] == 1610 || Screen->ComboD[ComboAt(Link->X+24, Link->Y-4)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y-4)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y+12)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y+12)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y+12)] == 1610 || Screen->ComboD[ComboAt(Link->X-8, Link->Y+12)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y+12)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1610 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y+12)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y+12)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y+12)] == 1610 || Screen->ComboD[ComboAt(Link->X+24, Link->Y+12)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y+12)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y+28)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y+28)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X-8, Link->Y+28)] == 1610 || Screen->ComboD[ComboAt(Link->X-8, Link->Y+28)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X-8, Link->Y+28)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+28)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+28)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+28)] == 1610 || Screen->ComboD[ComboAt(Link->X+8, Link->Y+28)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+8, Link->Y+28)] = 1609;
+
+                if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y+28)] == 1304 ) {
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y+28)] = 1600;
+                    Game->PlaySound(75);
+                }
+                else if ( Screen->ComboD[ComboAt(Link->X+24, Link->Y+28)] == 1610 || Screen->ComboD[ComboAt(Link->X+24, Link->Y+28)] == 1611 )
+                    Screen->ComboD[ComboAt(Link->X+24, Link->Y+28)] = 1609;
+            }
+
+            for (int i = 1; i <= Screen->NumItems(); i++) {
+                item droppeditem = Screen->LoadItem(i);
+                if ( droppeditem->ID == 133 ) {
+                    if ( Link->Item[131] ) {
+                        item dropitem = Screen->CreateItem(0);
+                        SetItemPickup(dropitem, IP_TIMEOUT, true);
+                        dropitem->X = droppeditem->X;
+                        dropitem->Y = droppeditem->Y;
+                        droppeditem->Y = -1600;
+                    }
+                    else
+                        droppeditem->Y = -1600;
+                }
+                else if ( droppeditem->ID == 134 ) {
+                    if ( Link->Item[131] ) {
+                        item dropitem = Screen->CreateItem(1);
+                        SetItemPickup(dropitem, IP_TIMEOUT, true);
+                        dropitem->X = droppeditem->X;
+                        dropitem->Y = droppeditem->Y;
+                        droppeditem->Y = -1600;
+                    }
+                    else
+                        droppeditem->Y = -1600;
+                }
+                else if ( droppeditem->ID == 135 ) {
+                    if ( Link->Item[131] ) {
+                        item dropitem = Screen->CreateItem(38);
+                        SetItemPickup(dropitem, IP_TIMEOUT, true);
+                        dropitem->X = droppeditem->X;
+                        dropitem->Y = droppeditem->Y;
+                        droppeditem->Y = -1600;
+                    }
+                    else
+                        droppeditem->Y = -1600;
+                }
+            }
+
+            if ( Link->Item[132] && ( Link->InputL || Link->InputR ) && insideDominion == false ) {
+                if ( Link->Action == LA_WALKING && Link->Dir == DIR_UP && Screen->isSolid(Link->X, Link->Y+7) == false && Screen->isSolid(Link->X+15, Link->Y+7) == false ) {
+                    Link->Y -= 1;
+                }
+                if ( Link->Action == LA_WALKING && Link->Dir == DIR_DOWN && Screen->isSolid(Link->X, Link->Y+16) == false && Screen->isSolid(Link->X+15, Link->Y+16) == false ) {
+                    Link->Y += 1;
+                }
+                if ( Link->Action == LA_WALKING && Link->Dir == DIR_LEFT && Screen->isSolid(Link->X-1, Link->Y+8) == false && Screen->isSolid(Link->X-1, Link->Y+15) == false ) {
+                    Link->X -= 1;
+                }
+                if ( Link->Action == LA_WALKING && Link->Dir == DIR_RIGHT && Screen->isSolid(Link->X+16, Link->Y+8) == false && Screen->isSolid(Link->X+16, Link->Y+15) == false ) {
+                    Link->X += 1;
+                }
+            }
+
+            if ( hatchTime == 36000 && Link->Action != LA_ATTACKING && !Link->Item[132] && !Link->Item[130] && !Link->Item[131] && Screen->ComboD[15] != 45 && insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                Link->Item[136] = false;
+                item animal = Screen->CreateItem(Choose(132, 130, 131));
+                SetItemPickup(animal, IP_HOLDUP, true);
+                animal->X = Link->X;
+                animal->Y = Link->Y;
+            }
+            if ( ( Link->Item[129] || Link->Item[136] ) && hatchTime < 36000 && hatchTime != 34200 && Screen->ComboD[15] != 45 && insideDominion == false && travelToDominion == false && travelToReal == false )
+                hatchTime ++;
+            if ( hatchTime == 34200 && Screen->ComboD[15] != 45 && insideDominion == false && travelToDominion == false && travelToReal == false ) {
+                hatchTime = 34201;
+                Link->Item[129] = false;
+                Link->Item[136] = true;
+                Screen->Message(130);
+            }
+
+            if ( variable1 == 1 && Link->Action != LA_ATTACKING )
+                variable1 = 0;
+
+            if ( !Link->Item[127] && !Link->Item[128] && Link->Item[138] && !Link->Item[139] ) {
+                Link->Item[138] = true;
+                Link->Item[139] = true;
+            } 
+            Waitframe();
+        }
+    }
+}

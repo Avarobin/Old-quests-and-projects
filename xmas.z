@@ -1,0 +1,1330 @@
+import "std.zh"
+
+int firstGift = 0;
+int firstKey = 0;
+int minigameLevel = 1;
+bool minigameActive = true;
+bool warpedd = false;
+
+item script Message{
+    void run(int m){
+        Screen->Message(m);
+    }
+}
+
+item script ChristmasGift{
+    void run(){
+        Game->PlaySound(65);
+        if ( firstGift == 0 ) {
+            firstGift = 1;
+            Screen->Message(10);
+        }
+    }
+}
+
+item script MinigameChristmasGift{
+    void run(){
+        Game->PlaySound(65);
+        Game->PlayMIDI(6);
+        if ( minigameLevel == 1 )
+            minigameLevel = 2;
+        else if ( minigameLevel == 2 )
+            minigameLevel = 3;
+        else
+            minigameLevel = 4;
+        if ( firstGift == 0 ) {
+            firstGift = 1;
+            Screen->Message(10);
+        }
+    }
+}
+
+item script Key{
+    void run(){
+        if ( firstKey == 0 ) {
+            firstKey = 1;
+            Screen->Message(11);
+        }
+    }
+}
+
+
+//D0 = item id
+//D1 = waitfames before creating (0)
+//D2 = 0 = normal, 1 = enemies->item
+//D3 = 0 = no holdup, 1 = holdup
+//D4 = 0 = respawn always, otherwise 1-18 (different for each item)
+//D5 = screen D register to use (0)
+//D6 = 0 = normal, othewise set number to triforce pieces needed (overworld keys)
+
+ffc script SpawnItem
+{
+    void run(int itm, int dly, int enemies, int holdup, int perm, int d, int owkey)
+    {
+        bool allowed = true;
+        if ( allowed == true )
+        {
+            if(enemies != 0) dly = 4;
+            Waitframes(dly);
+            if(perm > 0 && GetScreenDBit(d,perm)) return;
+            while(enemies != 0 && Screen->NumNPCs() > 0) Waitframe();
+            item i = CreateItemAt(itm,this->X,this->Y);
+            if(holdup) i->Pickup |= IP_HOLDUP;
+            if(perm == 0) return;
+            while(i->isValid()) Waitframe();
+            SetScreenDBit(d,perm,true);
+        }
+    }
+}
+
+ffc script EntranceToMinigame{
+    void run(){
+        bool stepped = false;
+        while(true){
+            if ( ( ComboAt(Link->X+8, Link->Y+12) == 73 || ComboAt(Link->X+8, Link->Y+12) == 89 || ComboAt(Link->X+8, Link->Y+12) == 105 ) && stepped == false ) {
+                stepped = true;
+                if ( Game->Counter[CR_RUPEES] >= 30 ) {
+                    Game->DCounter[CR_RUPEES] -= 30;
+                    Game->Counter[CR_SCRIPT2] = 0;
+                    this->Data = 888;
+                }
+                else
+                    Screen->Message(14);
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script Minigame{
+    void run(){
+        minigameActive = true;
+        int counter = 0;
+        if ( minigameLevel == 1 ) {
+            Game->Counter[CR_SCRIPT2] = 20;
+            Screen->Message(15);
+        }
+        else if ( minigameLevel == 2 ) {
+            Game->Counter[CR_SCRIPT2] = 40;
+            Screen->Message(17);
+        }
+        else if ( minigameLevel == 3 ) {
+            Game->Counter[CR_SCRIPT2] = 60;
+            Screen->Message(18);
+        }
+        else if ( minigameLevel == 4 )
+            Screen->Message(21);
+        WaitNoStart(60);
+        Game->PlayMIDI(4);
+        int hearts = 3;
+        int secretwait = 0;
+        Screen->State[ST_SECRET] = false;
+        while(true){
+            if ( hearts == 3 ) {
+                SetLayerComboD(3, 0, 110);
+                SetLayerComboD(3, 1, 110);
+                SetLayerComboD(3, 2, 110);
+            }
+            if ( secretwait == 0 ) {
+                Screen->State[ST_SECRET] = false;
+                secretwait = -1;
+            }
+            if ( Screen->State[ST_SECRET] == true && secretwait == -1 && hearts == 3 && minigameActive == true ) {
+                Game->PlaySound(67);
+                SetLayerComboD(3, 2, 111);
+                secretwait = 60;
+                hearts = 2;
+            }
+            else if ( Screen->State[ST_SECRET] == true && secretwait == -1 && hearts == 2 && minigameActive == true ) {
+                Game->PlaySound(67);
+                SetLayerComboD(3, 1, 111);
+                secretwait = 60;
+                hearts = 1;
+            }
+            else if ( Screen->State[ST_SECRET] == true && secretwait == -1 && hearts == 1 && minigameActive == true ) {
+                Game->PlaySound(67);
+                minigameActive = false;
+                Screen->ComboD[90] = 0;
+                SetLayerComboD(3, 0, 111);
+                Game->PlayMIDI(0);
+                Screen->Message(22);
+            }
+            if ( counter == 60 && minigameActive == true && minigameLevel != 4 )
+                Game->Counter[CR_SCRIPT2] --;
+            if ( Game->Counter[CR_SCRIPT2] == 0 && minigameActive == true && minigameLevel != 4 ) {
+                minigameActive = false;
+                Screen->ComboD[90] = 0;
+                item happyItem = Screen->CreateItem(124);
+                happyItem->X = 208;
+                happyItem->Y = 64;
+                happyItem->Jump = 1;
+                Game->PlayMIDI(0);
+                if ( minigameLevel == 1 || minigameLevel == 2 )
+                    Screen->Message(16);
+                else
+                    Screen->Message(19);
+            }
+            if ( counter == 60 && minigameActive == true && minigameLevel == 4 ) {
+                Game->PlaySound(62);
+                Game->Counter[CR_RUPEES] += 1;
+                if ( Game->Counter[CR_RUPEES] == 999 ) {
+                    minigameActive = false;
+                    Screen->ComboD[90] = 0;
+                    Game->PlayMIDI(0);
+                    Screen->Message(23);
+                }
+            }
+            if ( minigameActive == true ) {
+                if ( counter == 60 )
+                    counter = 0;
+                else
+                    counter ++;
+            }
+            Link->InputStart = false;
+            if ( secretwait > 0 )
+                secretwait --;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco1{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco2{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco3{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco4{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco5{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco6{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco7{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco8{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco9{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco10{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+            Waitframes(30);
+            Waitframe();
+        }
+    }
+}
+
+ffc script Cucco11{
+    void run(){
+        int number = 0;
+        int wennObenOderUnten = 0;
+        Waitframes(60);
+        while(true){
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            Waitframes(30);
+            number = Rand(0, 60);
+            Waitframes(number);
+            wennObenOderUnten = Choose(0, 1);
+            if ( wennObenOderUnten == 1 ) {
+                this->X = Rand(32, 208);
+                this->Y = Choose(-16, 176);
+            }
+            else {
+                this->X = Choose(-16, 256);
+                this->Y = Rand(32, 128);
+            }
+            if ( wennObenOderUnten == 0 && minigameActive == true ) {
+                if ( this->X == -16 ) {
+                    this->Data = 892;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+                else {
+                    this->Data = 893;
+                    if ( this->Y < 88 ) {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, 0.125, 0.25, 0.325, 0.5);
+                    }
+                    else {
+                        this->Vx = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                        this->Vy = Choose(0, -0.125, -0.25, -0.325, -0.5);
+                    }
+                }
+            }
+            else if ( minigameActive == true ) {
+                if ( this->Y == -16 ) {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(1.5, 1.75, 2, 2.25, 2.5);
+                    }
+                }
+                else {
+                    if ( this->X < 128 ) {
+                        this->Data = 892;
+                        this->Vx = Choose(0.5, 0.75, 1, 1.25, 1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                    else {
+                        this->Data = 893;
+                        this->Vx = Choose(-0.5, -0.75, -1, -1.25, -1.5);
+                        this->Vy = Choose(-1.5, -1.75, -2, -2.25, -2.5);
+                    }
+                }
+            }
+            Waitframes(60 - number);
+        }
+    }
+}
+
+void WaitNoStart(int frames)
+{
+	for(int i = 0; i < frames; i++)
+		Link->InputStart = false;
+                            Waitframe();
+}
+
+ffc script LockBlock{
+    void run(int perm, int d, int keytype, int sfx, int pushtime){
+        if(pushtime == 0) pushtime = 10;
+        int loc = ComboAt(this->X,this->Y);
+
+        int pushclk = 0;
+        while(!GetScreenDBit(d,perm)){
+            if(PushingCombo(loc,this)) pushclk++;
+            else pushclk = 0;
+            Waitframe();
+            if(pushclk == pushtime) Unlock(sfx,keytype,perm,d);
+        }
+        SetGraphic(this);
+    }
+    void Unlock(int sfx, int keytype, int perm, int d){
+        if(!CheckKeys(keytype)) return;
+        if(sfx == 0) Game->PlaySound(SFX_SHUTTER);
+        else if(sfx > 0) Game->PlaySound(sfx);
+        SetScreenDBit(d,perm,true);
+        if(keytype == 0){
+            if(Game->LKeys[Game->GetCurLevel()] > 0) Game->LKeys[Game->GetCurLevel()]--;
+            else Game->Counter[CR_KEYS]--;
+        }
+    }
+    bool CheckKeys(int keytype){
+        return (keytype == 0 && (Game->Counter[CR_KEYS] > 0 || Game->LKeys[Game->GetCurLevel()] > 0))
+                || (keytype == 1 && GetLevelItem(Game->GetCurLevel(),LI_BOSSKEY)) || keytype == 2;
+    }
+    bool PushingCombo(int loc, ffc size){
+        int w = Floor(size->EffectWidth/16); int h = Floor(size->EffectHeight/16);
+        int x = ComboX(loc); int y = ComboY(loc);
+        return Link->Z == 0 && 
+            ((Link->Dir == DIR_UP && Link->InputUp && Link->Y == y+8+16*(h-1) && Abs((Link->X+8)-(x+8*w)) < 8*w) 
+            || (Link->Dir == DIR_DOWN && Link->InputDown && Link->Y == y-16 && Abs((Link->X+8)-(x+8*w)) < 8*w)
+            || (Link->Dir == DIR_LEFT && Link->InputLeft && Link->X == x+16*w && Abs((Link->Y+8)-(y+8*h)) < 8*h)
+            || (Link->Dir == DIR_RIGHT && Link->InputRight && Link->X == x-16 && Abs((Link->Y+8)-(y+8*h)) < 8*h));
+    }
+    void SetGraphic(ffc size){
+        int first = ComboAt(size->X,size->Y);
+        int last = ComboAt(size->X+(size->EffectWidth-16),size->Y+(size->EffectHeight-16));
+        int w = last%16 - first%16;
+        for(int i=0;i<=last-first;i++) if(i%16 <= w) Screen->ComboD[first+i]++;
+    }
+}
+
+//Instructions:
+//1. Make a new combo with inherent flag 16 (or any secret flag)
+//2. Set this FFC to the above combo
+//3. When secrets are triggered by blocks, this script will make it permanent
+ffc script blockPermSecrets{
+    void run(){
+        int thisCombo = this->Data;
+        while(!Screen->State[ST_SECRET]){
+            if(this->Data != thisCombo) Screen->State[ST_SECRET] = true;
+            Waitframe();
+        }
+    }
+}
+
+global script ActiveScript
+{
+    void run()
+    {
+        while(true)
+        {
+            for(int i=0; i<176; i++){
+                if(Screen->ComboD[i]==701){ //pot
+                    Game->PlaySound(69);
+                    Screen->ComboD[i]++;
+                }
+            }
+            if (Game->Counter[CR_SCRIPT1] == 50 && warpedd == false) {
+                warpedd = true;
+                Screen->SetSideWarp(0, 0, 6, 8);
+                Screen->ComboD[15] = 888;
+            }
+            Waitframe();
+        }
+    }
+}
+
+const int ICE_BLOCK_SCRIPT = 17; // Slot number that the ice_block script is assigned to
+const int ICE_BLOCK_SENSITIVITY = 8; // Number of frames the blocks need to be pushed against to start moving
+
+ffc script ice_block {
+void run() {
+int undercombo;
+int framecounter = 0;
+
+Waitframe();
+undercombo = Screen->ComboD[this->Y + (this->X >> 4)];
+Screen->ComboD[this->Y + (this->X >> 4)] = this->Data;
+
+while(true) {
+// Check if Link is pushing against the block
+if((Link->X == this->X - 16 && (Link->Y < this->Y + 1 && Link->Y > this->Y - 12) && Link->InputRight && Link->Dir == DIR_RIGHT) || // Right
+(Link->X == this->X + 16 && (Link->Y < this->Y + 1 && Link->Y > this->Y - 12) && Link->InputLeft && Link->Dir == DIR_LEFT) || // Left
+(Link->Y == this->Y - 16 && (Link->X < this->X + 4 && Link->X > this->X - 4) && Link->InputDown && Link->Dir == DIR_DOWN) || // Down
+(Link->Y == this->Y + 8 && (Link->X < this->X + 4 && Link->X > this->X - 4) && Link->InputUp && Link->Dir == DIR_UP)) { // Up
+framecounter++;
+}
+else {
+// Reset the frame counter
+framecounter = 0;
+}
+// Once enough frames have passed, move the block
+if(framecounter >= ICE_BLOCK_SENSITIVITY) {
+// Check the direction
+if(Link->Dir == DIR_RIGHT) {
+while(this->X < 240 && // Not at the edge of the screen
+!ComboFI(this->X + 16, this->Y, CF_NOBLOCKS) && // Not "No Push Block"
+Screen->ComboS[this->Y + ((this->X + 16) >> 4)] == 0000b) { // Is walkable
+Screen->ComboD[this->Y + (this->X >> 4)] = undercombo;
+this->Vx = 2;
+WaitNoAction(8);
+Game->PlaySound(70);
+undercombo = Screen->ComboD[this->Y + (this->X >> 4)];
+}
+this->Vx = 0;
+Game->PlaySound(71);
+Screen->ComboD[this->Y + (this->X >> 4)] = this->Data;
+}
+else if(Link->Dir == DIR_LEFT) {
+while(this->X > 0 && // Not at the edge of the screen
+!ComboFI(this->X - 1, this->Y, CF_NOBLOCKS) && // Not "No Push Block"
+Screen->ComboS[this->Y + ((this->X - 16) >> 4)] == 0000b) { // Is walkable
+Screen->ComboD[this->Y + (this->X >> 4)] = undercombo;
+this->Vx = -2;
+WaitNoAction(8);
+Game->PlaySound(70);
+undercombo = Screen->ComboD[this->Y + (this->X >> 4)];
+}
+this->Vx = 0;
+Game->PlaySound(71);
+Screen->ComboD[this->Y + (this->X >> 4)] = this->Data;
+}
+else if(Link->Dir == DIR_DOWN) {
+while(this->Y < 160 && // Not at the edge of the screen
+!ComboFI(this->X, this->Y + 16, CF_NOBLOCKS) && // Not "No Push Block"
+Screen->ComboS[(this->Y + 16) + (this->X >> 4)] == 0000b) { // Is walkable
+Screen->ComboD[this->Y + (this->X >> 4)] = undercombo;
+this->Vy = 2;
+WaitNoAction(8);
+Game->PlaySound(70);
+undercombo = Screen->ComboD[this->Y + (this->X >> 4)];
+}
+this->Vy = 0;
+Game->PlaySound(71);
+Screen->ComboD[this->Y + (this->X >> 4)] = this->Data;
+}
+else if(Link->Dir == DIR_UP) {
+while(this->Y > 0 && // Not at the edge of the screen
+!ComboFI(this->X, this->Y - 1, CF_NOBLOCKS) && // Not "No Push Block"
+Screen->ComboS[(this->Y - 16) + (this->X >> 4)] == 0000b) { // Is walkable
+Screen->ComboD[this->Y + (this->X >> 4)] = undercombo;
+this->Vy = -2;
+WaitNoAction(8);
+Game->PlaySound(70);
+undercombo = Screen->ComboD[this->Y + (this->X >> 4)];
+}
+this->Vy = 0;
+Game->PlaySound(71);
+Screen->ComboD[this->Y + (this->X >> 4)] = this->Data;
+}
+// Reset the frame counter
+framecounter = 0;
+}
+Waitframe();
+}
+}
+}
+
+// Ice trigger script
+ffc script ice_trigger {
+void run() {
+ffc blocks[31];
+int triggerx[31];
+int triggery[31];
+int num_ice_blocks = 0;
+int num_triggers = 0;
+int good_counter = 0;
+
+for(int i = 0; i < 176 && num_triggers < 31; i++) {
+if(Screen->ComboF[i] == CF_BLOCKTRIGGER || Screen->ComboI[i] == CF_BLOCKTRIGGER) {
+triggerx[num_triggers] = (i % 16) * 16;
+triggery[num_triggers] = Floor(i / 16) * 16;
+num_triggers++;
+}
+}
+if(num_triggers == 0) Quit();
+
+for(int i = 1; i <= 32; i++) {
+ffc temp = Screen->LoadFFC(i);
+if(temp->Script == ICE_BLOCK_SCRIPT) {
+blocks[num_ice_blocks] = temp;
+num_ice_blocks++;
+}
+}
+if(num_ice_blocks == 0) Quit();
+
+while(true) {
+for(int i = 0; i < num_ice_blocks; i++) {
+//Check if blocks are on switches and not moving
+for(int j = 0; j < num_triggers; j++) {
+if(blocks[i]->X == triggerx[j] && blocks[i]->Y == triggery[j] && blocks[i]->Vx == 0 && blocks[i]->Vy == 0) {
+good_counter++;
+break;
+}
+}
+}
+if(good_counter == num_triggers) {
+Game->PlaySound(SFX_SECRET);
+Screen->TriggerSecrets();
+if((Screen->Flags[SF_SECRETS] & 2) == 0) Screen->State[ST_SECRET] = true;
+Quit();
+}
+good_counter = 0;
+Waitframe();
+}
+}
+}

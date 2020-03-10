@@ -1,0 +1,1583 @@
+import "std.zh"
+import "string.zh"
+import "Something Else/ghost.zh"
+import "Something Else/LinkMovement.zh"
+import "Something Else/scrollingDraws.zh"
+
+int GV[1000];
+const int ButtonALocked = 0;
+const int ButtonBLocked = 1;
+const int LinkSpeedX = 2;
+const int LinkSpeedY = 3;
+const int SwordActive = 4;
+const int BombActive = 5;
+const int OctorocksKilled = 6;
+const int SharpMovement = 7;
+const int RuinTriggerN = 8;
+const int RuinTriggerS = 9;
+const int SwordACounter = 10;
+const int SwordBCounter = 11;
+const int MazeState = 12;
+
+global script Active{
+	void run(){
+		StartGhostZH();
+		LinkMovement_Init();
+		ScrollingDraws_Init();
+		Link->DrawXOffset = -1000;
+		
+		int LinksCurrDMap = -1;
+		int LinksCurrScreen = -1;
+		
+		GV[LinkSpeedX] = 0;
+		GV[LinkSpeedY] = 0;
+		int LinkAccel = 0.06;
+		int LinkSpeedMax = 1.4;
+		int LinkTile = 2300;
+		int LinkAnimTimer;
+		
+		lweapon SwordWpn[4];
+		while(true){
+			UpdateGhostZH1();
+			LinkMovement_Update1();
+			ScrollingDraws_Update();
+			
+			if ( GV[SharpMovement] == 1 ) {
+				LinkAccel = 0.8;
+				LinkSpeedMax = 1.6;
+				GV[SharpMovement] = 2;
+			}
+			
+			if ( GV[ButtonALocked] == 1 && !Link->PressA && !Link->InputA )
+				GV[ButtonALocked] = 0;
+			if ( GV[ButtonBLocked] == 1 && !Link->PressB && !Link->InputB )
+				GV[ButtonBLocked] = 0;
+			if ( GV[ButtonALocked] == 1 ) {
+				Link->InputA = false;
+				Link->PressA = false;
+			}
+			if ( GV[ButtonBLocked] == 1 ) {
+				Link->InputB = false;
+				Link->PressB = false;
+			}
+			
+			bool OcarinaAPressed;
+			bool OcarinaBPressed;
+			
+			if ( Link->Action != LA_SCROLLING && LinksCurrDMap == Game->GetCurDMap() && LinksCurrScreen == Game->GetCurDMapScreen() ) { //global screen scripts
+				//link movement
+				if ( Link->Action == LA_DROWNING ) {
+					GV[LinkSpeedX] = 0;
+					GV[LinkSpeedY] = 0;
+					NoAction();
+				}
+				else {
+					if ( Link->InputUp )
+						GV[LinkSpeedY] = Max(LinkSpeedMax*-1, GV[LinkSpeedY]-LinkAccel);
+					else if ( Link->InputDown )
+						GV[LinkSpeedY] = Min(LinkSpeedMax, GV[LinkSpeedY]+LinkAccel);
+					else {
+						if ( GV[LinkSpeedY] < 0 )
+							GV[LinkSpeedY] = Min(0, GV[LinkSpeedY]+LinkAccel);
+						if ( GV[LinkSpeedY] > 0 )
+							GV[LinkSpeedY] = Max(0, GV[LinkSpeedY]-LinkAccel);
+					}
+					if ( Link->InputLeft )
+						GV[LinkSpeedX] = Max(LinkSpeedMax*-1, GV[LinkSpeedX]-LinkAccel);
+					else if ( Link->InputRight )
+						GV[LinkSpeedX] = Min(LinkSpeedMax, GV[LinkSpeedX]+LinkAccel);
+					else {
+						if ( GV[LinkSpeedX] < 0 )
+							GV[LinkSpeedX] = Min(0, GV[LinkSpeedX]+LinkAccel);
+						if ( GV[LinkSpeedX] > 0 )
+							GV[LinkSpeedX] = Max(0, GV[LinkSpeedX]-LinkAccel);
+					}
+					LinkMovement_PushNoEdge(GV[LinkSpeedX], GV[LinkSpeedY]);
+				}
+				
+				for (int i = 1; i <= Screen->NumLWeapons(); i++) { //for all lweapons
+					lweapon wpn = Screen->LoadLWeapon(i);
+					if ( wpn->ID == LW_SCRIPT1 ) {
+						wpn->Misc[0] --;
+						if ( wpn->Misc[0] == 0 ) {
+							lweapon expl = CreateLWeaponAt(LW_BOMBBLAST, wpn->X, wpn->Y);
+							expl->Damage = 1;
+							wpn->DeadState = WDS_DEAD;
+						}
+					}
+					if ( wpn->ID == LW_SCRIPT2 ) {
+						wpn->Misc[0] --;
+						if ( wpn->Misc[0] == 0 ) {
+							lweapon expl = CreateLWeaponAt(LW_SBOMBBLAST, wpn->X, wpn->Y);
+							expl->Damage = 1;
+							wpn->DeadState = WDS_DEAD;
+						}
+					}
+				}
+				for (int i = 1; i <= Screen->NumNPCs(); i++) { //for all enemies
+					npc enem = Screen->LoadNPC(i);
+					if ( enem->HP <= 0 && enem->HP != -100 ) {
+						if ( enem->ID >= 20 && enem->ID <= 23 ) {
+							enem->HP = -100;
+							GV[OctorocksKilled] ++;
+						}
+					}
+				}
+				
+				if ( (Link->PressA && GetEquipmentA() == 143) || (Link->PressB && GetEquipmentB() == 143) ) {
+					if ( GV[SwordActive] == 0 ) {
+						Game->PlaySound(2);
+						GV[SwordActive] = 20;
+						SwordWpn[0] = CreateLWeaponAt(LW_BEAM, Link->X, Link->Y-16);
+						SwordWpn[0]->Dir = DIR_UP;
+						SwordWpn[0]->UseSprite(88);
+						SwordWpn[1] = CreateLWeaponAt(LW_BEAM, Link->X+16, Link->Y);
+						SwordWpn[1]->Dir = DIR_RIGHT;
+						SwordWpn[1]->UseSprite(89);
+						SwordWpn[2] = CreateLWeaponAt(LW_BEAM, Link->X, Link->Y+16);
+						SwordWpn[2]->Dir = DIR_DOWN;
+						SwordWpn[2]->UseSprite(90);
+						SwordWpn[3] = CreateLWeaponAt(LW_BEAM, Link->X-16, Link->Y);
+						SwordWpn[3]->Dir = DIR_LEFT;
+						SwordWpn[3]->UseSprite(91);
+						for (int i = 0; i < 4; i++) {
+							SwordWpn[i]->Step = 200;
+							SwordWpn[i]->Damage = 1;
+							SwordWpn[i]->DrawYOffset = 0;
+						}
+						if ( GetEquipmentA() == 143 )
+							GV[SwordACounter] ++;
+						else
+							GV[SwordBCounter] ++;
+					}
+				}
+				if ( GV[SwordActive] == 5 ) {
+					for (int i = 0; i < 4; i++) {
+						if ( SwordWpn[i]->isValid() ) {
+							if ( SwordWpn[i]->DeadState == WDS_ALIVE )
+								SwordWpn[i]->DeadState = WDS_DEAD;
+						}
+					}
+				}
+				if ( GV[SwordActive] > 0 )
+					GV[SwordActive] --;
+				
+				if ( (Link->PressA && GetEquipmentA() == 144) || (Link->PressB && GetEquipmentB() == 144) ) {
+					if ( GV[BombActive] == 0 ) {
+						Game->PlaySound(21);
+						GV[BombActive] = 20;
+						lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X, Link->Y);
+						wpn->UseSprite(7);
+						wpn->DrawYOffset = 0;
+						wpn->CollDetection = false;
+						wpn->Misc[0] = 65;
+					}
+				}
+				if ( (Link->PressA && GetEquipmentA() == 146) || (Link->PressB && GetEquipmentB() == 146) ) {
+					if ( GV[BombActive] == 0 ) {
+						Game->PlaySound(21);
+						GV[BombActive] = 30;
+						lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+						wpn->UseSprite(8);
+						wpn->DrawYOffset = 0;
+						wpn->CollDetection = false;
+						wpn->Misc[0] = 75;
+					}
+				}
+				if ( GV[BombActive] > 0 )
+					GV[BombActive] --;
+				
+				if ( Link->PressA && GetEquipmentA() == 31 ) {
+					OcarinaAPressed = true;
+				}
+				if ( Link->PressB && GetEquipmentB() == 31 ) {
+					OcarinaBPressed = true;
+				}
+			}
+			
+			if ( !OcarinaAPressed )
+				Link->PressA = false;
+			if ( !OcarinaBPressed )
+				Link->PressB = false;
+			Link->InputUp = false; Link->PressUp = false;
+			Link->InputDown = false; Link->PressDown = false;
+			Link->InputLeft = false; Link->PressLeft = false;
+			Link->InputRight = false; Link->PressRight = false;
+			Link->InputR = false; Link->PressR = false;
+			Link->InputL = false; Link->PressL = false;
+			
+			Waitdraw();
+			
+			if ( LinksCurrDMap != Game->GetCurDMap() || LinksCurrScreen != Game->GetCurDMapScreen() ) { //screen init
+				LinksCurrDMap = Game->GetCurDMap();
+				LinksCurrScreen = Game->GetCurDMapScreen();
+				
+				Link->CollDetection = true;
+				
+				if ( Link->Action != LA_SCROLLING ) {
+					GV[LinkSpeedX] = 0;
+					GV[LinkSpeedY] = 0;
+				}
+				GV[SwordActive] = 0;
+			}
+			
+			//link animation
+			if ( LinkAnimTimer >= 8 ) {
+				if ( LinkTile == 2300 )
+					LinkTile ++;
+				else
+					LinkTile --;
+				LinkAnimTimer = 0;
+			}
+			else if ( GV[LinkSpeedX] != 0 || GV[LinkSpeedY] != 0 || Link->Action == LA_DROWNING )
+				LinkAnimTimer ++;
+			Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), LinkTile, 8, OP_OPAQUE);
+			
+			UpdateGhostZH2();
+			LinkMovement_Update2();
+			Waitframe();
+		}
+	}
+}
+
+void NoActionFull(){
+	Link->InputUp = false; Link->PressUp = false;
+	Link->InputDown = false; Link->PressDown = false;
+	Link->InputLeft = false; Link->PressLeft = false;
+	Link->InputRight = false; Link->PressRight = false;
+	Link->InputR = false; Link->PressR = false;
+	Link->InputL = false; Link->PressL = false;
+	Link->InputA = false; Link->PressA = false;
+	Link->InputB = false; Link->PressB = false;
+	Link->InputEx1 = false; Link->PressEx1 = false;
+	Link->InputEx2 = false; Link->PressEx2 = false;
+	Link->InputEx3 = false; Link->PressEx3 = false;
+	Link->InputEx4 = false; Link->PressEx4 = false;
+	Link->InputStart = false; Link->PressStart = false;
+	Link->InputMap = false; Link->PressMap = false;
+}
+void WaitNoActionFull(){
+	NoActionFull();
+	Waitframe();
+}
+void WaitNoActionFull(int frames){
+	for(int i = 0; i < frames; i++)
+		WaitNoActionFull();
+}
+
+bool PointWithinRect(int px, int py, int x1, int y1, int x2, int y2){
+	if ( px < x1 ) return false;
+	if ( px > x2 ) return false;
+	if ( py < y1 ) return false;
+	if ( py > y2 ) return false;
+	return true;
+}
+
+ffc script ScreenMessage{
+	void run(int m, int mpos, int npcname){
+		MessageDrawStuff(mpos, npcname, 0, 0);
+		Screen->Message(m);
+		WaitNoAction();
+	}
+}
+
+void MessageDrawStuff(int messageposition, int npcname, int itemtile, int itemcset){
+	int mpos = messageposition;
+	if ( messageposition == 0 )
+		mpos = 32;
+	if ( messageposition == 1 )
+		mpos = 96;
+	if ( npcname > 0 ) { //normal with name
+		Screen->DrawTile(6, 16, mpos-16, 63760, 14, 4, 10, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		if ( npcname == 1 ) {
+			int NameOfNPC[] = "Old Man";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 2 ) {
+			int NameOfNPC[] = "Goriya";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 3 ) {
+			int NameOfNPC[] = "Dude";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 4 ) {
+			int NameOfNPC[] = "Old Woman";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 5 ) {
+			int NameOfNPC[] = "Zelda";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 6 ) {
+			int NameOfNPC[] = "Mumblin";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 7 ) {
+			int NameOfNPC[] = "Fairy";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+		if ( npcname == 8 ) {
+			int NameOfNPC[] = "???";
+			Screen->DrawString(6, 64, mpos-8, FONT_GBLA, 0x01, -1, TF_CENTERED, NameOfNPC, OP_OPAQUE);
+		}
+	}
+	if ( npcname == 0 ) { //normal without name
+		Screen->DrawTile(6, 16, mpos, 63700, 14, 3, 10, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	}
+	if ( itemtile > 0 ) { //blue
+		Screen->DrawTile(6, 16, 96, 63840, 14, 3, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, 38, 108, itemtile, itemcset, OP_OPAQUE);
+	}
+}
+
+int FONT_LA_WIDTH(int text){
+	if ( text == 0 )
+		return 0;
+	int TANGO_FONT_LA[] = {
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+		// Character widths, including any trailing space
+		// ASCII characters 32 to 126
+		
+		// sp !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  
+		   4, 4, 5, 8, 8, 7, 8, 3, 5, 5, 6, 6, 3, 6, 3, 5,
+		
+		// 0  1  2  3  4  5  6  7  8  9
+		   6, 5, 7, 7, 7, 7, 6, 6, 7, 6,
+		
+		// :  ;  <  =  >  ?  @
+		   4, 4, 6, 6, 6, 7, 8,
+		
+		// A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z
+		   8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 7, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+		
+		// [  \  ]  ^  _  `
+		   8, 8, 8, 4, 6, 3,
+		
+		// a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+		   6, 6, 5, 7, 6, 7, 6, 5, 5, 7, 6, 4, 7, 6, 6, 6, 6, 5, 6, 5, 6, 6, 7, 6, 7, 6,
+		
+		// {  |  }  ~
+		   6, 3, 6, 5
+	};
+	int width;
+	for(int i = 0; i < strlen(text); i++){
+		width += TANGO_FONT_LA[text[i]];
+	}
+	return width;
+}
+
+//int textrow1full[] = "Save the game?";
+//int option1[] = "Yes";
+//int option2[] = "No";
+//int Choice = ChoiceSelection(
+//0, 0, //messageYpos and npc name
+//textrow1full, 0, 0, //textrow1
+//0, 0, 0, //textrow2
+//0, 0, 0, //textrow3
+//option1, option2, 0, 0, 0, //options 1-5
+//1, 2); //starting option and option B
+
+int ChoiceSelection(int messageYpos, int npcname,
+					int textrow1full, int textrow1red, int textrow1before,
+					int textrow2full, int textrow2red, int textrow2before,
+					int textrow3full, int textrow3red, int textrow3before,
+					int option1, int option2, int option3, int option4, int option5,
+					int optionstart,
+					int optionb){
+	int mpos = messageYpos;
+	if ( messageYpos == 0 )
+		mpos = 32;
+	if ( messageYpos == 1 )
+		mpos = 96;
+	int NumOptions;
+	int YPos1;
+	int YPos2;
+	int YPos3;
+	int YPos4;
+	int YPos5;
+	if ( option3 == 0 ) {
+		NumOptions = 2;
+		YPos1 = 104+1.5*8;
+		YPos2 = 104+2.5*8;
+	}
+	else if ( option4 == 0 ) {
+		NumOptions = 3;
+		YPos1 = 104+1*8;
+		YPos2 = 104+2*8;
+		YPos3 = 104+3*8;
+	}
+	else if ( option5 == 0 ) {
+		NumOptions = 4;
+		YPos1 = 104+0.5*8;
+		YPos2 = 104+1.5*8;
+		YPos3 = 104+2.5*8;
+		YPos4 = 104+3.5*8;
+	}
+	else {
+		NumOptions = 5;
+		YPos1 = 104;
+		YPos2 = 104+1*8;
+		YPos3 = 104+2*8;
+		YPos4 = 104+3*8;
+		YPos5 = 104+4*8;
+	}
+	int Selection = optionstart;
+	int InitialDelay = 30;
+	int LongestText = FONT_LA_WIDTH(option1);
+	if ( FONT_LA_WIDTH(option2) > LongestText )
+		LongestText = FONT_LA_WIDTH(option2);
+	if ( FONT_LA_WIDTH(option3) > LongestText )
+		LongestText = FONT_LA_WIDTH(option3);
+	if ( FONT_LA_WIDTH(option4) > LongestText )
+		LongestText = FONT_LA_WIDTH(option4);
+	if ( FONT_LA_WIDTH(option5) > LongestText )
+		LongestText = FONT_LA_WIDTH(option5);
+	while(true){
+		MessageDrawStuff(mpos, npcname, 0, 0);
+		//textrow 1
+		Screen->DrawString(6, 32, mpos+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow1full, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow1red, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow1before, OP_OPAQUE);
+		//textrow 2
+		Screen->DrawString(6, 32, mpos+8+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow2full, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8+8, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow2red, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow2before, OP_OPAQUE);
+		//textrow 3
+		Screen->DrawString(6, 32, mpos+8+8+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow3full, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8+8+8, FONT_GBLA, 0x82, -1, TF_NORMAL, textrow3red, OP_OPAQUE);
+		Screen->DrawString(6, 32, mpos+8+8+8, FONT_GBLA, 0x01, -1, TF_NORMAL, textrow3before, OP_OPAQUE);
+		//choice box
+		Screen->DrawTile(6, 88, 96, 63714, 5, 4, 5, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		//options
+		Screen->DrawString(6, 128, YPos1, FONT_GBLA, 0x01, -1, TF_CENTERED, option1, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos2, FONT_GBLA, 0x01, -1, TF_CENTERED, option2, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos3, FONT_GBLA, 0x01, -1, TF_CENTERED, option3, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos4, FONT_GBLA, 0x01, -1, TF_CENTERED, option4, OP_OPAQUE);
+		Screen->DrawString(6, 128, YPos5, FONT_GBLA, 0x01, -1, TF_CENTERED, option5, OP_OPAQUE);
+		
+		if ( InitialDelay == 0 ) {
+			if ( Selection == 1 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos1, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos1, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 2 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos2, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos2, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 3 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos3, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos3, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 4 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos4, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos4, 63739, 5, OP_OPAQUE);
+			}
+			if ( Selection == 5 ) {
+				Screen->FastTile(6, 120 - LongestText/2 - 8, YPos5, 63719, 5, OP_OPAQUE);
+				//Screen->FastTile(6, 120 + LongestText/2 + 8, YPos5, 63739, 5, OP_OPAQUE);
+			}
+			
+			if ( Link->PressUp ) {
+				Game->PlaySound(5);
+				Selection --;
+				if ( Selection < 1 )
+					Selection = NumOptions;
+			}
+			else if ( Link->PressDown ) {
+				Game->PlaySound(5);
+				Selection ++;
+				if ( Selection > NumOptions )
+					Selection = 1;
+			}
+			else if ( Link->PressB && optionb > 0 ) {
+				GV[ButtonBLocked] = 1;
+				WaitNoAction();
+				return optionb;
+			}
+			else if ( Link->PressA ) {
+				GV[ButtonALocked] = 1;
+				WaitNoAction();
+				return Selection;
+			}
+		}
+		
+		if ( InitialDelay > 0 )
+			InitialDelay --;
+		WaitNoActionFull();
+	}
+}
+
+ffc script Intro{
+	void run(){
+		MessageDrawStuff(64, 0, 0, 0);
+		Screen->Message(1);
+		WaitNoActionFull();
+		this->Data = 888;
+		WaitNoActionFull();
+	}
+}
+
+ffc script SwordAbei{
+	void run(){
+		if ( Link->Item[143] ) {
+			MessageDrawStuff(24, 1, 0, 0);
+			Screen->Message(4);
+			WaitNoActionFull();
+		}
+		else {
+			MessageDrawStuff(24, 1, 0, 0);
+			Screen->Message(3);
+			WaitNoActionFull();
+		}
+	}
+}
+
+ffc script BombGoriya{
+	void run(){
+		WaitNoActionFull();
+		item itm = Screen->LoadItem(1);
+		if ( Screen->D[0] == 0 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(15);
+			WaitNoActionFull();
+			if ( !Link->Item[145] ) {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(16);
+				WaitNoActionFull();
+				if ( GV[OctorocksKilled] >= 5 ) {
+					itm->X = 120;
+					itm->Y = 96;
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(17);
+					WaitNoActionFull();
+					Screen->D[0] = 1;
+				}
+			}
+			else {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(19);
+				WaitNoActionFull();
+				
+				int textrow1full[] = "Ah, what's this I smell? Meat!";
+				int textrow2full[] = "Will you give me the meat?";
+				int option1[] = "Yes";
+				int option2[] = "No";
+				int Choice = ChoiceSelection(
+				24, 2, //messageYpos and npc name
+				textrow1full, 0, 0, //textrow1
+				textrow2full, 0, 0, //textrow2
+				0, 0, 0, //textrow3
+				option1, option2, 0, 0, 0, //options 1-5
+				1, 2); //starting option and option B
+				
+				if ( Choice == 1 ) {
+					Link->Item[145] = false;
+					itm->X = 120;
+					itm->Y = 96;
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(20);
+					WaitNoActionFull();
+					Screen->D[0] = 1;
+				}
+				else {
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(22);
+					WaitNoActionFull();
+					Screen->D[0] = 2;
+				}
+			}
+		}
+		else if ( Screen->D[0] == 1 ) {
+			itm->X = 120;
+			itm->Y = 96;
+			if ( !Link->Item[145] ) {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(18);
+				WaitNoActionFull();
+			}
+			else {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(19);
+				WaitNoActionFull();
+				
+				int textrow1full[] = "Ah, what's this I smell? Meat!";
+				int textrow2full[] = "Will you give me the meat?";
+				int option1[] = "Yes";
+				int option2[] = "No";
+				int Choice = ChoiceSelection(
+				24, 2, //messageYpos and npc name
+				textrow1full, 0, 0, //textrow1
+				textrow2full, 0, 0, //textrow2
+				0, 0, 0, //textrow3
+				option1, option2, 0, 0, 0, //options 1-5
+				1, 2); //starting option and option B
+				
+				if ( Choice == 1 ) {
+					Link->Item[145] = false;
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(21);
+					WaitNoActionFull();
+				}
+				else {
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(22);
+					WaitNoActionFull();
+					Screen->D[0] = 2;
+				}
+			}
+		}
+		else if ( Screen->D[0] == 2 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(22);
+			WaitNoActionFull();
+		}
+	}
+}
+
+ffc script WarpyKeyRoom{
+	void run(){
+		Waitframe();
+		item itm = Screen->LoadItem(1);
+		if ( !itm->isValid() )
+			Quit();
+		if ( Screen->D[0] == 0 ) {
+			Screen->D[0] = Rand(1, 4);
+		}
+		int D1Counter;
+		int D2Activated;
+		int D3State;
+		int D4P1;
+		int D4P2;
+		int D4P3;
+		int D4P4;
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( Screen->D[0] == 1 ) {
+				if ( D1Counter < 2 ) {
+					if ( LinkPos == 119 || LinkPos == 135 ) {
+						Link->X = 128;
+						Link->Y = 40;
+						D1Counter ++;
+					}
+				}
+			}
+			
+			if ( Screen->D[0] == 2 ) {
+				if ( D2Activated != 2 ) {
+					if ( LinkPos == 119 || LinkPos == 135 ) {
+						Link->X = 128;
+						Link->Y = 40;
+						D2Activated = 0;
+					}
+				}
+				if ( D2Activated == 0 && LinkPos == 130 ) {
+					Link->X = 160;
+					Link->Y = 80;
+					D2Activated = 1;
+				}
+				if ( D2Activated == 1 && LinkPos == 55 ) {
+					Link->X = 144;
+					Link->Y = 144;
+					D2Activated = 2;
+				}
+			}
+			
+			if ( Screen->D[0] == 3 ) {
+				if ( D3State != 2 ) {
+					if ( LinkPos == 119 || LinkPos == 135 ) {
+						Link->X = 128;
+						Link->Y = 40;
+						D3State = 0;
+					}
+				}
+				else {
+					if ( LinkPos == 119 || LinkPos == 135 ) {
+						Link->X = 160;
+						Link->Y = 112;
+					}
+					if ( LinkPos == 153 ) {
+						Link->X = 128;
+						Link->Y = 40;
+					}
+				}
+				if ( D3State == 0 && LinkPos == 65 ) {
+					Link->X = 160;
+					Link->Y = 80;
+					D3State = 1;
+				}
+				if ( D3State == 1 && LinkPos == 98 ) {
+					Link->X = 160;
+					Link->Y = 112;
+					D3State = 2;
+				}
+			}
+			
+			if ( Screen->D[0] == 4 ) {
+				if ( D4P1 == 0 || D4P2 == 0 || D4P3 == 0 || D4P4 == 0 ) {
+					if ( LinkPos == 119 || LinkPos == 135 ) {
+						Link->X = 128;
+						Link->Y = 40;
+						D4P1 = 0;
+						D4P2 = 0;
+						D4P3 = 0;
+						D4P4 = 0;
+					}
+				}
+				if ( D4P1 == 0 && LinkPos == 65 ) {
+					Link->X = 80;
+					Link->Y = 64;
+					D4P1 = 1;
+				}
+				if ( D4P2 == 0 && LinkPos == 90 ) {
+					Link->X = 128;
+					Link->Y = 80;
+					D4P2 = 1;
+				}
+				if ( D4P3 == 0 && LinkPos == 98 ) {
+					Link->X = 64;
+					Link->Y = 96;
+					D4P3 = 1;
+				}
+				if ( D4P4 == 0 && LinkPos == 130 ) {
+					Link->X = 64;
+					Link->Y = 128;
+					D4P4 = 1;
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script OcarinaDude{
+	void run(){
+		if ( Screen->D[0] == 1 ) {
+			MessageDrawStuff(24, 3, 0, 0);
+			Screen->Message(27);
+			WaitNoActionFull();
+		}
+		else {
+			MessageDrawStuff(24, 3, 0, 0);
+			Screen->Message(25);
+			WaitNoActionFull();
+			item itm = Screen->LoadItem(1);
+			while(true){
+				if ( !itm->isValid() ) {
+					Screen->D[0] = 1;
+					Quit();
+				}
+				Waitframe();
+			}
+		}
+	}
+}
+
+ffc script Keybushes{
+	void run(int type){
+		if ( Screen->State[ST_LOCKBLOCK] )
+			Quit();
+		int PushFrames;
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( type == 0 ) {
+				if ( PushFrames >= 25 ) {
+					Game->PlaySound(9);
+					Game->Counter[CR_KEYS] --;
+					Screen->State[ST_LOCKBLOCK] = true;
+					Screen->ComboD[106] ++;
+				}
+				if ( LinkPos == 90 && Link->Y == 80 && Link->InputDown && Game->Counter[CR_KEYS] > 0 )
+					PushFrames ++;
+				else
+					PushFrames = 0;
+			}
+			if ( type == 1 ) {
+				if ( PushFrames >= 25 ) {
+					Game->PlaySound(9);
+					Game->Counter[CR_KEYS] --;
+					Screen->State[ST_LOCKBLOCK] = true;
+					Screen->ComboD[87] ++;
+				}
+				if ( ((LinkPos == 86 && Link->X == 96 && Link->InputRight)
+				|| (LinkPos == 88 && Link->X == 128 && Link->InputLeft)
+				|| (LinkPos == 103 && Link->Y == 88 && Link->InputUp)) && Game->Counter[CR_KEYS] > 0 )
+					PushFrames ++;
+				else
+					PushFrames = 0;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script OcarinaAma{
+	void run(){
+		if ( Screen->D[0] == 1 ) {
+			MessageDrawStuff(24, 4, 0, 0);
+			Screen->Message(Rand(38, 43));
+			WaitNoActionFull();
+		}
+		else if ( Screen->D[0] == 2 ) {
+			MessageDrawStuff(24, 4, 0, 0);
+			Screen->Message(37);
+			WaitNoActionFull();
+		}
+		else {
+			MessageDrawStuff(24, 4, 0, 0);
+			Screen->Message(33);
+			WaitNoActionFull();
+			if ( !Link->Item[31] ) {
+				MessageDrawStuff(24, 4, 0, 0);
+				Screen->Message(34);
+				WaitNoActionFull();
+				Screen->D[0] = 1;
+			}
+			else {
+				MessageDrawStuff(24, 4, 0, 0);
+				Screen->Message(36);
+				WaitNoActionFull();
+				Screen->D[0] = 2;
+				Link->Item[31] = false;
+			}
+		}
+	}
+}
+
+ffc script Teacher{
+	void run(){
+		while(Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] != 544){
+			Waitframe();
+		}
+		GV[LinkSpeedX] = 0;
+		GV[LinkSpeedY] = 0;
+		if ( Screen->D[0] == 0 ) {
+			MessageDrawStuff(24, 1, 0, 0);
+			Screen->Message(46);
+			WaitNoActionFull();
+			
+			int textrow1full[] = "10 rupees and I'll train you.";
+			int option1[] = "Yes";
+			int option2[] = "No";
+			int Choice = ChoiceSelection(
+			24, 1, //messageYpos and npc name
+			textrow1full, 0, 0, //textrow1
+			0, 0, 0, //textrow2
+			0, 0, 0, //textrow3
+			option1, option2, 0, 0, 0, //options 1-5
+			1, 2); //starting option and option B
+			
+			if ( Choice == 1 ) {
+				if ( Game->Counter[CR_RUPEES] >= 10 ) {
+					Game->DCounter[CR_RUPEES] -= 10;
+					MessageDrawStuff(24, 1, 0, 0);
+					Screen->Message(49);
+					WaitNoActionFull();
+					GV[SharpMovement] = 1;
+					Screen->D[0] = 1;
+				}
+				else {
+					MessageDrawStuff(24, 1, 0, 0);
+					Screen->Message(48);
+					WaitNoActionFull();
+				}
+			}
+			else {
+				MessageDrawStuff(24, 1, 0, 0);
+				Screen->Message(50);
+				WaitNoActionFull();
+			}
+		}
+		else {
+			MessageDrawStuff(24, 1, 0, 0);
+			Screen->Message(51);
+			WaitNoActionFull();
+		}
+	}
+}
+
+ffc script Pitfalling{
+	void run(){
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( LinkPos == 43 || LinkPos == 59 || LinkPos == 75 ) {
+				MessageDrawStuff(1, 0, 0, 0);
+				Screen->Message(55);
+				WaitNoActionFull();
+				this->Data = 888;
+				WaitNoActionFull();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script Deathpit{
+	void run(){
+		int state;
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( state == 0 && Link->X < 88 ) {
+				GV[LinkSpeedX] = 0;
+				GV[LinkSpeedY] = 0;
+				MessageDrawStuff(1, 0, 0, 0);
+				Screen->Message(56);
+				WaitNoActionFull();
+				state = 1;
+			}
+			if ( state == 1 && Link->X <= 64 ) {
+				GV[LinkSpeedX] = 0;
+				GV[LinkSpeedY] = 0;
+				MessageDrawStuff(1, 0, 0, 0);
+				Screen->Message(57);
+				WaitNoActionFull();
+				state = 2;
+			}
+			if ( LinkPos == 67 || LinkPos == 83 || LinkPos == 99 ) {
+				Link->HP = 0;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script RuinTriggers{
+	void run(){
+		if ( GV[RuinTriggerS] == 1 ) {
+			for (int i = 0; i < 176; i++) {
+				if ( Screen->ComboF[i] == 16 )
+					Screen->ComboD[i] ++;
+			}
+			Screen->ComboD[94] = 397;
+			Screen->ComboD[115] --;
+		}
+		if ( GV[RuinTriggerN] == 1 ) {
+			for (int i = 0; i < 176; i++) {
+				if ( Screen->ComboF[i] == 17 )
+					Screen->ComboD[i] ++;
+			}
+			Screen->ComboD[94] = 397;
+			Screen->ComboD[51] --;
+		}
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( LinkPos == 119 && GV[RuinTriggerS] == 0 ) {
+				Game->PlaySound(27);
+				GV[RuinTriggerS] = 1;
+				for (int i = 0; i < 176; i++) {
+					if ( Screen->ComboF[i] == 16 )
+						Screen->ComboD[i] ++;
+				}
+				Screen->ComboD[94] = 397;
+				Screen->ComboD[115] --;
+			}
+			if ( LinkPos == 55 && GV[RuinTriggerN] == 0 ) {
+				Game->PlaySound(27);
+				GV[RuinTriggerN] = 1;
+				for (int i = 0; i < 176; i++) {
+					if ( Screen->ComboF[i] == 17 )
+						Screen->ComboD[i] ++;
+				}
+				Screen->ComboD[94] = 397;
+				Screen->ComboD[51] --;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script RuinDoors{
+	void run(){
+		if ( GV[RuinTriggerN] == 1 || GV[RuinTriggerS] == 1 )
+			Screen->ComboD[81] = 393;
+		if ( GV[RuinTriggerN] == 1 && GV[RuinTriggerS] == 1 )
+			Screen->ComboD[94] = 397;
+	}
+}
+
+ffc script ZeldaHint{
+	void run(){
+		if ( Screen->D[0] == 0 ) {
+			MessageDrawStuff(24, 5, 0, 0);
+			Screen->Message(61);
+			WaitNoActionFull();
+			Screen->D[0] = 1;
+		}
+		else {
+			MessageDrawStuff(24, 5, 0, 0);
+			Screen->Message(64);
+			WaitNoActionFull();
+		}
+	}
+}
+
+ffc script TimedSwitchRoom{
+	void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		int Timer = -1;
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( LinkPos == 45 && Timer == -1 ) {
+				Screen->ComboD[45] ++;
+				Screen->ComboD[116] ++;
+				Screen->ComboD[132] ++;
+				Timer = 160;
+			}
+			
+			if ( Timer == 0 ) {
+				Timer = -1;
+				Screen->ComboD[45] --;
+				Screen->ComboD[116] --;
+				Screen->ComboD[132] --;
+				if ( LinkPos == 116 || LinkPos == 132 ) {
+					if ( Link->X <= 64 )
+						Link->X = 56;
+					else
+						Link->X = 72;
+				}
+			}
+			if ( Timer > 0 )
+				Timer --;
+			
+			if ( LinkPos == 130 && !Screen->State[ST_SECRET] ) {
+				Game->PlaySound(27);
+				Screen->State[ST_SECRET] = true;
+				Screen->TriggerSecrets();
+				Quit();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script Ghost_Stalfos{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_KNOCKBACK);
+		Ghost_SetFlag(GHF_4WAY);
+		int counter = -1;
+		int haltcounter = 150 + Rand(90);
+		while(true){
+			if ( haltcounter > 0 ) {
+				counter = Ghost_VariableWalk8(counter, 80, 8, 60, 0, 30);
+				if ( Ghost_Dir != DIR_UP && Ghost_Dir != DIR_RIGHT && Ghost_Dir != DIR_DOWN && Ghost_Dir != DIR_LEFT )
+					Ghost_Dir = Choose(DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT);
+			}
+			
+			if ( haltcounter == -32 ) { //attack
+				for (int i = 1; i <= 10; i++) {
+					eweapon e = FireAimedEWeapon(EW_FIREBALL, Ghost_X, Ghost_Y, 0, 250, ghost->WeaponDamage, -1, -1, 0);
+					SetEWeaponLifespan(e, EWL_SLOW_TO_HALT, 3);
+					SetEWeaponDeathEffect(e, EWD_FIRE, 80);
+					Ghost_Waitframes(this, ghost, true, true, 6);
+				}
+			}
+			
+			haltcounter --;
+			if ( haltcounter < -48 )
+				haltcounter = 150 + Rand(90);
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Ghost_Fairy{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_4WAY);
+		Ghost_SetFlag(GHF_IGNORE_ALL_TERRAIN);
+		Ghost_SetFlag(GHF_FLYING_ENEMY);
+		int counter = -1;
+		int haltcounter = 60 + Rand(120);
+		while(true){
+			if ( haltcounter > 0 ) {
+				counter = Ghost_VariableWalk8(counter, 60, 8, 60, 0, 30);
+				//if ( Ghost_Dir != DIR_UP && Ghost_Dir != DIR_RIGHT && Ghost_Dir != DIR_DOWN && Ghost_Dir != DIR_LEFT )
+				//	Ghost_Dir = Choose(DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT);
+			}
+			
+			if ( haltcounter == -32 ) { //attack
+				Game->PlaySound(32);
+				for (int i = 1; i <= 24; i++) {
+					eweapon e = FireEWeapon(EW_MAGIC, Ghost_X, Ghost_Y, DegtoRad(360/24*i), 300, ghost->WeaponDamage, 92, 0, EWF_NO_COLLISION);
+					SetEWeaponLifespan(e, EWL_SLOW_TO_HALT, 4);
+					SetEWeaponDeathEffect(e, EWD_EXPLODE, ghost->WeaponDamage);
+				}
+			}
+			
+			haltcounter --;
+			if ( haltcounter < -48 )
+				haltcounter = 150 + Rand(90);
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Ghost_Link{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SetFlag(GHF_KNOCKBACK);
+		Ghost_SetFlag(GHF_4WAY);
+		int counter = -1;
+		int haltcounter = 150 + Rand(90);
+		while(true){
+			if ( haltcounter > 0 ) {
+				counter = Ghost_VariableWalk8(counter, 80, 8, 60, 0, 30);
+				if ( Ghost_Dir != DIR_UP && Ghost_Dir != DIR_RIGHT && Ghost_Dir != DIR_DOWN && Ghost_Dir != DIR_LEFT )
+					Ghost_Dir = Choose(DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT);
+			}
+			
+			if ( haltcounter == -32 ) { //attack
+				int attack = Choose(1, 2);
+				if ( attack == 1 ) {
+					int doffset = Rand(360);
+					for (int i = 1; i <= 24; i++) {
+						eweapon e = FireEWeapon(EW_MAGIC, Ghost_X, Ghost_Y, DegtoRad(360/24*i+doffset), 350-300/24*i, ghost->WeaponDamage, 92, 0, EWF_NO_COLLISION);
+						SetEWeaponLifespan(e, EWL_SLOW_TO_HALT, 4);
+						SetEWeaponDeathEffect(e, EWD_EXPLODE, ghost->WeaponDamage);
+						eweapon e2 = FireEWeapon(EW_MAGIC, Ghost_X, Ghost_Y, DegtoRad(360/24*i+180+doffset), 350-300/24*i, ghost->WeaponDamage, 92, 0, EWF_NO_COLLISION);
+						SetEWeaponLifespan(e2, EWL_SLOW_TO_HALT, 4);
+						SetEWeaponDeathEffect(e2, EWD_EXPLODE, ghost->WeaponDamage);
+						CustomWaitframes(this, ghost, 8);
+					}
+				}
+				if ( attack == 2 ) {
+					for (int i = 1; i <= 10; i++) {
+						eweapon fireball = FireEWeapon(EW_FIREBALL, this->X, this->Y, DegtoRad(360/10*i), 150, 4, -1, 0, 0);
+						SetEWeaponMovement(fireball, EWM_HOMING_REAIM, 1, 35);
+					}
+					CustomWaitframes(this, ghost, 8);
+				}
+			}
+			CustomWaitframe(this, ghost);
+			haltcounter --;
+			if ( haltcounter < -48 )
+				haltcounter = 90 + Rand(90);
+			
+		}
+	}
+	void CustomWaitframe(ffc this, npc ghost){
+		if(!Ghost_Waitframe(this, ghost, false, false)) {
+			Ghost_Explode(this, ghost);
+			Waitframe();
+			this->Data = 888;
+			Quit();
+		}
+	}
+	void CustomWaitframes(ffc this, npc ghost, int n){
+		for (int i = 1; i <= n; i++) {
+			if(!Ghost_Waitframe(this, ghost, false, false)) {
+				Ghost_Explode(this, ghost);
+				Waitframe();
+				this->Data = 888;
+				Quit();
+			}
+		}
+	}
+}
+
+ffc script DesertTrip{
+	void run(){
+		MessageDrawStuff(1, 0, 0, 0);
+		Screen->Message(70);
+		WaitNoActionFull();
+		this->Data = 888;
+		WaitNoActionFull();
+	}
+}
+
+ffc script DesertEntrance{
+	void run(){
+		if ( Link->Y > 128 ) {
+			if ( Screen->D[0] == 1 ) {
+				GV[LinkSpeedX] = 0;
+				GV[LinkSpeedY] = 0;
+				MessageDrawStuff(0, 0, 0, 0);
+				Screen->Message(71);
+				WaitNoActionFull();
+			}
+			else
+				Link->HP = Link->MaxHP;
+			Screen->D[0] = 1;
+		}
+		if ( Link->Item[146] && Link->Item[143] ) {
+			while(Link->X >= 208){
+				Waitframe();
+			}
+			Game->PlayMIDI(0);
+			this->Data = 848;
+			this->X = 120;
+			this->Y = 176;
+			this->Vy = -1;
+			GV[LinkSpeedX] = 0;
+			GV[LinkSpeedY] = 0;
+			while(this->Y > 144){
+				WaitNoActionFull();
+			}
+			this->Vy = 0;
+			MessageDrawStuff(0, 1, 0, 0);
+			Screen->Message(5);
+			WaitNoActionFull();
+			Screen->TriggerSecrets();
+			while(true){
+				FireAimedEWeapon(EW_FIREBALL, this->X, this->Y, DegtoRad(Rand(-35, 35)), 250, 4, -1, -1, 0);
+				Waitframes(2);
+			}
+		}
+	}
+}
+
+ffc script DesertBushes{
+	void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		while(true){
+			for (int i = 1; i <= Screen->NumLWeapons(); i++) { //for all lweapons
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( wpn->ID == LW_BEAM ) {
+					if ( Screen->ComboF[ComboAt(wpn->X+8, wpn->Y+8)] == 16 ) {
+						wpn->DeadState = WDS_DEAD;
+						Game->PlaySound(27);
+						Screen->TriggerSecrets();
+						Screen->State[ST_SECRET] = true;
+						Quit();
+					}
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script HintGoriya{
+	void run(){
+		if ( Screen->D[0] == 0 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(90);
+			WaitNoActionFull();
+			
+			if ( GetEquipmentA() == 143 )
+				GV[SwordACounter] += 5;
+			if ( GetEquipmentB() == 143 )
+				GV[SwordBCounter] += 5;
+			
+			if ( GV[SwordACounter] >= GV[SwordBCounter] ) {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(92);
+				WaitNoActionFull();
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(94);
+				WaitNoActionFull();
+				Screen->D[0] = 1;
+			}
+			else {
+				MessageDrawStuff(24, 2, 0, 0);
+				Screen->Message(91);
+				WaitNoActionFull();
+				if ( !Link->Item[145] ) {
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(96);
+					WaitNoActionFull();
+					Screen->D[0] = 2;
+				}
+				else {
+					MessageDrawStuff(24, 2, 0, 0);
+					Screen->Message(93);
+					WaitNoActionFull();
+					
+					int textrow1full[] = "But wait! Ah, that zmell. It'z meat!";
+					int textrow2full[] = "Can I have it?";
+					int option1[] = "Yes";
+					int option2[] = "No";
+					int Choice = ChoiceSelection(
+					24, 2, //messageYpos and npc name
+					textrow1full, 0, 0, //textrow1
+					textrow2full, 0, 0, //textrow2
+					0, 0, 0, //textrow3
+					option1, option2, 0, 0, 0, //options 1-5
+					1, 2); //starting option and option B
+					
+					if ( Choice == 1 ) {
+						Link->Item[145] = false;
+						MessageDrawStuff(24, 2, 0, 0);
+						Screen->Message(94);
+						WaitNoActionFull();
+						Screen->D[0] = 1;
+					}
+					else {
+						MessageDrawStuff(24, 2, 0, 0);
+						Screen->Message(97);
+						WaitNoActionFull();
+						Screen->D[0] = 3;
+					}
+				}
+			}
+		}
+		else if ( Screen->D[0] == 1 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(95);
+			WaitNoActionFull();
+		}
+		else if ( Screen->D[0] == 2 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(96);
+			WaitNoActionFull();
+		}
+		else if ( Screen->D[0] == 3 ) {
+			MessageDrawStuff(24, 2, 0, 0);
+			Screen->Message(97);
+			WaitNoActionFull();
+		}
+	}
+}
+
+ffc script CometHint{
+	void run(){
+		Link->CollDetection = false;
+		MessageDrawStuff(24, 6, 0, 0);
+		Screen->Message(105);
+		WaitNoActionFull();
+		WaitNoActionFull(120);
+		for (int i = 0; i < 30; i++) {
+			Screen->Quake = 60;
+			WaitNoActionFull(2);
+		}
+		for (int i = 0; i < 176; i++) {
+			lweapon expl = CreateLWeaponAt(LW_BOMBBLAST, ComboX(i), ComboY(i));
+		}
+		WaitNoActionFull(8);
+		Link->HP = 0;
+	}
+}
+
+//thx moosh
+ffc script PurpleTrees{
+	void run(){
+		int chargeframes;
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( LinkPos == 88 && Link->InputLeft && Link->InputRight ) {
+				chargeframes ++;
+			}
+			else
+				chargeframes = 0;
+			if ( chargeframes > 180 ) {
+				Link->CollDetection = false;
+				Game->PlayMIDI(0);
+				int ringX[16];
+				int ringY[16];
+				int ringA[16];
+				int ringR[16];
+				int ringD[16];
+				int ringSinMod[16];
+				int ringCosMod[16];
+				int ringC[16];
+				int ringMax[16];
+				int ringMultiplier[16];
+				
+				int vars[16] = {0, ringX, ringY, ringA, ringR, ringD, ringSinMod, ringCosMod, ringC, ringMax, ringMultiplier};
+			
+				int ringTimer = 8;
+				int dir = 1;
+				int warpTimer = 300;
+				while(true){
+					ringTimer--;
+					if(ringTimer<0){
+						ringTimer = Choose(8, 10, 12);
+						AddRing(vars, 136+Rand(-4, 4), 88+Rand(-4, 4), Rand(360), dir*Rand(2, 4));
+						dir = -dir;
+					}
+					UpdateRings(vars);
+					if ( warpTimer <= 0 ) {
+						this->Data = 888;
+					}
+					warpTimer --;
+					WaitNoActionFull();
+				}
+			}
+			Waitframe();
+		}
+	}
+	void AddRing(int vars, int x, int y, int a, int r){
+		int colors[] = {0x76, 0x72, 0x82, 0x01, 0xA3};
+		int ringX = vars[1];
+		int ringY = vars[2];
+		int ringA = vars[3];
+		int ringR = vars[4];
+		int ringD = vars[5];
+		int ringSinMod = vars[6];
+		int ringCosMod = vars[7];
+		int ringC = vars[8];
+		int ringMax = vars[9];
+		int ringMultiplier = vars[10];
+		
+		for(int i=0; i<16; i++){
+			if(ringD[i]==0){
+				ringX[i] = x;
+				ringY[i] = y;
+				ringA[i] = a;
+				ringR[i] = r;
+				ringD[i] = 1;
+				ringSinMod[i] = Rand(3, 9);
+				ringCosMod[i] = Rand(3, 9);
+				int maxColors = SizeOfArray(colors);
+				int c = Rand(maxColors);
+				ringC[i] = colors[c];
+				ringMax[i] = Choose(16, 24, 32);
+				ringMultiplier[i] = Rand(10, 30)/10;
+				return;
+			}
+		}
+	}
+	void UpdateRings(int vars){
+		int ringX = vars[1];
+		int ringY = vars[2];
+		int ringA = vars[3];
+		int ringR = vars[4];
+		int ringD = vars[5];
+		int ringSinMod = vars[6];
+		int ringCosMod = vars[7];
+		int ringC = vars[8];
+		int ringMax = vars[9];
+		int ringMultiplier = vars[10];
+		
+		vars[0] = 0;
+		for(int i=0; i<16; i++){
+			if(ringD[i]>0){
+				ringD[i] += 2;
+				ringA[i] = WrapDegrees(ringA[i]+ringR[i]);
+				DrawRing(vars, ringX[i], ringY[i], ringD[i], ringA[i], ringSinMod[i], ringCosMod[i], ringMax[i], ringC[i]);
+				if(ringD[i]>=132){
+					ringD[i] = 0;
+				}
+			}
+		}
+	}
+	void DrawRing(int vars, int x, int y, int dist, int angle, int sinmod, int cosmod, int max, int c){
+		int tempx; int tempy; int a;
+		int r = Max(1, dist/16);
+		for(int i=0; i<max; i++){
+			a = i*(360/max); 
+			int d = dist+dist*0.2*(0.5*Abs(Sin(sinmod*a+angle))+0.5*Abs(Sin(sinmod*a+angle)));
+			tempx = x + VectorX(d, a+angle);
+			tempy = y + VectorY(d, a+angle);
+			vars[0]++;
+			Screen->Ellipse(0, tempx, tempy, r, Max(1, r*0.6), c, 1, tempx, tempy, angle-2*a, true, 128);
+		}
+	}
+}
+
+ffc script Fairy{
+	void run(){
+		if ( Screen->D[0] == 0 ) {
+			MessageDrawStuff(24, 7, 0, 0);
+			Screen->Message(80);
+			WaitNoActionFull();
+			Screen->D[0] = 1;
+		}
+		else {
+			MessageDrawStuff(24, 7, 0, 0);
+			Screen->Message(83);
+			WaitNoActionFull();
+			while(true){
+				int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+				if ( Screen->ComboT[LinkPos] == CT_SHALLOWWATER ) {
+					Game->End();
+				}
+				Waitframe();
+			}
+		}
+	}
+}
+
+ffc script MazeReset{
+	void run(){
+		GV[MazeState] = 0;
+	}
+}
+
+//SWWES ESWES
+ffc script Maze{
+	void run(){
+		int EnteredDir;
+		if ( Link->Y < 16 )
+			EnteredDir = DIR_DOWN;
+		if ( Link->X > 224 )
+			EnteredDir = DIR_LEFT;
+		if ( Link->Y > 144 )
+			EnteredDir = DIR_UP;
+		if ( Link->X < 16 )
+			EnteredDir = DIR_RIGHT;
+		
+		if ( GV[MazeState] == 0 )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 1 && EnteredDir == DIR_DOWN )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 2 && EnteredDir == DIR_LEFT )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 3 && EnteredDir == DIR_LEFT )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 4 && EnteredDir == DIR_RIGHT )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 5 && EnteredDir == DIR_DOWN )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 6 && EnteredDir == DIR_RIGHT )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 7 && EnteredDir == DIR_DOWN )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 8 && EnteredDir == DIR_LEFT )
+			GV[MazeState] ++;
+		else if ( GV[MazeState] == 9 && EnteredDir == DIR_RIGHT )
+			Screen->SetSideWarp(1, 0x4A, -1, -1);
+		else
+			GV[MazeState] = 1;
+	}
+}
+
+ffc script PondWarp{
+	void run(){
+		while(true){
+			int LinkPos = ComboAt(Link->X+8, Link->Y+12);
+			if ( Screen->ComboT[LinkPos] == CT_SHALLOWWATER ) {
+				this->Data = 888;
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script SavePoint{
+	void run(){
+		if ( Screen->D[0] == 1 )
+			Quit();
+		Screen->D[0] = 1;
+		Game->ShowSaveScreen();
+		Link->HP = Link->MaxHP;
+		Waitframe();
+	}
+}
+
+ffc script BossEncounter{
+	void run(){
+		while(Link->Y > 136){
+			Waitframe();
+		}
+		Screen->TriggerSecrets();
+		MessageDrawStuff(24, 8, 0, 0);
+		Screen->Message(112);
+		WaitNoActionFull();
+		this->Data = 888;
+		WaitNoActionFull();
+	}
+}
+
+ffc script Outro{
+	void run(){
+		MessageDrawStuff(64, 0, 0, 0);
+		Screen->Message(120);
+		WaitNoActionFull();
+		WaitNoActionFull();
+		Game->End();
+	}
+}

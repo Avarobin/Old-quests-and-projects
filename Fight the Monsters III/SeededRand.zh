@@ -1,0 +1,45 @@
+//int XORShift_X = -1;
+//int XORShift_Y = -1;
+
+void XORShift_SetSeed(int x, int y) {
+	GV[XORShift_X] = x & 0xFFFF;
+	GV[XORShift_Y] = y & 0xFFFF;
+}
+
+int XORShift_Next() {
+	int t = GV[XORShift_X] ^ ((GV[XORShift_X] << 5) & 0xFFFF);
+	GV[XORShift_X] = GV[XORShift_Y];
+	GV[XORShift_Y] ^= (GV[XORShift_Y] ^ (GV[XORShift_Y] >> 1)); //changed = to ^=
+	GV[XORShift_Y] ^= t ^ (t >> 3);
+	return GV[XORShift_Y];
+}
+
+int SRand(int max){
+	if(GV[XORShift_X]==-1)
+		return Rand(max);
+	else
+		return XORShift_Next()%max;
+}
+
+int SRand(int min, int max){
+	if(GV[XORShift_X]==-1)
+		return Rand(min, max);
+	else
+		return min+(XORShift_Next()%(max-min+1));
+}
+
+ffc script TestSeeds{
+	void run(){
+		XORShift_SetSeed(1, 5);
+		int rand[128];
+		for(int i=0; i<128; i++){
+			rand[i] = SRand(10);
+		}
+		while(true){
+			for(int i=0; i<128; i++){
+				Screen->DrawInteger(6, 8*Floor(i/16), 8*(i%16), FONT_Z3SMALL, 1, 0, -1, -1, rand[i], 0, 128);
+			}
+			Waitframe();
+		}
+	}
+}

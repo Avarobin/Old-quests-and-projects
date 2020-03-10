@@ -1,0 +1,265 @@
+---Floor generation---
+
+Floor size is 5x5
+Place filler blocks randomly near the 4 corners.
+From start, create the main path to the boss which tries to be 13 tiles, but be satisfied with 12.
+Remove the filler blocks.
+For 20 times pick a random main path tile other than the boss and try to create a side path of 3 tiles.
+If failed, try the same thing 50 times with 2 tiles. If failed again, be satisfied with 1. (Chance to skip the 3 or 2 tiles tries altogether, based on floor)
+Place a treasure at the end of that path.
+Now repeat the procedure for a second side path with another treasure.
+For 20 times pick a random room tile other than boss or treasure and try to create a side path of 2 tiles.
+If failed, be satisfied with 1.
+Place a shop at the end of that path.
+For 50 times pick a random room tile other than boss or treasure and try creating a side room.
+Create the final unplaced rooms, connecting them to random rooms other than boss.
+Done.
+Place 3-4 events on main path, 2-3 events on side paths.
+The rest becomes enemy rooms.
+Make screens
+Determine big treasure chests content.
+Create a passive item table with random order.
+
+
+
+
+
+---Room layout types---
+
+Main path (1-13)
+Side path
+
+---Room content types---
+
+Start room
+Boss room (boss marker)
+Enemy room (red marker)
+Event room (blue marker)
+Treasure room (gold marker)
+Shop room (white marker)
+
+
+
+
+
+---Rules---
+
+Start with 30 HP, 30 MP and 30 rupees. +5 max HP after each boss.
+
+Permadeath
+
+Can sense whats in adjacent unexplored rooms.
+
+Map gets revealed as you traverse the floor.
+
+Small chests contain consumables, big chests contain passive items.
+
+2 treasure rooms per floor, which contain a big chest as a reward for a fight.
+
+A shop per floor. After leaving a shop, it will disappear.
+
+Full heal after a bossfight. Must continue to next floor after a boss.
+
+
+
+
+
+
+
+---CHARACTERS---
+
+---Link, the Legendary Hero---
+
+Passives:
+Shield blocks small projectiles from the front.
+Start each fight with 3 defense.
+
+A: Sword attack
+B: Shoot arrow
+R: Change arrow type (normal->fire->ice)
+
+---Nayru, the Oracle of Ages---
+
+Passives:
+Opens a portal after 30 seconds in a fight.
+It can be used to skip the fight at the cost of 1 HP. Also skips rewards.
+
+A: Fire an orb for a short distance. It then stays in place. Also moves all orbs in the same way. When more than 20 remove the first.
+B: Nayrus love. Take no damage for 5 seconds (10 sec CD)
+R: Freezes enemies for 5 seconds. (20 sec CD) 
+
+---Zee, the Shadow Ninja---
+
+Passives:
+Has 20% increased movespeed.
+Has a shadow clone following his steps.
+
+A: Throw a shuriken. Shadow clones throw shuriken too.
+B: Place up to 2 warp swords, then be able to warp between them.
+R: Dash and become invincible for a short time, leaving behind a shadow clone (20 sec CD)
+
+---Calor, the Flame Enchanter---
+
+Passives:
+Nearby enemies passively take damage.
+When enemies die, they shoot flames at their nearest enemy.
+
+A:
+B:
+R:
+
+---Lorelle, the Gambler---
+
+Passives:
+Can pick a card at the start of a fight.
+
+A:
+B:
+R:
+
+---Novus, the Fairy Spirit---
+
+Passives:
+Can extract passive items to gain power. Can only carry 5 passive items.
+
+A: Shoot 4 projectiles, alternating between 4-way and diagonal.
+B:
+R:
+
+---Gale, the Eye of the Storm---
+
+Passives:
+Enemies drop energy to fill up a meter. When full, can unleash super whirlwind attacks.
+
+A: Shoot a tornado.
+B: Shoot 3 tornadoes.
+R: Place 5 circling tornadoes.
+
+
+
+
+
+
+
+
+---ITEMS---
+
+---Useable items---
+
+1 Health potion:
+Restore 10 HP.
+
+2 Power potion:
+Gain 5 attack power for 10 seconds and restore 5 HP.
+
+3 Magic potion:
+Gain unlimited MP for 10 seconds and gain 1 max MP.
+
+4 Metal plate:
+Gain 5 defense, that lasts until you leave the room.
+
+5 Lightning bomb:
+Deal 40 damage to all enemies.
+
+6 Bubbled poison:
+Fill the room with poison that deals 40 damage over 20 seconds to all enemies.
+
+
+
+---Passive items----
+
+(companion) (cant see waves left) (cant sense adjacent rooms)
+(fluctuating power) (item attacks you)
+(double damage)
+(something with defend maybe fireshield (+power)) (+ power pro rupees)
+
+1 Map:
+Reveals the layout of the dungeon.
+
+2 Compass:
+Shows big treasures and boss locations. Makes a sound in rooms with chests.
+
+3 Dangerous wallet:
+Gain 60 rupees whenever you enter a shop. Lose 1 HP for every purchase.
+
+4 Deluxe card:
+Shop items cost 20% less.
+
+5 Genie lamp:
+The genie can grant you a wish at the start of a fight. Only works 3 times.
+
+6 Bottled fairy:
+If you would die, restore 50% HP and remove this item.
+
+7 Magic lantern:
+Create damaging flames around you when your MP falls below 10.
+
+8 Lucky medal:
+30% chance to restore 3 HP at the start of each fight.
+
+9 Lightning ring:
+Every 10 seconds a random enemy gets hit by 30 damage.
+
+10 Linked Damage:
+Whenever you damage an enemy all other enemies lose 3 HP.
+
+11 Item magnet:
++3 max HP. Attract dropped items.
+
+12 Wondrous pyramid:
+Link - Include light arrows to your selection.
+Nayru - 
+Zee - 
+Calor - 
+Norelle - 
+Novus - 
+Gale - 
+
+13 Shell of tributes:
++8 max MP. +5 attack power. Lose 1 HP every time you enter a new room.
+
+14 Cursed heart container:
++5 max HP. Bosses start with 50 more HP.
+
+15 Peril pendant
++5 attack power while you are under 50% health.
+
+
+
+---Events---
+
+(quests, minigames (collect stars))
+(leave money or life/health potion or heart container (3rd floor))
+
+-Shopkiller-
+The shopkeeper on this floor gets killed, 
+
+
+
+
+
+
+---Active sub---
+
+Floor #
+Big chests found:
+Shop found:
+Seed:
+
+
+
+
+---Scriptstuff used---
+
+LW_SCRIPT1:
+Misc 0 = special type
+Misc 1 = special type var
+Misc 15 = deadtimer
+
+LW_SCRIPT2:
+Misc 0 = deadtimer
+Misc 14 = damage number type (0 = normal, 1 = player)
+Misc 15 = damage number (-1000 = defended)
+
+EW_SCRIPT1:
+Misc 0 = special type

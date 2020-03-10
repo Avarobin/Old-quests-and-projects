@@ -1,0 +1,79 @@
+No rules
+Easiest mode. Enjoy the quest without rules.
+
+Standard
+Normal mode. Great for those who play this for the first time.
+
+Expert
+Harder mode. Rules come a bit faster.
+
+All rules
+Begin the quest with all rules in play. For the crazy.
+
+
+
+
+
+
+
+e, n, n, e, h
+e, n, n, e, h
+e, n, n, e, h
+e, n, n, e, h
+e, n, n, e, h
+e, n, n, e, n, n, n
+
+
+
+Easy rules:
+1 You shall not step on shallow water.
+2 You shall not step on flowers.
+3 You shall not release ghosts from graves.
+4 You shall not attack peahats.
+5 You shall not kill zoras.
+6 You shall not kill butterflies.
+7 You shall not max out your bombs.
+8 You shall not use bombs in caves.
+9 You shall not let gels turn into zols. (low prio if water dungeon beaten)
+10 You shall not complain about the rules. (low prio if 2 or less rules)
+11 You shall not stand still for 4 seconds.
+12 You shall not go inside if it rains.
+
+Normal rules:
+13 You shall not get hit by octorock's rocks.
+14 You shall not get hit by boomerangs.
+15 You shall not kill keese.
+16 You shall not press L or R. (low prio if less than 2 B items)
+17 You shall not damage stunned enemies. (low prio if no boomerang and hookshot)
+18 You shall not touch your own flames. (low prio if no candle)
+19 You shall not use health recovery tiles. (low prio if no dungeon has been beaten)
+20 You shall not use more than 1 bomb per screen.
+21 You shall not remain in a dungeon for 10 minutes.
+22 You shall not let wallmasters go back into the wall.
+23 You shall not use the hammer twice in a row. (low prio if no hammer)
+24 You shall not press Ex1 while there are enemies. (low prio if 2 or less rules)
+25 You shall not press Map while facing left or right.
+26 You shall not have less than 1 full heart.
+27 You shall not use items in doorways.
+
+Five hard rules:
+28 You shall not leave any octorock alive.
+29 You shall not slash pots or bushes.
+30 You shall always kill stalfos first.
+31 You shall not change direction during a sword slash.
+32 You shall kill 20 enemies before entering a dungeon.
+
+after lvl 1:
+33 You shall use your sword at least once every 20 seconds.
+after lvl 2:
+34 You shall not use your sword at full health.
+after lvl 3:
+35 You shall not use potions.
+
+
+
+36 You shall not leave any armos unactivated.
+37 You shall not face up or down on black tiles.
+38 You shall not use items on white tiles.
+39 You shall not let bombchus explode.
+40 You shall not kill me.

@@ -1,0 +1,12 @@
+E/LWeapons miscs
+
+0: 0 = dies on contact with solidity, 1 = on top of solidity
+1: 0 = normal, -1 = carries link, >0 = ignore link time
+2: position of the combo to ignore
+3: 0 = normalwind, 1 = firewind, 2 = icewind
+4: initial delay before moving
+5: 0 = ignores enemies, otherwise the damage it does to enemies
+6: mirroring delay
+7: 0 = normal, >0 = spinattackwind
+8: own wind reflection carry prevention
+

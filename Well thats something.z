@@ -1,0 +1,190 @@
+import "std.zh"
+
+int moveIt = 0;
+int newRule = 0;
+
+ffc script Message {
+    void run(int m){
+        Screen->Message(m);
+        Waitframe();
+    }
+}
+
+item script ItemMessage {
+    void run(int m){
+        Screen->Message(m);
+    }
+}
+
+item script moveIt {
+    void run(){
+        if ( moveIt == 0 ) {
+            Game->PlaySound(61);
+            moveIt = 540;
+            for(int i = 0; i < 175; i++){
+                if ( Screen->ComboD[i] >= 704 && Screen->ComboD[i] <= 707 )
+                    Screen->ComboD[i] -= 4;
+            }
+        }
+    }
+}
+
+ffc script ScreenFlashTimeWarp {
+    void run(int time, int timeLeftToFlash){
+        int explosionTimer = time;
+        int flashTimer;
+        while(true){
+            if ( explosionTimer == 0 )
+                this->Data = 25744;
+            if ( explosionTimer <= timeLeftToFlash && flashTimer >= 3 )
+                Screen->Rectangle(5, 0, 0, 256, 176, 129, 1, 0, 0, 0, true, 128);
+            if ( flashTimer == 4 )
+                flashTimer = 0;
+            explosionTimer --;
+            flashTimer ++;
+            Waitframe();
+        }
+    }
+}
+
+ffc script warpLabyrinth {
+    void run(){
+        int upperWait = 0;
+        bool warped1 = false;
+        bool warped2 = false;
+        bool isWarped = false;
+        while(true){
+            if ( Link->Y <= 32 && Link->X <= 136 && warped2 == false ) {
+                if ( upperWait == 0 )
+                    upperWait = Rand(1, 30);
+                else if ( upperWait == 1 ) {
+                    Link->Y += 64;
+                    warped1 = true;
+                }
+            }
+            else
+                upperWait = 0;
+
+            if ( warped1 == true && Link->Y > 144 ) {
+                warped2 = true;
+                isWarped = true;
+                Link->X -= 48;
+                Link->Y = 56;
+            }
+            if ( isWarped == true && Link->Y < 56 ) {
+                isWarped = false;
+                Link->X += 48;
+                Link->Y = 144;
+            }
+
+            if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 39 ) {
+                Link->Item[54] = true;
+                Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 36;
+            }
+
+            if ( upperWait > 0 )
+                upperWait --;
+            Waitframe();
+        }
+    }
+}
+
+ffc script shoot {
+    void run(){
+        int shoot = 180;
+        while (true){
+            shoot --;
+            if (shoot <= 180 && (shoot % 4 == 0 || shoot+1 % 4 == 0)) {
+                Game->PlaySound(40);
+                eweapon ew = Screen->CreateEWeapon(EW_FIREBALL);
+                ew->X = this->X;
+                ew->Y = this->Y;
+                ew->Angular = true;
+                ew->Angle = DegtoRad(Rand(360));
+                ew->Dir = RadianAngleDir8(WrapAngle(ew->Angle));
+                ew->Step = 120;
+                ew->Damage = 2;
+            }
+            if ( shoot == 0 )
+                shoot = 180;
+            Waitframe();
+        }
+    }
+}
+ 
+void ShootFireball(npc enemy) {
+    for (int i = 1; i <= Screen->NumNPCs(); i++) {
+        Game->PlaySound(40);
+        eweapon ew = Screen->CreateEWeapon(EW_FIREBALL);
+        ew->X = CenterX(enemy) - 8;
+        ew->Y = CenterY(enemy) - 8;
+        ew->Angular = true;
+        ew->Angle = DegtoRad(Rand(360));
+        ew->Dir = RadianAngleDir8(WrapAngle(ew->Angle));
+        ew->Step = 120;
+        ew->Damage = enemy->WeaponDamage;
+    }
+}
+
+ffc script newRuleCave {
+    void run(){
+        while(true){
+            if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == 39 ) {
+                newRule = 1;
+                Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] = 36;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script newRuleScreen {
+    void run(){
+        while(true){
+            if ( newRule == 1 ) {
+                Screen->Message(13);
+                Waitframe();
+                Link->Item[93] = false;
+                newRule = 2;
+            }
+            Waitframe();
+        }
+    }
+}
+
+
+
+global script active {
+    void run(){
+        int flashTimer = 0;
+        while(true){
+            if ( moveIt > 0 ) {
+                Link->HP = Link->MaxHP;
+                NoAction();
+                if ( Link->Dir == DIR_UP )
+                    Link->InputUp = true;
+                if ( Link->Dir == DIR_RIGHT )
+                    Link->InputRight = true;
+                if ( Link->Dir == DIR_DOWN )
+                    Link->InputDown = true;
+                if ( Link->Dir == DIR_LEFT )
+                    Link->InputLeft = true;
+                if ( moveIt == 1 ) {
+                    for(int i = 0; i < 175; i++){
+                        if ( Screen->ComboD[i] >= 700 && Screen->ComboD[i] <= 703 )
+                            Screen->ComboD[i] += 4;
+                    }
+                }
+                if ( flashTimer == 0 ) {
+                    flashTimer = 5;
+                    Screen->Rectangle(5, 0, 0, 256, 176, 1, 1, 0, 0, 0, true, 128);
+                }
+            }
+            if ( flashTimer > 0 )
+                flashTimer --;
+            if ( moveIt > 0 )
+                moveIt --;
+            Waitframe();
+        }
+    }
+}

@@ -1,0 +1,4682 @@
+import "Fight the Monsters III/FTM3_Enemies.z"
+import "stdImproved/std_constants.zh"
+import "stdImproved/std_functions.zh"
+import "string.zh"
+import "ffcscript.zh"
+import "Fight the Monsters III/ghost.zh"
+import "Fight the Monsters III/SeededRand.zh"
+import "LinkMovement.zh"
+import "Fight the Monsters III/tango.zh"
+import "Fight the Monsters III/tango/font/GUI.zh"
+import "Fight the Monsters III/scrollingDraws.zh"
+import "laser.zh"
+
+
+const int CMB_AWarpA = 1388;
+const int CMB_AWarpB = 1389;
+const int CMB_AWarpC = 1390;
+const int CMB_AWarpD = 1391;
+const int CMB_ScreenFreezeA = 1392;
+const int CMB_ScreenFreezeB = 1393;
+
+int FloorsRoomLayout[75]; //1-13 = main path, 14 = side path, 15 = filler
+int FloorsRoomDoors[75];
+int FloorsRoomContent[75];
+
+int FloorsRoomCleared[75];
+int FloorsRoomVar1[75]; //event ID or rupee count
+int FloorsRoomVar2[75]; //enemy A
+int FloorsRoomVar3[75]; //enemy B
+int FloorsRoomVar4[75]; //enemy C
+int FloorsRoomVar5[75]; //enemy D
+int FloorsRoomItemReward[75];
+int FloorsRoomAfterState[75]; //0 = no chest, 1 = un-opened chest, 2 = opened chest
+
+int PassiveItems[200];
+int InventoryOrder[200];
+int UseableItems[4];
+int RNGPassiveItemsTable[200];
+
+const int MaxNumOfPassiveItems = 15;
+const int MaxNumOfUseableItems = 6;
+
+const int InitMagicRegen = 0.005;
+const int InitMagicRegenAcc2 = 0.0003;
+
+const int FRContent_Start = 1;
+const int FRContent_Boss = 2;
+const int FRContent_Enemy = 3;
+const int FRContent_Event = 4;
+const int FRContent_Treasure = 5;
+const int FRContent_Shop = 6;
+
+const int TStyle_Standard = 0;
+const int TStyle_Info = 1;
+
+const int CharAnimBase_Link = 3120;
+const int CharAnimBase_Nayru = 3140;
+const int CharAnimBase_Zee = 3180;
+const int CharAnimBase_Calor = 3260;
+const int CharAnimBase_Norelle = 3280;
+const int CharAnimBase_Novus = 3300;
+const int CharAnimBase_Gale = 3320;
+
+const int ThemeCombo_FloorA = 0;
+const int ThemeCombo_FloorB = 52;
+const int ThemeCombo_WallA = 171;
+const int ThemeCombo_WallB = 170;
+const int ThemeCombo_Reward = 120;
+
+const int Boss_Aquamenti = 1;
+const int Boss_Digdogger = 2;
+const int Master_Ganon = 1;
+
+int GBuffer[256];
+int GV[1000];
+const int GamePaused = 0;
+const int LinksCurrDMap = 1;
+const int LinksCurrScreen = 2;
+const int XORShift_X = 3;
+const int XORShift_Y = 4;
+const int CurrentFloor = 5;
+const int CurrentCharacter = 6; //1 = link, 2 = nayru, 3 = zee, 4 = calor, 5 = lorelle, 6 = novus, 7 = gale
+const int CharAnimBase = 7;
+const int CharAnimVisible = 8;
+const int CharAnimWalkFrame = 9;
+const int CharAnimWalkTimer = 10;
+const int CharAnimHurtFrames = 11;
+const int CharAnimAttackFrames = 12;
+const int TicToc2 = 13;
+const int TicToc3 = 14;
+const int TicToc4 = 15;
+const int SD_NSCX = 16;
+const int SD_NSCY = 17;
+const int SD_OSCX = 18;
+const int SD_OSCY = 19;
+const int SD_SAVELASTSCREEN = 20;
+const int SD_LASTSCREEN = 21;
+const int SD_SCROLLDIR = 22;
+const int SD_SCROLLTIMER = 23;
+const int SwordFrames = 24;
+const int PlayerAttackPower = 25;
+const int PlayerMaxHP = 26;
+const int PlayerHP = 27;
+const int PlayerMaxMP = 28;
+const int PlayerMP = 29;
+const int PlayerDefense = 30;
+const int PlayerRupees = 31;
+const int BowCD = 32;
+const int ArrowType = 33; //0 = normal, 1 = fire, 2 = ice, 3 = light
+const int MagicRegen = 34;
+const int MagicRegenAcc = 35;
+const int MagicRegenAcc2 = 36;
+const int MagicRegenCD = 37;
+const int ScreenStep = 38;
+const int CurrentFR = 39;
+const int EnemyWavesLeft = 40;
+const int EnemyWavesTimer = 41;
+const int CurrPassiveItemNum = 42;
+const int RewardBankRupees = 43;
+const int RewardBankHearts = 44;
+const int LastHeartReward = 45;
+const int CurrRewardPos = 46;
+const int ChestGroundDraw = 47;
+const int LastRoomChestGroundDraw = 48;
+const int LMenuState = 49;
+const int LMenuSelection = 50;
+const int LMenuInfo = 51;
+const int AttackPowerBase = 52;
+const int PowerPotionBonus = 53;
+const int PowerPotionTimer = 54;
+const int MagicPotionTimer = 55;
+const int BubPoisonExpansion = 56;
+const int BubPoisonX = 57;
+const int BubPoisonY = 58;
+const int BubPoisonTimer = 59;
+const int BubPoisonBuffer = 60;
+const int StartMenuState = 61;
+const int RunSeedX = 62;
+const int RunSeedY = 63;
+const int Shop_F0I0 = 45;
+const int Shop_F0P0 = 54;
+//64 - 117 = shop
+const int Floor1Boss = 118;
+const int Floor2Boss = 119;
+const int Floor3Master = 120;
+const int Floor1BossReward1 = 121;
+const int Floor1BossReward2 = 122;
+const int Floor1BossReward3 = 123;
+const int Floor2BossReward1 = 124;
+const int Floor2BossReward2 = 125;
+const int Floor2BossReward3 = 126;
+const int Floor1Theme = 127;
+const int Floor2Theme = 128;
+const int Floor3Theme = 129;
+const int StartMessageDone = 130;
+const int GenieWishes = 131;
+const int GenieInvincible = 132;
+const int GeniePoison = 133;
+const int UnbottledFairyZ = 134;
+const int UnbottledFairyDegrees = 135;
+const int LastFrameMP = 136;
+const int MagicLanternTimer = 137;
+const int MagicLanternRadius = 138;
+const int MagicLanternDegrees = 139;
+const int MagicLanternCD = 140;
+const int LightningRingFrames = 141;
+const int PerilPendantBonus = 142;
+const int FloatingMessageStart = 143;
+//143 - 193 = floating message string
+const int FloatingMessageState = 194;
+const int FloatingMessageColour = 195;
+const int FloatingMessageDuration = 196;
+const int FloatingMessageFrames = 197;
+const int FloorIntrosPlayed = 198;
+const int BigChestsFound = 199;
+const int ShopFound = 200;
+const int ActSubPassiveItemSelected = 201;
+
+
+global script Init{
+	void run(){
+		GV[XORShift_X] = -1;
+		GV[XORShift_Y] = -1;
+		
+		ResetRun();
+		
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_BACKDROP_TYPE, TANGO_BACKDROP_TILE);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_BACKDROP_TILE, 8060);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_BACKDROP_CSET, 8);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_BACKDROP_WIDTH, 14);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_BACKDROP_HEIGHT, 4);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_FONT, TANGO_FONT_GUI);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_X, 8);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_Y, 7);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_WIDTH, 14*16-16);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_HEIGHT, 3.5*16-17);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_CSET, 0);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_COLOR, 1);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_SPEED, 4);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_SFX, 18);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_TEXT_END_SFX, 0);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_ALT_CSET_1, 8);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_ALT_COLOR_1, 4);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_ALT_CSET_2, 6);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_ALT_COLOR_2, 4);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_MORE_COMBO, 1396);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_MORE_CSET, 7);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_MORE_X, 200);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_MORE_Y, 44);
+		Tango_SetStyleAttribute(TStyle_Standard, TANGO_STYLE_FLAGS, TANGO_FLAG_ENABLE_SPEEDUP | TANGO_FLAG_ENABLE_SUPER_SPEED | TANGO_FLAG_BLOCK_INPUT);
+		
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_BACKDROP_TYPE, TANGO_BACKDROP_TILE);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_BACKDROP_TILE, 8060);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_BACKDROP_CSET, 7);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_BACKDROP_WIDTH, 14);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_BACKDROP_HEIGHT, 4);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_FONT, TANGO_FONT_GUI);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_X, 8);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_Y, 7);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_WIDTH, 14*16-16);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_HEIGHT, 3.5*16-17);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_CSET, 0);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_COLOR, 1);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_SPEED, 4);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_SFX, 18);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_TEXT_END_SFX, 0);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_ALT_CSET_1, 8);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_ALT_COLOR_1, 4);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_ALT_CSET_2, 6);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_ALT_COLOR_2, 4);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_MORE_COMBO, 1396);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_MORE_CSET, 7);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_MORE_X, 200);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_MORE_Y, 44);
+		Tango_SetStyleAttribute(TStyle_Info, TANGO_STYLE_FLAGS, TANGO_FLAG_AUTO_ADVANCE | TANGO_FLAG_INSTANTANEOUS | TANGO_FLAG_PERSISTENT | TANGO_FLAG_CENTERED);
+	}
+}
+void SetCurrentCharacter(int c){
+	GV[CurrentCharacter] = c;
+	if ( c == 1 ) {
+		GV[CharAnimBase] = CharAnimBase_Link;
+		CopyTile(2863, 2860);
+		CopyTile(2864, 2861);
+		CopyTile(2865, 2862);
+	}
+}
+
+void ResetRun(){
+	for (int i = 0; i <= 6; i++) {
+		Screen->SetRenderTarget(i);
+		for (int j = 0; j <= 7; j++) {
+			Screen->Rectangle(j, 0, 0, 512, 512, 0x00, 1, 0, 0, 0, true, OP_OPAQUE);
+		}
+	}
+	Screen->SetRenderTarget(-1);
+	
+	GV[CurrentFloor] = 0;
+	
+	for (int i = 0; i < 75; i++) {
+		FloorsRoomLayout[i] = 0;
+		FloorsRoomDoors[i] = 0;
+		FloorsRoomContent[i] = 0;
+		FloorsRoomCleared[i] = 0;
+		FloorsRoomVar1[i] = 0;
+		FloorsRoomVar2[i] = 0;
+		FloorsRoomVar3[i] = 0;
+		FloorsRoomVar4[i] = 0;
+		FloorsRoomVar5[i] = 0;
+		FloorsRoomItemReward[i] = 0;
+	}
+	for (int i = 0; i < 200; i++) {
+		PassiveItems[i] = 0;
+		InventoryOrder[i] = 0;
+		RNGPassiveItemsTable[i] = 0;
+	}
+	for (int i = 0; i < 4; i++) {
+		UseableItems[i] = 0;
+	}
+	
+	int destmap; int destscreen;
+	for (int floor = 1; floor <= 3; floor++) {
+		destmap = FloorToMap(floor);
+		for (int i = 0; i <= 24; i++) {
+			destscreen = RoomToScreen(i);
+			for (int j = 0; j < 176; j++) {
+				Game->SetComboData(destmap, destscreen, j, 0);
+			}
+		}
+	}
+	
+	GV[CharAnimWalkFrame] = 0;
+	GV[CharAnimWalkTimer] = 0;
+	GV[PlayerAttackPower] = 0;
+	GV[PlayerMaxHP] = 30;
+	GV[PlayerHP] = GV[PlayerMaxHP];
+	Link->HP = 192;
+	GV[PlayerMaxMP] = 30;
+	GV[PlayerMP] = GV[PlayerMaxMP];
+	GV[PlayerDefense] = 0;
+	GV[PlayerRupees] = 30;
+	Game->Counter[CR_RUPEES] = 0;
+	Game->DCounter[CR_RUPEES] = 0;
+	GV[BowCD] = 0;
+	GV[ArrowType] = 0;
+	GV[MagicRegen] = InitMagicRegen;
+	GV[MagicRegenAcc] = 0;
+	GV[MagicRegenAcc2] = InitMagicRegenAcc2;
+	GV[MagicRegenCD] = 0;
+	GV[CurrPassiveItemNum] = 0;
+	GV[LastHeartReward] = 0;
+	GV[ChestGroundDraw] = 0;
+	GV[AttackPowerBase] = 0;
+	GV[PowerPotionBonus] = 0;
+	GV[PowerPotionTimer] = 0;
+	GV[MagicPotionTimer] = 0;
+	for (int i = 46; i <= 117; i++) {
+		GV[i] = 0;
+	}
+	GV[Floor1Boss] = 0;
+	GV[Floor2Boss] = 0;
+	GV[Floor3Master] = 0;
+	GV[Floor1BossReward1] = 0;
+	GV[Floor1BossReward2] = 0;
+	GV[Floor1BossReward3] = 0;
+	GV[Floor2BossReward1] = 0;
+	GV[Floor2BossReward2] = 0;
+	GV[Floor2BossReward3] = 0;
+	GV[Floor1Theme] = -1;
+	GV[Floor2Theme] = -1;
+	GV[Floor3Theme] = -1;
+	GV[GenieWishes] = 0;
+	GV[GenieInvincible] = 0;
+	GV[GeniePoison] = 0;
+	GV[UnbottledFairyZ] = 0;
+	GV[LastFrameMP] = GV[PlayerMP];
+	GV[MagicLanternTimer] = 0;
+	GV[MagicLanternRadius] = 0;
+	GV[MagicLanternDegrees] = 0;
+	GV[MagicLanternCD] = 0;
+	GV[LightningRingFrames] = 0;
+	GV[PerilPendantBonus] = 0;
+	GV[FloatingMessageState] = 0;
+	GV[FloorIntrosPlayed] = 0;
+	GV[BigChestsFound] = 0;
+	GV[ShopFound] = 0;
+	
+	//!!!
+	SetCurrentCharacter(1);
+	GV[CharAnimVisible] = 1;
+}
+
+global script ActiveScript{
+	void run(){
+		int i; int j; int k; int var;
+		for (i = 0; i <= 6; i++) {
+			Screen->SetRenderTarget(i);
+			for (j = 0; j <= 7; j++) {
+				Screen->Rectangle(j, 0, 0, 512, 512, 0x00, 1, 0, 0, 0, true, OP_OPAQUE);
+			}
+		}
+		Screen->SetRenderTarget(-1);
+		
+		StartGhostZH();
+		LinkMovement_Init();
+		Tango_Start();
+		ScrollingDraws_Init();
+		
+		GV[LinksCurrDMap] = -1;
+		GV[LinksCurrScreen] = -1;
+		
+		ffc FFCNum[33];
+		while(true){
+			Tango_Update1();
+			UpdateGhostZH1();
+			LinkMovement_Update1();
+			ScrollingDraws_Update();
+			
+			for (i = 1; i <= Screen->NumLWeapons(); i++) {
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( wpn->ID == LW_SCRIPT2 ) { //damage numbers
+					if ( wpn->Misc[15] != 0 && wpn->DeadState != WDS_DEAD ) {
+						DrawDamageNumber(wpn);
+					}
+					wpn->Misc[0] --;
+					if ( wpn->Misc[0] <= 0 )
+						wpn->DeadState = WDS_DEAD;
+				}
+			}
+			
+			if ( Link->Action != LA_SCROLLING
+			&& GV[LinksCurrDMap] == Game->GetCurDMap() && GV[LinksCurrScreen] == Game->GetCurDMapScreen() && GV[GamePaused] == 0 ) {
+				if ( GV[ScreenStep] == 0 ) { //check if player on closing door
+					NoAction();
+					if ( FloorsRoomCleared[GV[CurrentFR]] == 0 ) {
+						if ( Link->Y <= 8 )
+							Link->Dir = DIR_DOWN;
+						if ( Link->Y >= 152 )
+							Link->Dir = DIR_UP;
+						if ( Link->X <= 8 )
+							Link->Dir = DIR_RIGHT;
+						if ( Link->X >= 232 )
+							Link->Dir = DIR_LEFT;
+						GV[ScreenStep] = 1;
+					}
+					else
+						GV[ScreenStep] = 2;
+				}
+				if ( GV[ScreenStep] == 1 ) { //automove player on closing door
+					NoAction();
+					if ( Screen->ComboD[ComboAt(Link->X+8+InFrontX(Link->Dir, 24), Link->Y+8+InFrontY(Link->Dir, 24))] >= 220
+					&& Screen->ComboD[ComboAt(Link->X+8+InFrontX(Link->Dir, 24), Link->Y+8+InFrontY(Link->Dir, 24))] <= 223 ) {
+						if ( Link->Dir == DIR_UP )
+							Link->InputUp = true;
+						if ( Link->Dir == DIR_DOWN )
+							Link->InputDown = true;
+						if ( Link->Dir == DIR_LEFT )
+							Link->InputLeft = true;
+						if ( Link->Dir == DIR_RIGHT )
+							Link->InputRight = true;
+					}
+					else {
+						//close doors
+						Game->PlaySound(9);
+						for (i = 0; i < 176; i++) {
+							if ( Screen->ComboD[i] >= 220 && Screen->ComboD[i] <= 223 )
+								Screen->ComboD[i] -= 4;
+						}
+						GV[ScreenStep] = 2;
+					}
+				}
+				if ( GV[ScreenStep] == 2 ) { //check for genie wishes
+					if ( PassiveItems[5] == 1 && GV[GenieWishes] > 0 ) {
+						if ( FloorsRoomCleared[GV[CurrentFR]] == 0 ) {
+							if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy || FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure ) {
+								int SN[] = "Genie";
+								FFCNum[32]->Script = Game->GetFFCScript(SN);
+								GV[ScreenStep] = 3;
+							}
+						}
+					}
+					if ( GV[ScreenStep] == 2 )
+						GV[ScreenStep] = 4;
+				}
+				if ( GV[ScreenStep] == 3 ) { //genie wish
+					NoAction();
+					if ( FFCNum[32]->Data == 3 ) {
+						FFCNum[32]->Data = 1;
+						GV[GenieWishes] --;
+						GV[ScreenStep] = 4;
+					}
+				}
+				if ( GV[ScreenStep] == 4 ) { //first frame of the room
+					if ( FloorsRoomCleared[GV[CurrentFR]] == 0 ) {
+						if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Boss ) {
+							int SN[] = "Boss";
+							FFCNum[32]->Script = Game->GetFFCScript(SN);
+						}
+						if ( PassiveItems[13] == 1 ) { //shell of tributes
+							GV[PlayerHP] --;
+							lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+							wpn->UseSprite(106);
+							wpn->Misc[14] = 1;
+							wpn->Misc[15] = 1;
+							wpn->Misc[0] = 40;
+							wpn->CollDetection = false;
+						}
+						//start of a fight
+						if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy || FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure
+						|| FloorsRoomContent[GV[CurrentFR]] == FRContent_Boss ) {
+							if ( GV[CurrentCharacter] == 1 )
+								GV[PlayerDefense] += 3;
+							if ( PassiveItems[2] == 1 ) { //compass beep
+								if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure )
+									Game->PlaySound(34);
+								else if ( FloorsRoomItemReward[GV[CurrentFR]] != 0 )
+									Game->PlaySound(34);
+							}
+							if ( PassiveItems[8] == 1 ) { //lucky medal
+								if ( Rand(100) < 30 ) {
+									Game->PlaySound(22);
+									Link->HP += 12;
+								}
+							}
+							if ( GV[GeniePoison] > 0 ) {
+								GV[BubPoisonExpansion] = 4;
+								GV[BubPoisonX] = Link->X;
+								GV[BubPoisonY] = Link->Y;
+								GV[BubPoisonTimer] = -1000;
+							}
+						}
+						if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Shop ) {
+							GV[ShopFound] ++;
+							if ( PassiveItems[3] == 1 ) //dangerous wallet
+								Game->DCounter[CR_RUPEES] += 60;
+							int SN[] = "Shop";
+							FFCNum[32]->Script = Game->GetFFCScript(SN);
+						}
+						if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Event ) {
+							int SN[] = "WIPEvent";
+							FFCNum[32]->Script = Game->GetFFCScript(SN);
+						}
+					}
+					if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Start ) {
+						if ( GV[CurrentFloor] == 1 && GV[StartMessageDone] == 0 ) {
+							GV[StartMessageDone] = 1;
+							int SN[] = "StartText";
+							FFCNum[32]->Script = Game->GetFFCScript(SN);
+						}
+						if ( GV[CurrentFloor] == 1 && GV[FloorIntrosPlayed] < 1 ) {
+							GV[FloorIntrosPlayed] ++;
+							for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+								GV[i] = 0;
+							int FM[] = "Floor 1";
+							strcpy(GV, FloatingMessageStart, FM, 0);
+							GV[FloatingMessageState] = 1;
+							GV[FloatingMessageColour] = 0x01;
+							GV[FloatingMessageDuration] = 120;
+						}
+						if ( GV[CurrentFloor] == 2 && GV[FloorIntrosPlayed] < 2 ) {
+							GV[FloorIntrosPlayed] ++;
+							for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+								GV[i] = 0;
+							int FM[] = "Floor 2";
+							strcpy(GV, FloatingMessageStart, FM, 0);
+							GV[FloatingMessageState] = 1;
+							GV[FloatingMessageColour] = 0x01;
+							GV[FloatingMessageDuration] = 120;
+						}
+						if ( GV[CurrentFloor] == 3 && GV[FloorIntrosPlayed] < 3 ) {
+							GV[FloorIntrosPlayed] ++;
+							for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+								GV[i] = 0;
+							int FM[] = "Floor 3";
+							strcpy(GV, FloatingMessageStart, FM, 0);
+							GV[FloatingMessageState] = 1;
+							GV[FloatingMessageColour] = 0x01;
+							GV[FloatingMessageDuration] = 120;
+						}
+					}
+					GV[ScreenStep] = 100;
+				}
+				
+				if ( GV[ScreenStep] == 100 ) { //global screen scripts-----------
+					GV[TicToc2] ++;
+					GV[TicToc2] %= 2;
+					GV[TicToc3] ++;
+					GV[TicToc3] %= 3;
+					GV[TicToc4] ++;
+					GV[TicToc4] %= 4;
+					
+					if ( GV[CharAnimAttackFrames] > 0 ) {
+						NoActionOld();
+						GV[CharAnimAttackFrames] --;
+						GV[CharAnimWalkFrame] = 0;
+						GV[CharAnimWalkTimer] = 0;
+					}
+					
+					for (i = 1; i <= Screen->NumLWeapons(); i++) { //for all lweapons
+						lweapon wpn = Screen->LoadLWeapon(i);
+						if ( wpn->ID == LW_SCRIPT1 ) {
+							if ( wpn->Misc[0] == 1 ) { //fire arrow effect
+								if ( wpn->Misc[1] == 0 ) {
+									wpn->Misc[1] = 8;
+									lweapon wpn2 = CreateLWeaponAt(LW_SPARKLE, wpn->X, wpn->Y);
+									wpn2->UseSprite(107);
+								}
+								else
+									wpn->Misc[1] --;
+								if ( !ArrowHere(wpn) )
+									FireArrowDeath(wpn);
+							}
+							else if ( wpn->Misc[0] == 2 ) { //ice arrow effect
+								if ( wpn->Misc[1] == 0 ) {
+									wpn->Misc[1] = 8;
+									lweapon wpn2 = CreateLWeaponAt(LW_SPARKLE, wpn->X, wpn->Y);
+									wpn2->UseSprite(108);
+								}
+								else
+									wpn->Misc[1] --;
+								if ( !ArrowHere(wpn) )
+									IceArrowDeath(wpn);
+							}
+							else if ( wpn->Misc[0] == 3 ) { //light arrow
+								if ( wpn->Misc[1] == 0 ) {
+									wpn->Misc[1] = 8;
+									lweapon wpn2 = CreateLWeaponAt(LW_SPARKLE, wpn->X, wpn->Y);
+									wpn2->UseSprite(109);
+								}
+								else
+									wpn->Misc[1] --;
+								if ( PointWithinRect(CenterX(wpn), CenterY(wpn), 0, 0, 255, 175) )
+									wpn->DeadState = WDS_ALIVE;
+							}
+							else if ( wpn->Misc[0] == 4 ) { //warning
+								if ( wpn->Misc[15] == 15 ) {
+									wpn->DrawXOffset = -1000;
+									lweapon spawnpuff = CreateLWeaponAt(LW_SPARKLE, wpn->X, wpn->Y);
+									spawnpuff->UseSprite(22);
+								}
+								if ( wpn->Misc[15] == 6 )
+									CreateNPCAt(wpn->Misc[1], wpn->X, wpn->Y);
+							}
+							else if ( wpn->Misc[0] == 5 ) { //lightning
+								j = wpn->Y-8;
+								k = 0;
+								while(j > -16){
+									Screen->FastCombo(5, wpn->X, j, 1408+k, 8, OP_OPAQUE);
+									j -= 16;
+									k ++;
+									if ( k > 3 ) k = 0;
+								}
+							}
+							else if ( wpn->Misc[0] == 6 ) { //magic lantern fire
+								wpn->DeadState = WDS_ALIVE;
+								wpn->HitXOffset = Link->X-2 + GV[MagicLanternRadius] * Cos(GV[MagicLanternDegrees]+wpn->Misc[1]*90);
+								wpn->HitYOffset = Link->Y-2 + GV[MagicLanternRadius] * Sin(GV[MagicLanternDegrees]+wpn->Misc[1]*90);
+								wpn->DrawXOffset = wpn->HitXOffset;
+								wpn->DrawYOffset = wpn->HitYOffset;
+							}
+							if ( wpn->Misc[15] > 0 ) { //dead timer
+								wpn->Misc[15] --;
+								if ( wpn->Misc[15] == 0 )
+									wpn->X = -1000;
+							}
+						}
+					}
+					
+					for (i = 1; i <= Screen->NumEWeapons(); i++) { //for all eweapons
+						eweapon wpn = Screen->LoadEWeapon(i);
+						if ( wpn->ID == EW_SCRIPT1 ) {
+							if ( wpn->Misc[0] == 1 ) { //transfire
+								if ( wpn->Step > 0 )
+									wpn->Step -= 5;
+								Screen->FastTile(1, wpn->X, wpn->Y, 7460+wpn->Frame, 8, OP_TRANS);
+							}
+						}
+					}
+					
+					for (i = 1; i <= Screen->NumItems(); i++) { //for all items
+						item itm = Screen->LoadItem(i);
+						if ( PassiveItems[11] == 1 ) { //item magnet
+							if ( itm->Z <= 16 ) {
+								if ( itm->ID != 86 && itm->ID != 159 ) {
+									j = Angle(itm->X, itm->Y, Link->X, Link->Y);
+									if ( itm->X < Link->X-1 || itm->X > Link->X+1 )
+										itm->X += VectorX(2, j);
+									if ( itm->Y < Link->Y-1 || itm->Y > Link->Y+1 )
+										itm->Y += VectorY(2, j);
+								}
+							}
+						}
+					}
+					
+					//player infront combo
+					if ( Link->Dir == DIR_UP )
+						i = ComboAt(Link->X+8, Link->Y-1);
+					else if ( Link->Dir == DIR_RIGHT )
+						i = ComboAt(Link->X+16, Link->Y+8);
+					else if ( Link->Dir == DIR_DOWN )
+						i = ComboAt(Link->X+8, Link->Y+16);
+					else if ( Link->Dir == DIR_LEFT )
+						i = ComboAt(Link->X-1, Link->Y+8);
+					else
+						i = ComboAt(Link->X+8, Link->Y+8);
+					if ( Screen->ComboD[i] == 1400 || Screen->ComboD[i] == 1402 ) { //chests
+						if ( Link->PressA ) {
+							int SN[] = "Chest";
+							FFCNum[32]->Script = Game->GetFFCScript(SN);
+							Screen->ComboD[i] ++;
+							FloorsRoomAfterState[GV[CurrentFR]] = 2;
+							NoAction();
+						}
+						else
+							Screen->FastTile(6, Link->X, Link->Y-16, 8074, 7, OP_OPAQUE);
+					}
+					
+					//fight room scripts
+					if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy || FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure ) {
+						if ( FloorsRoomCleared[GV[CurrentFR]] == 0 ) {
+							//enemy waves
+							if ( GV[EnemyWavesLeft] > 0 ) {
+								if ( GV[EnemyWavesTimer] == 15*60+1 )
+									GV[EnemyWavesLeft] --; //when enemies have spawned decrease waves counter
+								if ( GV[EnemyWavesTimer] > 180 )
+									GV[EnemyWavesTimer] --; //go down to 3 seconds
+								if ( GV[EnemyWavesTimer] > 0 && GV[EnemyWavesTimer] < 15*60 && Screen->NumNPCs() <= 2 )
+									GV[EnemyWavesTimer] --; //then count down more if <= 2 enemies
+								if ( GV[EnemyWavesTimer] == 0 || (Screen->NumNPCs() == 0 && GV[EnemyWavesTimer] <= 15*60) ) {
+									for (i = 0; i < 4; i++) {
+										j = FindSpawnPoint(true, false, false, false);
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, ComboX(j), ComboY(j));
+										wpn->UseSprite(110);
+										wpn->CollDetection = false;
+										wpn->Misc[0] = 4;
+										if ( FloorsRoomVar5[GV[CurrentFR]] != 0 )
+											wpn->Misc[1] = Choose(FloorsRoomVar2[GV[CurrentFR]], FloorsRoomVar3[GV[CurrentFR]], FloorsRoomVar4[GV[CurrentFR]],
+											FloorsRoomVar5[GV[CurrentFR]]);
+										else
+											wpn->Misc[1] = Choose(FloorsRoomVar2[GV[CurrentFR]], FloorsRoomVar3[GV[CurrentFR]], FloorsRoomVar4[GV[CurrentFR]]);
+										wpn->Misc[15] = 75;
+									}
+									GV[EnemyWavesTimer] = 15*60+75;
+								}
+							}
+							else if ( Screen->NumNPCs() == 0 ) {
+								Game->PlaySound(27);
+								Game->PlaySound(9);
+								FloorsRoomCleared[GV[CurrentFR]] = 1;
+								//spawn rewards
+								if ( FloorsRoomItemReward[GV[CurrentFR]] == 0 ) {
+									item itm = CreateItemAt(86, ComboX(GV[CurrRewardPos]), ComboY(GV[CurrRewardPos]));
+									FloorsRoomAfterState[GV[CurrentFR]] = 0;
+								}
+								else {
+									if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy ) Screen->ComboD[GV[CurrRewardPos]] = 1400;
+									else {
+										Screen->ComboD[GV[CurrRewardPos]] = 1402;
+										GV[BigChestsFound] ++;
+									}
+									FloorsRoomAfterState[GV[CurrentFR]] = 1;
+									GV[ChestGroundDraw] = GV[CurrRewardPos];
+								}
+								lweapon rewardspawn = CreateLWeaponAt(LW_SPARKLE, ComboX(GV[CurrRewardPos]), ComboY(GV[CurrRewardPos]));
+								rewardspawn->UseSprite(111);
+								i = 0;
+								while(GV[RewardBankHearts] > 0 ){
+									j = Rand(32, 208); k = Rand(32, 128);
+									while(Screen->isSolid(j, k) || Distance(j, k, Link->X+8, Link->Y+8) > 72){
+										j = Rand(32, 208); k = Rand(32, 128);
+									}
+									item itm = CreateItemAt(2, ComboX(ComboAt(j, k)), ComboY(ComboAt(j, k)));
+									itm->Z = 144+i*8;
+									i ++;
+									GV[RewardBankHearts] --;
+								}
+								while(GV[RewardBankRupees] > 0 ){
+									j = Rand(32, 208); k = Rand(32, 128);
+									while(Screen->isSolid(j, k) || Distance(j, k, Link->X+8, Link->Y+8) > 72){
+										j = Rand(32, 208); k = Rand(32, 128);
+									}
+									if ( GV[RewardBankRupees] >= 5 ) {
+										item itm = CreateItemAt(1, ComboX(ComboAt(j, k)), ComboY(ComboAt(j, k)));
+										itm->Z = 144+i*8;
+										GV[RewardBankRupees] -= 5;
+									}
+									else {
+										item itm = CreateItemAt(0, ComboX(ComboAt(j, k)), ComboY(ComboAt(j, k)));
+										itm->Z = 144+i*8;
+										GV[RewardBankRupees] --;
+									}
+									i ++;
+								}
+								//open doors
+								for (i = 0; i < 176; i++) {
+									if ( Screen->ComboD[i] >= 216 && Screen->ComboD[i] <= 219 )
+										Screen->ComboD[i] += 4;
+								}
+							}
+							if ( GV[EnemyWavesLeft] < 4 ) {
+								Screen->DrawTile(7, 160, 0, 8740, 6, 1, 8, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+								Screen->FastTile(7, 240, 0, 8720+GV[EnemyWavesLeft], 8, OP_OPAQUE);
+							}
+						}
+					}
+					
+					//L menu
+					if ( Link->PressL ) {
+						NoAction();
+						PauseGame();
+						
+						GV[LMenuState] = 8;
+						GV[LMenuSelection] = 0;
+						GV[LMenuInfo] = 0;
+					}
+					
+					//start menu
+					if ( Link->PressStart ) {
+						NoAction();
+						PauseGame();
+						
+						GV[StartMenuState] = 1;
+					}
+					
+					//link specific scripts
+					if ( GV[CurrentCharacter] == 1 ) {
+						if ( GV[BowCD] > 0 )
+							GV[BowCD] --;
+						
+						if ( GV[SwordFrames] > 0 ) {
+							lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X, Link->Y);
+							var = DirAngle(Link->Dir);
+							if ( GV[SwordFrames] <= 13 && GV[SwordFrames] >= 12 )
+								var += 90;
+							if ( GV[SwordFrames] <= 11 && GV[SwordFrames] >= 9 )
+								var += 45;
+							if ( GV[SwordFrames] <= 8 && GV[SwordFrames] >= 6 )
+								var += 0;
+							if ( GV[SwordFrames] <= 5 && GV[SwordFrames] >= 3 )
+								var -= 45;
+							if ( GV[SwordFrames] <= 2 && GV[SwordFrames] >= 1 )
+								var -= 90;
+							var = WrapDegrees(var);
+							wpn->X += VectorX(14, var);
+							wpn->Y += VectorY(14, var);
+							if ( var == 0 )
+								wpn->Tile = 2880;
+							if ( var == 45 )
+								wpn->Tile = 2881;
+							if ( var == 90 )
+								wpn->Tile = 2882;
+							if ( var == 135 )
+								wpn->Tile = 2883;
+							if ( var == 180 )
+								wpn->Tile = 2884;
+							if ( var == -135 )
+								wpn->Tile = 2885;
+							if ( var == -90 )
+								wpn->Tile = 2886;
+							if ( var == -45 )
+								wpn->Tile = 2887;
+							wpn->DrawYOffset = 0;
+							wpn->Damage = 20 + GV[PlayerAttackPower];
+							wpn->Misc[15] = 1; //weapon dies
+							GV[SwordFrames] --;
+						}
+						
+						if ( Link->PressA ) {
+							Game->PlaySound(30);
+							GV[CharAnimAttackFrames] = 13;
+							GV[SwordFrames] = 13;
+						}
+						if ( Link->PressB && GV[BowCD] == 0 ) {
+							if ( GV[ArrowType] == 0 ) {
+								Game->PlaySound(1);
+								GV[BowCD] = 30;
+								GV[CharAnimAttackFrames] = 12;
+								lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn->Dir = Link->Dir;
+								wpn->Step = 250;
+								wpn->Tile = 2923 + wpn->Dir;
+								wpn->DrawYOffset = 0;
+								wpn->Damage = 9 + GV[PlayerAttackPower];
+							}
+							else if ( GV[ArrowType] == 1 && GV[PlayerMP] >= 8 ) {
+								Game->PlaySound(77);
+								GV[PlayerMP] -= 8;
+								ResetMagicRegen();
+								GV[BowCD] = 30;
+								GV[CharAnimAttackFrames] = 12;
+								lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn->Dir = Link->Dir;
+								wpn->Step = 250;
+								wpn->Tile = 2943 + wpn->Dir;
+								wpn->DrawYOffset = 0;
+								wpn->Damage = 9 + GV[PlayerAttackPower];
+								
+								lweapon wpn2 = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn2->Dir = Link->Dir;
+								wpn2->Step = 250;
+								wpn2->DrawXOffset = -1000;
+								wpn2->CollDetection = false;
+								wpn2->Misc[0] = 1;
+							}
+							else if ( GV[ArrowType] == 2 && GV[PlayerMP] >= 8 ) {
+								Game->PlaySound(78);
+								GV[PlayerMP] -= 8;
+								ResetMagicRegen();
+								GV[BowCD] = 30;
+								GV[CharAnimAttackFrames] = 12;
+								lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn->Dir = Link->Dir;
+								wpn->Step = 250;
+								wpn->Tile = 2927 + wpn->Dir;
+								wpn->DrawYOffset = 0;
+								wpn->Damage = 9 + GV[PlayerAttackPower];
+								
+								lweapon wpn2 = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn2->Dir = Link->Dir;
+								wpn2->Step = 250;
+								wpn2->DrawXOffset = -1000;
+								wpn2->CollDetection = false;
+								wpn2->Misc[0] = 2;
+							}
+							else if ( GV[ArrowType] == 3 && GV[PlayerMP] >= 10 ) {
+								Game->PlaySound(79);
+								GV[PlayerMP] -= 10;
+								ResetMagicRegen();
+								GV[BowCD] = 30;
+								GV[CharAnimAttackFrames] = 12;
+								lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, Link->X + InFrontX(Link->Dir, 2), Link->Y + InFrontY(Link->Dir, 2));
+								wpn->Dir = Link->Dir;
+								wpn->Step = 350;
+								wpn->Tile = 2947 + wpn->Dir;
+								wpn->DrawYOffset = 0;
+								wpn->Damage = 18 + GV[PlayerAttackPower];
+								wpn->Misc[0] = 3;
+							}
+						}
+						if ( Link->PressR ) {
+							Game->PlaySound(5);
+							GV[ArrowType] ++;
+							if ( GV[ArrowType] > 2 ) {
+								if ( PassiveItems[12] == 0 || GV[ArrowType] > 3 )
+									GV[ArrowType] = 0;
+							}
+						}
+					}
+					
+					if ( Link->PressEx1 && !true ) { //!!!
+						if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy || FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure
+						|| FloorsRoomContent[GV[CurrentFR]] == FRContent_Boss ) {
+							GV[EnemyWavesLeft] = 0;
+							for (i = 1; i <= Screen->NumNPCs(); i++) {
+								npc enem = Screen->LoadNPC(i);
+								SetEnemyProperty(enem, ENPROP_HP, 100);
+							}
+						}
+						else {
+							ClearRoomOpenDoors();
+						}
+					}
+					if ( Link->PressEx2 ) { //!!!
+						
+					}
+					
+					//power potion
+					if ( GV[PowerPotionTimer] > 0 ) {
+						GV[PowerPotionTimer] --;
+						if ( GV[TicToc3] == 0 && GV[TicToc4] == 0 ) {
+							lweapon PowerSparkle = CreateLWeaponAt(LW_SPARKLE, Link->X+Rand(-6, 6), Link->Y+Rand(-6, 6));
+							PowerSparkle->UseSprite(109);
+						}
+						if ( GV[PowerPotionTimer] == 0 ) {
+							GV[PowerPotionBonus] = 0;
+							UpdateAttackPower();
+						}
+					}
+					
+					//bubbled poison
+					if ( GV[BubPoisonExpansion] > 0 ) {
+						if ( GV[TicToc2] == 0 ) {
+							var = 0;
+							for (i = 0; i < 4+GV[BubPoisonExpansion]/4; i++) {
+								j = GV[BubPoisonX] + GV[BubPoisonExpansion] * Cos(360/(4+GV[BubPoisonExpansion]/4)*i+GV[TicToc3]);
+								k = GV[BubPoisonY] + GV[BubPoisonExpansion] * Sin(360/(4+GV[BubPoisonExpansion]/4)*i+GV[TicToc3]);
+								if ( PointWithinRect(j, k, 0, 0, 240, 160) ) {
+									lweapon poison = CreateLWeaponAt(LW_SPARKLE, j, k);
+									poison->UseSprite(113);
+									poison->CollDetection = false;
+									var = 1;
+								}
+							}
+							if ( var == 0 ) {
+								GV[BubPoisonExpansion] = 0;
+								if ( GV[BubPoisonBuffer] > 0 ) {
+									GV[BubPoisonBuffer] --;
+									GV[BubPoisonExpansion] = 4;
+									GV[BubPoisonX] = Link->X;
+									GV[BubPoisonY] = Link->Y;
+								}
+							}
+							else
+								GV[BubPoisonExpansion] += 8;
+							if ( GV[BubPoisonExpansion] == 100 ) {
+								if ( GV[BubPoisonTimer] < 0 )
+									GV[BubPoisonTimer] = 120;
+								else
+									GV[BubPoisonTimer] += 20*60;
+							}
+						}
+					}
+					if ( GV[BubPoisonTimer] > 0 ) {
+						if ( GV[BubPoisonTimer] % 60 == 0 ) {
+							for (i = 1; i <= Screen->NumNPCs(); i++) {
+								npc enem = Screen->LoadNPC(i);
+								SetEnemyProperty(enem, ENPROP_HP, GetEnemyProperty(enem, ENPROP_HP)-2);
+							}
+						}
+						GV[BubPoisonTimer] --;
+					}
+					
+					//sense adjacent rooms
+					if ( FloorsRoomCleared[GV[CurrentFR]] == 1 ) {
+						i = ScreenToRoom(Game->GetCurScreen());
+						if ( (FloorsRoomDoors[GV[CurrentFR]] & 1000b) > 0 ) {
+							if ( NorthRoomIndex(i) != -1 ) {
+								var = FR(NorthRoomIndex(i), GV[CurrentFloor]);
+								if ( FloorsRoomCleared[var] == 0 ) {
+									j = 0;
+									if ( Screen->isSolid(112, 8) ) j = 1;
+									Screen->FastCombo(4, 112+16*j, 8, 1407, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Boss ) Screen->FastTile(4, 112+16*j, 8, 2984, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Enemy ) Screen->FastTile(4, 112+16*j, 8, 2985, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Event ) Screen->FastTile(4, 112+16*j, 8, 2986, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Treasure ) Screen->FastTile(4, 112+16*j, 8, 2987, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Shop ) Screen->FastTile(4, 112+16*j, 8, 2988, 8, OP_OPAQUE);
+								}
+							}
+						}
+						if ( (FloorsRoomDoors[GV[CurrentFR]] & 0100b) > 0 ) {
+							if ( SouthRoomIndex(i) != -1 ) {
+								var = FR(SouthRoomIndex(i), GV[CurrentFloor]);
+								if ( FloorsRoomCleared[var] == 0 ) {
+									j = 0;
+									if ( Screen->isSolid(112, 152) ) j = 1;
+									Screen->FastCombo(4, 112+16*j, 152, 1407, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Boss ) Screen->FastTile(4, 112+16*j, 152, 2984, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Enemy ) Screen->FastTile(4, 112+16*j, 152, 2985, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Event ) Screen->FastTile(4, 112+16*j, 152, 2986, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Treasure ) Screen->FastTile(4, 112+16*j, 152, 2987, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Shop ) Screen->FastTile(4, 112+16*j, 152, 2988, 8, OP_OPAQUE);
+								}
+							}
+						}
+						if ( (FloorsRoomDoors[GV[CurrentFR]] & 0010b) > 0 ) {
+							if ( WestRoomIndex(i) != -1 ) {
+								var = FR(WestRoomIndex(i), GV[CurrentFloor]);
+								if ( FloorsRoomCleared[var] == 0 ) {
+									Screen->FastCombo(4, 8, 80, 1407, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Boss ) Screen->FastTile(4, 8, 80, 2984, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Enemy ) Screen->FastTile(4, 8, 80, 2985, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Event ) Screen->FastTile(4, 8, 80, 2986, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Treasure ) Screen->FastTile(4, 8, 80, 2987, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Shop ) Screen->FastTile(4, 8, 80, 2988, 8, OP_OPAQUE);
+								}
+							}
+						}
+						if ( (FloorsRoomDoors[GV[CurrentFR]] & 0001b) > 0 ) {
+							if ( EastRoomIndex(i) != -1 ) {
+								var = FR(EastRoomIndex(i), GV[CurrentFloor]);
+								if ( FloorsRoomCleared[var] == 0 ) {
+									Screen->FastCombo(4, 232, 80, 1407, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Boss ) Screen->FastTile(4, 232, 80, 2984, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Enemy ) Screen->FastTile(4, 232, 80, 2985, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Event ) Screen->FastTile(4, 232, 80, 2986, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Treasure ) Screen->FastTile(4, 232, 80, 2987, 8, OP_OPAQUE);
+									if ( FloorsRoomContent[var] == FRContent_Shop ) Screen->FastTile(4, 232, 80, 2988, 8, OP_OPAQUE);
+								}
+							}
+						}
+					}
+					
+					//genie code
+					if ( GV[GenieInvincible] > 0 ) {
+						GV[GenieInvincible] --;
+					}
+					if ( GV[GeniePoison] > 0 ) {
+						GV[GeniePoison] --;
+						if ( GV[BubPoisonTimer] == 59 )
+							GV[BubPoisonTimer] += 60;
+					}
+					
+					//unbottled fairy
+					if ( GV[UnbottledFairyZ] > 0 ) {
+						if ( GV[UnbottledFairyZ] > 20 )
+							GV[UnbottledFairyZ] = 0;
+						else {
+							Screen->FastCombo(4, Link->X+14*Cos(GV[UnbottledFairyDegrees]), Link->Y+14*Sin(GV[UnbottledFairyDegrees])-GV[UnbottledFairyZ], 1406, 8, OP_OPAQUE);
+							GV[UnbottledFairyZ] += 0.2;
+							GV[UnbottledFairyDegrees] += 8;
+							GV[UnbottledFairyDegrees] %= 360;
+						}
+					}
+					
+					//magic lantern
+					if ( PassiveItems[7] == 1 ) {
+						if ( GV[PlayerMP] < 10 ) {
+							if ( GV[LastFrameMP] >= 10 ) {
+								if ( GV[MagicLanternTimer] == 0 ) {
+									Game->PlaySound(13);
+									if ( GV[MagicLanternRadius] > 0 )
+										GV[MagicLanternCD] = 145;
+									GV[MagicLanternTimer] = 150 - GV[MagicLanternCD];
+									GV[MagicLanternRadius] = 2;
+									//kill fire
+									for (i = 1; i <= Screen->NumLWeapons(); i++) {
+										lweapon wpn = Screen->LoadLWeapon(i);
+										if ( wpn->Misc[0] == 6 )
+											wpn->X = -1000;
+									}
+									//create fire
+									for (i = 0; i < 4; i++) {
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, 2, 2);
+										wpn->UseSprite(124);
+										wpn->Misc[0] = 6;
+										wpn->Misc[1] = i;
+										wpn->Damage = 12;
+										wpn->DeadState = WDS_ALIVE;
+										wpn->HitXOffset = Link->X-2 + GV[MagicLanternRadius] * Cos(GV[MagicLanternDegrees]+wpn->Misc[1]*90);
+										wpn->HitYOffset = Link->Y-2 + GV[MagicLanternRadius] * Sin(GV[MagicLanternDegrees]+wpn->Misc[1]*90);
+										wpn->DrawXOffset = wpn->HitXOffset;
+										wpn->DrawYOffset = wpn->HitYOffset;
+									}
+								}
+							}
+						}
+						if ( GV[MagicLanternTimer] + GV[MagicLanternRadius] > 0 ) {
+							GV[MagicLanternDegrees] -= 8;
+							GV[MagicLanternDegrees] %= 360;
+							if ( GV[MagicLanternTimer] > 0 ) {
+								if ( GV[MagicLanternRadius] < 48 )
+									GV[MagicLanternRadius] += 2;
+								GV[MagicLanternTimer] --;
+							}
+							else {
+								GV[MagicLanternRadius] -= 2;
+								if ( GV[MagicLanternRadius] <= 0 ) {
+									GV[MagicLanternRadius] = 0;
+									//kill fire
+									for (i = 1; i <= Screen->NumLWeapons(); i++) {
+										lweapon wpn = Screen->LoadLWeapon(i);
+										if ( wpn->Misc[0] == 6 )
+											wpn->X = -1000;
+									}
+									GV[MagicLanternCD] = 145;
+								}
+							}
+						}
+						if ( GV[MagicLanternCD] > 0 )
+							GV[MagicLanternCD] --;
+					}
+					
+					//lightning ring
+					if ( PassiveItems[9] == 1 ) {
+						GV[LightningRingFrames] ++;
+						if ( GV[LightningRingFrames] >= 600 ) {
+							GV[LightningRingFrames] = 0;
+							if ( Screen->NumNPCs() > 0 ) {
+								Game->PlaySound(73);
+								i = Rand(1, Screen->NumNPCs());
+								npc enem = Screen->LoadNPC(i);
+								lweapon hit = CreateLWeaponAt(LW_SCRIPT1, CenterX(enem), CenterY(enem));
+								hit->HitWidth = 1; hit->HitHeight = 1;
+								hit->DrawXOffset = -1000;
+								hit->Damage = 30;
+								hit->Misc[15] = 5;
+								lweapon lightning = CreateLWeaponAt(LW_SCRIPT1, CenterX(enem)-8, CenterY(enem)-8);
+								lightning->DrawXOffset = -1000;
+								lightning->CollDetection = false;
+								lightning->Misc[0] = 5;
+								lightning->Misc[15] = 30;
+							}
+						}
+					}
+					
+					//peril pendant
+					if ( PassiveItems[15] == 1 ) {
+						if ( GV[PerilPendantBonus] == 0 ) {
+							if ( GV[PlayerHP] < GV[PlayerMaxHP]/2 ) {
+								GV[PerilPendantBonus] = 5;
+								UpdateAttackPower();
+							}
+						}
+						else {
+							if ( GV[PlayerHP] >= GV[PlayerMaxHP]/2 ) {
+								GV[PerilPendantBonus] = 0;
+								UpdateAttackPower();
+							}
+						}
+					}
+					
+					//floating message
+					if ( GV[FloatingMessageState] > 0 ) {
+						if ( GV[FloatingMessageState] == 2 ) {
+							if ( GV[FloatingMessageFrames] == 8 ) {
+								GV[FloatingMessageFrames] = 0;
+								GV[FloatingMessageState] = 3;
+							}
+							else {
+								remchr(GBuffer, 0);
+								strcpy(GBuffer, 0, GV, FloatingMessageStart);
+								Screen->DrawString(6, 128+1, 88-GV[FloatingMessageFrames], FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 88-GV[FloatingMessageFrames]+1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128-1, 88-GV[FloatingMessageFrames], FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 88-GV[FloatingMessageFrames]-1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 88-GV[FloatingMessageFrames], FONT_L, GV[FloatingMessageColour], -1, TF_CENTERED, GBuffer, OP_TRANS);
+								GV[FloatingMessageFrames] += 0.5;
+							}
+						}
+						if ( GV[FloatingMessageState] == 3 ) {
+							if ( GV[FloatingMessageFrames] == GV[FloatingMessageDuration] ) {
+								GV[FloatingMessageFrames] = 0;
+								GV[FloatingMessageState] = 4;
+							}
+							else {
+								remchr(GBuffer, 0);
+								strcpy(GBuffer, 0, GV, FloatingMessageStart);
+								Screen->DrawString(6, 128+1, 80, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+								Screen->DrawString(6, 128, 80+1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+								Screen->DrawString(6, 128-1, 80, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+								Screen->DrawString(6, 128, 80-1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+								Screen->DrawString(6, 128, 80, FONT_L, GV[FloatingMessageColour], -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+								GV[FloatingMessageFrames] ++;
+							}
+						}
+						if ( GV[FloatingMessageState] == 4 ) {
+							if ( GV[FloatingMessageFrames] == 8 ) {
+								GV[FloatingMessageFrames] = 0;
+								GV[FloatingMessageState] = 0;
+							}
+							else {
+								remchr(GBuffer, 0);
+								strcpy(GBuffer, 0, GV, FloatingMessageStart);
+								Screen->DrawString(6, 128+1, 80-GV[FloatingMessageFrames], FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 80-GV[FloatingMessageFrames]+1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128-1, 80-GV[FloatingMessageFrames], FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 80-GV[FloatingMessageFrames]-1, FONT_L, 0x0F, -1, TF_CENTERED, GBuffer, OP_TRANS);
+								Screen->DrawString(6, 128, 80-GV[FloatingMessageFrames], FONT_L, GV[FloatingMessageColour], -1, TF_CENTERED, GBuffer, OP_TRANS);
+								GV[FloatingMessageFrames] += 0.5;
+							}
+						}
+						if ( GV[FloatingMessageState] == 1 ) {
+							GV[FloatingMessageFrames] = 0;
+							GV[FloatingMessageState] = 2;
+						}
+					}
+					
+					//rupee counter change
+					if ( Game->Counter[CR_RUPEES] > 0 ) {
+						GV[PlayerRupees] += Game->Counter[CR_RUPEES];
+						Game->Counter[CR_RUPEES] = 0;
+					}
+					
+					//max min player counters
+					if ( GV[PlayerRupees] > 999 )
+						GV[PlayerRupees] = 999;
+					if ( GV[PlayerMaxHP] < 5 )
+						GV[PlayerMaxHP] = 5;
+					if ( GV[PlayerMaxMP] < 0 )
+						GV[PlayerMaxMP] = 0;
+					if ( GV[PlayerMaxHP] > 99 ) {
+						GV[PlayerMaxHP] = 99;
+						if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+							GV[PlayerHP] = GV[PlayerMaxHP];
+					}
+					if ( GV[PlayerMaxMP] > 99 ) {
+						GV[PlayerMaxMP] = 99;
+						if ( GV[PlayerMP] > GV[PlayerMaxMP] )
+							GV[PlayerMP] = GV[PlayerMaxMP];
+					}
+					
+					//link hp changes
+					if ( Link->HP != 192 ) {
+						if ( GV[GenieInvincible] == 0 || Link->HP > 192 ) {
+							if ( Link->HP < 192 && GV[PlayerDefense] > 0 ) { //defended
+								Game->PlaySound(6);
+								GV[PlayerDefense] --;
+								lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+								wpn->UseSprite(106);
+								wpn->Misc[14] = 1;
+								wpn->Misc[15] = -1000;
+								wpn->Misc[0] = 40;
+								wpn->CollDetection = false;
+							}
+							else {
+								GV[PlayerHP] -= (192 - Link->HP) / 4;
+								if ( GV[PlayerHP] > 0 ) {
+									lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+									wpn->UseSprite(106);
+									wpn->Misc[14] = 1;
+									wpn->Misc[15] = (192 - Link->HP) / 4;
+									wpn->Misc[0] = 40;
+									wpn->CollDetection = false;
+								}
+								if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+									GV[PlayerHP] = GV[PlayerMaxHP];
+							}
+						}
+						Link->HP = 192;
+					}
+					
+					//magic regen
+					if ( GV[MagicPotionTimer] > 0 ) { //magic potion
+						GV[MagicPotionTimer] --;
+						GV[PlayerMP] = GV[PlayerMaxMP];
+						if ( GV[TicToc3] == 0 && GV[TicToc4] == 0 ) {
+							lweapon MagicSparkle = CreateLWeaponAt(LW_SPARKLE, Link->X+Rand(-6, 6), Link->Y+Rand(-6, 6));
+							MagicSparkle->UseSprite(112);
+						}
+					}
+					if ( GV[MagicRegenCD] > 0 )
+						GV[MagicRegenCD] --;
+					else if ( GV[PlayerMP] < GV[PlayerMaxMP] ) {
+						if ( GV[MagicRegen] < 0.16 ) {
+							if ( GV[TicToc4] == 0 )
+								GV[MagicRegenAcc] += GV[MagicRegenAcc2];
+							if ( GV[TicToc4] == 0 )
+								GV[MagicRegen] += GV[MagicRegenAcc];
+						}
+						GV[PlayerMP] += GV[MagicRegen];
+						if ( GV[PlayerMP] > GV[PlayerMaxMP] )
+							GV[PlayerMP] = GV[PlayerMaxMP];
+					}
+					GV[LastFrameMP] = GV[PlayerMP];
+					
+					//player death
+					if ( GV[PlayerHP] <= 0 ) {
+						if ( PassiveItems[6] == 1 ) { //bottled fairy
+							GV[PlayerHP] = Round(GV[PlayerMaxHP]/2);
+							lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+							wpn->UseSprite(106);
+							wpn->Misc[14] = 1;
+							wpn->Misc[15] = GV[PlayerHP] * -1;
+							wpn->Misc[0] = 40;
+							wpn->CollDetection = false;
+							
+							Game->PlaySound(14);
+							GV[UnbottledFairyZ] = 0.2;
+							GV[UnbottledFairyDegrees] = 90;
+							RemovePassiveItem(6);
+						}
+						else {
+							GV[PlayerHP] = 0;
+							Link->PitWarp(0, 0x60);
+						}
+						NoAction();
+					}
+				}
+			}
+			
+			if ( GV[GamePaused] == 1 ) {
+				//L menu
+				if ( GV[LMenuState] > 0 ) {
+					Screen->DrawTile(6, 96, 32, 8200, 4, 4, 10, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Screen->DrawTile(6, 116+GV[LMenuState], 52, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Screen->DrawTile(6, 116-GV[LMenuState], 52, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Screen->DrawTile(6, 116, 52+GV[LMenuState], 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					Screen->DrawTile(6, 116, 52-GV[LMenuState], 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					if ( GV[LMenuState] == 23 ) {
+						remchr(GBuffer, 0);
+						GBuffer[0] = ' ';
+						PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+					}
+					if ( GV[LMenuState] < 24 )
+						GV[LMenuState] ++;
+					else {
+						if ( Link->PressUp ) GV[LMenuSelection] = 1;
+						if ( Link->PressDown ) GV[LMenuSelection] = 2;
+						if ( Link->PressLeft ) GV[LMenuSelection] = 3;
+						if ( Link->PressRight ) GV[LMenuSelection] = 4;
+						
+						if ( GV[LMenuInfo] != GV[LMenuSelection] ) {
+							Game->PlaySound(5);
+							GV[LMenuInfo] = GV[LMenuSelection];
+							remchr(GBuffer, 0);
+							GBuffer[0] = ' ';
+							if ( GV[LMenuInfo] == 1 ) {
+								if ( UseableItems[0] > 0 )
+									ShowItemInfo(true, UseableItems[0], 112);
+								else
+									PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+							}
+							else if ( GV[LMenuInfo] == 2 ) {
+								if ( UseableItems[1] > 0 )
+									ShowItemInfo(true, UseableItems[1], 112);
+								else
+									PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+							}
+							else if ( GV[LMenuInfo] == 3 ) {
+								if ( UseableItems[2] > 0 )
+									ShowItemInfo(true, UseableItems[2], 112);
+								else
+									PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+							}
+							else if ( GV[LMenuInfo] == 4 ) {
+								if ( UseableItems[3] > 0 )
+									ShowItemInfo(true, UseableItems[3], 112);
+								else
+									PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+							}
+						}
+						
+						if ( UseableItems[0] > 0 )
+							Screen->FastTile(6, 120, 56-GV[LMenuState], UseableItemIDTile(UseableItems[0]), 8, OP_OPAQUE);
+						if ( UseableItems[1] > 0 )
+							Screen->FastTile(6, 120, 56+GV[LMenuState], UseableItemIDTile(UseableItems[1]), 8, OP_OPAQUE);
+						if ( UseableItems[2] > 0 )
+							Screen->FastTile(6, 120-GV[LMenuState], 56, UseableItemIDTile(UseableItems[2]), 8, OP_OPAQUE);
+						if ( UseableItems[3] > 0 )
+							Screen->FastTile(6, 120+GV[LMenuState], 56, UseableItemIDTile(UseableItems[3]), 8, OP_OPAQUE);
+						
+						if ( GV[LMenuSelection] == 0 )
+							Screen->DrawTile(6, 116, 52, 8164, 2, 2, 8, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						if ( GV[LMenuSelection] == 1 )
+							Screen->DrawTile(6, 116, 52-GV[LMenuState], 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						if ( GV[LMenuSelection] == 2 )
+							Screen->DrawTile(6, 116, 52+GV[LMenuState], 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						if ( GV[LMenuSelection] == 3 )
+							Screen->DrawTile(6, 116-GV[LMenuState], 52, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						if ( GV[LMenuSelection] == 4 )
+							Screen->DrawTile(6, 116+GV[LMenuState], 52, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						
+						if ( Link->PressB || Link->PressL )
+							GV[LMenuState] = 0;
+						if ( Link->PressA ) {
+							if ( UseableItems[GV[LMenuSelection]-1] > 0 ) {
+								Game->PlaySound(25);
+								UseUseableItem(UseableItems[GV[LMenuSelection]-1]);
+								UseableItems[GV[LMenuSelection]-1] = 0;
+								GV[LMenuState] = 0;
+							}
+						}
+					}
+					if ( GV[LMenuState] == 0 ) { //closing
+						Tango_ClearSlot(0);
+						UnpauseGame();
+					}
+				}
+				//start menu
+				if ( GV[StartMenuState] > 0 ) {
+					Screen->DrawTile(6, 16, 0, 8320, 14, 7, 11, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					if ( GV[StartMenuState] < 11 ) {
+						if ( GV[StartMenuState] == 1 ) {
+							GV[ActSubPassiveItemSelected] = 0;
+							remchr(GBuffer, 0);
+							GBuffer[0] = ' ';
+							PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+						}
+						if ( GV[StartMenuState] == 10 )
+							ShowItemInfo(false, InventoryOrder[GV[ActSubPassiveItemSelected]], 112);
+						
+						GV[StartMenuState] ++;
+					}
+					if ( GV[StartMenuState] >= 11 ) {
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'F'; GBuffer[1] = 'l'; GBuffer[2] = 'o'; GBuffer[3] = 'o'; GBuffer[4] = 'r'; GBuffer[5] = ' ';
+						itoa(GBuffer, 6, GV[CurrentFloor]);
+						Screen->DrawString(6, 72, 8, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'B';
+						GBuffer[1] = 'i';
+						GBuffer[2] = 'g';
+						GBuffer[3] = ' ';
+						GBuffer[4] = 'c';
+						GBuffer[5] = 'h';
+						GBuffer[6] = 'e';
+						GBuffer[7] = 's';
+						GBuffer[8] = 't';
+						GBuffer[9] = 's';
+						GBuffer[10] = ' ';
+						GBuffer[11] = 'f';
+						GBuffer[12] = 'o';
+						GBuffer[13] = 'u';
+						GBuffer[14] = 'n';
+						GBuffer[15] = 'd';
+						GBuffer[16] = ':';
+						Screen->DrawString(6, 72, 24, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						remchr(GBuffer, 0);
+						i = itoa(GBuffer, 0, GV[BigChestsFound]);
+						GBuffer[i] = ' ';
+						GBuffer[1+i] = '/';
+						GBuffer[2+i] = ' ';
+						itoa(GBuffer, 3+i, 2);
+						Screen->DrawString(6, 72, 38, FONT_L2, 0x88, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'S';
+						GBuffer[1] = 'h';
+						GBuffer[2] = 'o';
+						GBuffer[3] = 'p';
+						GBuffer[4] = ' ';
+						GBuffer[5] = 'v';
+						GBuffer[6] = 'i';
+						GBuffer[7] = 's';
+						GBuffer[8] = 'i';
+						GBuffer[9] = 't';
+						GBuffer[10] = 'e';
+						GBuffer[11] = 'd';
+						GBuffer[12] = ':';
+						Screen->DrawString(6, 72, 54, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						if ( GV[ShopFound] > 0 ) {
+							remchr(GBuffer, 0);
+							GBuffer[0] = 'Y';
+							GBuffer[1] = 'e';
+							GBuffer[2] = 's';
+							Screen->DrawString(6, 72, 68, FONT_L2, 0x78, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						}
+						else {
+							remchr(GBuffer, 0);
+							GBuffer[0] = 'N';
+							GBuffer[1] = 'o';
+							Screen->DrawString(6, 72, 68, FONT_L2, 0x83, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						}
+						
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'S'; GBuffer[1] = 'e'; GBuffer[2] = 'e'; GBuffer[3] = 'd'; GBuffer[4] = ':'; GBuffer[5] = ' ';
+						i = itoa(GBuffer, 6, GV[RunSeedX]);
+						GBuffer[6+i] = ' ';
+						itoa(GBuffer, 7+i, GV[RunSeedY]);
+						Screen->DrawString(6, 184, 8, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'P';
+						GBuffer[1] = 'a';
+						GBuffer[2] = 's';
+						GBuffer[3] = 's';
+						GBuffer[4] = 'i';
+						GBuffer[5] = 'v';
+						GBuffer[6] = 'e';
+						GBuffer[7] = ' ';
+						GBuffer[8] = 'I';
+						GBuffer[9] = 't';
+						GBuffer[10] = 'e';
+						GBuffer[11] = 'm';
+						GBuffer[12] = 's';
+						Screen->DrawString(6, 184, 40, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						Screen->DrawTile(6, 172, 56, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+						Screen->FastTile(6, 156, 60, 8095, 8, OP_OPAQUE);
+						Screen->FastTile(6, 196, 60, 8094, 8, OP_OPAQUE);
+						if ( InventoryOrder[GV[ActSubPassiveItemSelected]] > 0 )
+							Screen->FastTile(6, 176, 60, PassiveItemIDTile(InventoryOrder[GV[ActSubPassiveItemSelected]]), 8, OP_OPAQUE);
+						
+						remchr(GBuffer, 0);
+						GBuffer[0] = 'D';
+						GBuffer[1] = 'e';
+						GBuffer[2] = 'm';
+						GBuffer[3] = 'o';
+						GBuffer[4] = ' ';
+						GBuffer[5] = 'v';
+						GBuffer[6] = 'e';
+						GBuffer[7] = 'r';
+						GBuffer[8] = 's';
+						GBuffer[9] = 'i';
+						GBuffer[10] = 'o';
+						GBuffer[11] = 'n';
+						Screen->DrawString(6, 128, 88, FONT_L2, 0xB3, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+						
+						if ( Link->PressRight ) {
+							Game->PlaySound(5);
+							GV[ActSubPassiveItemSelected] ++;
+							if ( GV[ActSubPassiveItemSelected] > GV[CurrPassiveItemNum]-1 )
+								GV[ActSubPassiveItemSelected] = 0;
+							ShowItemInfo(false, InventoryOrder[GV[ActSubPassiveItemSelected]], 112);
+						}
+						else if ( Link->PressLeft ) {
+							Game->PlaySound(5);
+							GV[ActSubPassiveItemSelected] --;
+							if ( GV[ActSubPassiveItemSelected] < 0 )
+								GV[ActSubPassiveItemSelected] = GV[CurrPassiveItemNum]-1;
+							ShowItemInfo(false, InventoryOrder[GV[ActSubPassiveItemSelected]], 112);
+						}
+						
+						if ( Link->PressB || Link->PressStart )
+							GV[StartMenuState] = 0;
+					}
+					if ( GV[StartMenuState] == 0 ) { //closing
+						Tango_ClearSlot(0);
+						UnpauseGame();
+					}
+				}
+				
+				NoAction();
+			}
+			
+			if ( GV[GamePaused] < 2 ) { //when not outside dungeon dmaps
+				if ( GV[ChestGroundDraw] > 0 ) {
+					if ( Link->Action == LA_SCROLLING ) {
+						Screen->FastCombo(3, ScrollingNewX() + ComboX(GV[ChestGroundDraw]), ScrollingNewY() + ComboY(GV[ChestGroundDraw]),
+						120 + Game->GetComboData(3, 0, (GV[CurrentFloor]-1)*16+1) % 4, Game->GetComboCSet(3, 0, (GV[CurrentFloor]-1)*16+1), OP_OPAQUE);
+					}
+					else {
+						Screen->FastCombo(3, ComboX(GV[ChestGroundDraw]), ComboY(GV[ChestGroundDraw]),
+						120 + Game->GetComboData(3, 0, (GV[CurrentFloor]-1)*16+1) % 4, Game->GetComboCSet(3, 0, (GV[CurrentFloor]-1)*16+1), OP_OPAQUE);
+					}
+				}
+				if ( GV[LastRoomChestGroundDraw] > 0 ) {
+					if ( Link->Action == LA_SCROLLING ) {
+						Screen->FastCombo(3, ScrollingOldX() + ComboX(GV[LastRoomChestGroundDraw]), ScrollingOldY() + ComboY(GV[LastRoomChestGroundDraw]),
+						120 + Game->GetComboData(3, 0, (GV[CurrentFloor]-1)*16+1) % 4, Game->GetComboCSet(3, 0, (GV[CurrentFloor]-1)*16+1), OP_OPAQUE);
+					}
+					else
+						GV[LastRoomChestGroundDraw] = 0;
+				}
+				
+				PassiveSubDraw();
+			}
+			
+			Link->PressStart = false; Link->InputStart = false;
+			Waitdraw();
+            UpdateGhostZH2();
+			LinkMovement_Update2();
+			
+			if ( GV[LinksCurrDMap] != Game->GetCurDMap() || GV[LinksCurrScreen] != Game->GetCurDMapScreen() ) { //screen init
+				NoAction();
+				GV[LinksCurrDMap] = Game->GetCurDMap();
+				GV[LinksCurrScreen] = Game->GetCurDMapScreen();
+				
+				FFCNum[31] = Screen->LoadFFC(31);
+				FFCNum[31]->Data = 1;
+				FFCNum[32] = Screen->LoadFFC(32);
+				FFCNum[32]->Data = 1;
+				
+				if ( Game->GetCurDMap() >= 1 && Game->GetCurDMap() <= 3 ) {
+					GV[GamePaused] = 0;
+				}
+				else { //if outside dungeon dmap
+					GV[GamePaused] = 2;
+					GV[ScreenStep] = -1;
+					GV[CharAnimVisible] = 0;
+				}
+				
+				if ( GV[GamePaused] < 2 ) { //not when outside dungeon dmaps
+					GV[CurrentFR] = FR(ScreenToRoom(GV[LinksCurrScreen]), GV[CurrentFloor]);
+					
+					Link->CollDetection = true;
+					Link->DrawXOffset = 0;
+					
+					GV[CharAnimHurtFrames] = 0;
+					GV[CharAnimAttackFrames] = 0;
+					GV[SwordFrames] = 0;
+					GV[MagicRegenCD] = 0;
+					GV[PlayerMP] = GV[PlayerMaxMP];
+					GV[LastRoomChestGroundDraw] = GV[ChestGroundDraw];
+					GV[ChestGroundDraw] = 0;
+					GV[PlayerDefense] = 0;
+					GV[LMenuState] = 0;
+					GV[BubPoisonExpansion] = 0;
+					GV[BubPoisonTimer] = 0;
+					GV[BubPoisonBuffer] = 0;
+					GV[UnbottledFairyZ] = 0;
+					GV[MagicLanternTimer] = 0;
+					GV[MagicLanternRadius] = 0;
+					GV[MagicLanternDegrees] = 0;
+					GV[MagicLanternCD] = 0;
+					GV[LightningRingFrames] = 0;
+					GV[FloatingMessageState] = 0;
+					
+					for (i = 0; i < 176; i++) {
+						if ( Screen->ComboD[i] >= 120 && Screen->ComboD[i] <= 123 )
+							GV[CurrRewardPos] = i;
+					}
+					
+					if ( FloorsRoomCleared[GV[CurrentFR]] == 1 ) { //room cleared
+						//open doors
+						for (i = 0; i < 176; i++) {
+							if ( Screen->ComboD[i] >= 216 && Screen->ComboD[i] <= 219 )
+								Screen->ComboD[i] += 4;
+						}
+					}
+					else
+						OpenPlayerDoor();
+					
+					if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy || FloorsRoomContent[GV[CurrentFR]] == FRContent_Treasure ) {
+						if ( FloorsRoomCleared[GV[CurrentFR]] == 0 ) {
+							GV[EnemyWavesLeft] = 4;
+							GV[EnemyWavesTimer] = 1;
+							
+							GV[RewardBankRupees] = FloorsRoomVar1[GV[CurrentFR]];
+							GV[RewardBankHearts] = Rand(1, 3);
+							if ( GV[LastHeartReward] == 1 && GV[RewardBankHearts] < 3 )
+								GV[RewardBankHearts] ++;
+							else if ( GV[LastHeartReward] == 3 && GV[RewardBankHearts] > 1 )
+								GV[RewardBankHearts] --;
+							GV[LastHeartReward] = GV[RewardBankHearts];
+						}
+						else {
+							if ( FloorsRoomAfterState[GV[CurrentFR]] == 1  ) {
+								if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy ) Screen->ComboD[GV[CurrRewardPos]] = 1400;
+								else Screen->ComboD[GV[CurrRewardPos]] = 1402;
+							}
+							if ( FloorsRoomAfterState[GV[CurrentFR]] == 2  ) {
+								if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy ) Screen->ComboD[GV[CurrRewardPos]] = 1401;
+								else Screen->ComboD[GV[CurrRewardPos]] = 1403;
+							}
+							
+							GV[ChestGroundDraw] = GV[CurrRewardPos];
+						}
+					}
+					
+					MapDrawUpdate();
+					GV[ScreenStep] = 0;
+				}
+			}
+			
+			//character animation
+			if ( Link->Action == LA_WALKING || Link->Action == LA_SCROLLING )
+				GV[CharAnimWalkTimer] ++;
+			if ( GV[CharAnimWalkTimer] > 6 ) {
+				GV[CharAnimWalkTimer] = 0;
+				GV[CharAnimWalkFrame] ++;
+			}
+			if ( GV[CharAnimWalkFrame] > 3 )
+				GV[CharAnimWalkFrame] = 0;
+			
+			if ( GV[CharAnimHurtFrames] > 0 )
+				GV[CharAnimHurtFrames] --;
+			if ( Link->Action == LA_GOTHURTLAND )
+				GV[CharAnimHurtFrames] = 48;
+			
+			if ( GV[CharAnimVisible] == 1 ) {
+				if ( GV[CharAnimAttackFrames] > 0 ) { //attacking
+					if ( GV[CharAnimHurtFrames] > 0 && GV[TicToc4] > 1 ) //flash
+						Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir + 16 + 520, 6, OP_OPAQUE);
+					else //not flash
+						Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir + 16, 6, OP_OPAQUE);
+				}
+				else { //not attacking
+					if ( GV[CharAnimHurtFrames] > 0 && GV[TicToc4] > 1 ) //flash
+						Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir*4 + GV[CharAnimWalkFrame] + 520, 6, OP_OPAQUE);
+					else //not flash
+						Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir*4 + GV[CharAnimWalkFrame], 6, OP_OPAQUE);
+				}
+				if ( GV[GenieInvincible] > 0 ) {
+					Screen->Circle(1, ScrollingLinkX()+8, ScrollingLinkY()+8, 8+GV[TicToc4], 0x73, 1, 0, 0, 0, true, OP_OPAQUE);
+				}
+			}
+			
+			Tango_Update2();
+			Waitframe();
+		}
+	}
+}
+
+bool ArrowHere(lweapon a) {
+	for (int i = 1; i <= Screen->NumLWeapons(); i++) { //for all lweapons
+		lweapon wpn = Screen->LoadLWeapon(i);
+		if ( wpn->ID == LW_SCRIPT1 ) {
+			if ( wpn->Misc[0] == 0 ) {
+				if ( a->X == wpn->X && a->Y == wpn->Y )
+					return true;
+			}
+		}
+	}
+	return false;
+}
+void FireArrowDeath(lweapon wpn) {
+	Game->PlaySound(13);
+	for (int i = 0; i < 5; i++) {
+		lweapon wpn2 = CreateLWeaponAt(LW_FIRE, wpn->X, wpn->Y);
+		wpn2->Damage = 9 + GV[PlayerAttackPower];
+		wpn2->Angular = true;
+		wpn2->Angle = DegtoRad(360/5*i);
+		//wpn2->Dir = RadianAngleDir8(WrapAngle(wpn2->Angle));
+		wpn2->Step = 50;
+	}
+	for (int i = 0; i < 10; i++) {
+		lweapon wpn2 = CreateLWeaponAt(LW_FIRE, wpn->X, wpn->Y);
+		wpn2->Damage = 9 + GV[PlayerAttackPower];
+		wpn2->Angular = true;
+		wpn2->Angle = DegtoRad(360/10*i);
+		//wpn2->Dir = RadianAngleDir8(WrapAngle(wpn2->Angle));
+		wpn2->Step = 100;
+	}
+	wpn->DeadState = WDS_DEAD;
+}
+void IceArrowDeath(lweapon wpn) {
+	for (int i = 0; i < 4; i++) {
+		lweapon icesparkle = CreateLWeaponAt(LW_SPARKLE, wpn->X+4*Cos(360/4*i), wpn->Y+4*Sin(360/4*i));
+		icesparkle->UseSprite(108);
+		icesparkle->ASpeed += Rand(-1, 1);
+	}
+	for (int i = 0; i < 8; i++) {
+		lweapon icesparkle = CreateLWeaponAt(LW_SPARKLE, wpn->X+12*Cos(360/8*i), wpn->Y+12*Sin(360/8*i));
+		icesparkle->UseSprite(108);
+		icesparkle->ASpeed += Rand(-1, 1);
+	}
+	for (int i = 1; i <= Screen->NumNPCs(); i++) {
+		npc enem = Screen->LoadNPC(i);
+		if ( Distance(CenterX(wpn), CenterY(wpn), CenterX(enem), CenterY(enem)) < 24 ) {
+			if ( enem->Attributes[11] == 0 )
+				enem->Stun = 105;
+		}
+	}
+	wpn->DeadState = WDS_DEAD;
+}
+void ResetMagicRegen() {
+	GV[MagicRegen] = InitMagicRegen;
+	GV[MagicRegenAcc] = 0;
+	GV[MagicRegenCD] = 30;
+}
+void UpdateAttackPower() {
+	GV[PlayerAttackPower] = GV[AttackPowerBase];
+	GV[PlayerAttackPower] += GV[PowerPotionBonus];
+	GV[PlayerAttackPower] += GV[PerilPendantBonus];
+}
+
+void DrawDamageNumber(lweapon wpn) {
+	if ( wpn->Misc[14] == 1 ) {
+		wpn->X = Link->X;
+		wpn->Y = Link->Y;
+	}
+	int x = wpn->X+8;
+	int y = wpn->Y - ((40 - wpn->Misc[0]) / 2);
+	
+	if ( wpn->Misc[15] == -1000 ) { //defended
+		Screen->FastTile(6, x-8, y, 2889, 2, OP_OPAQUE);
+	}
+	else if ( wpn->Misc[15] > 0 ) { //damage
+		remchr(GBuffer, 0);
+		itoa(GBuffer, wpn->Misc[15]);
+		
+		Screen->DrawString(6, x+1, y, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x-1, y, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y+1, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y-1, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y, FONT_L, 0x84, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	else { //heal
+		remchr(GBuffer, 0);
+		GBuffer[0] = '+';
+		itoa(GBuffer, 1, wpn->Misc[15]*-1);
+		
+		Screen->DrawString(6, x+1, y, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x-1, y, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y+1, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y-1, FONT_L, 0x8F, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+		Screen->DrawString(6, x, y, FONT_L, 0x69, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+}
+
+void PassiveSubDraw() {
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerHP]);
+	Screen->DrawString(7, 38, -56+3, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, Floor(GV[PlayerMP]));
+	Screen->DrawString(7, 38, -56+27, FONT_L2, 0x01, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerMaxHP]);
+	Screen->DrawString(7, 65, -56+3, FONT_L2, 0x84, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerMaxMP]);
+	Screen->DrawString(7, 65, -56+27, FONT_L2, 0x79, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	
+	if ( Floor(GV[PlayerHP]) > 0 )
+		Screen->Rectangle(7, 6, -56+18, 5+Round(64 / GV[PlayerMaxHP] * GV[PlayerHP]), -56+23, 0x83, 1, 0, 0, 0, true, OP_OPAQUE);
+	if ( Floor(GV[PlayerMP]) > 0 )
+		Screen->Rectangle(7, 6, -56+42, 5+Round(64 / GV[PlayerMaxMP] * GV[PlayerMP]), -56+47, 0x78, 1, 0, 0, 0, true, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerDefense]);
+	Screen->DrawString(7, 100, -56+5, FONT_L2, 0xB3, -1, TF_NORMAL, GBuffer, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerRupees]);
+	Screen->DrawString(7, 100, -56+21, FONT_L2, 0x78, -1, TF_NORMAL, GBuffer, OP_OPAQUE);
+	
+	remchr(GBuffer, 0);
+	itoa(GBuffer, GV[PlayerAttackPower]);
+	Screen->DrawString(7, 100, -56+37, FONT_L2, 0x83, -1, TF_NORMAL, GBuffer, OP_OPAQUE);
+	
+	Screen->DrawBitmap(7, 0, 0, 0, 80, 80, 202-16, -56+3-16, 80, 80, 0, true);
+	
+	if ( GV[CurrentCharacter] == 1 ) {
+		if ( PassiveItems[12] == 0 ) {
+			Screen->FastTile(7, 134, -56+4, 2923, 11, OP_OPAQUE);
+			Screen->FastTile(7, 150, -56+4, 2943, 11, OP_OPAQUE);
+			Screen->FastTile(7, 166, -56+4, 2927, 11, OP_OPAQUE);
+			Screen->FastTile(7, 134+GV[ArrowType]*16, -56+4, 2866, 11, OP_OPAQUE);
+		}
+		else {
+			Screen->FastTile(7, 126, -56+4, 2923, 11, OP_OPAQUE);
+			Screen->FastTile(7, 142, -56+4, 2943, 11, OP_OPAQUE);
+			Screen->FastTile(7, 158, -56+4, 2927, 11, OP_OPAQUE);
+			Screen->FastTile(7, 174, -56+4, 2947, 11, OP_OPAQUE);
+			Screen->FastTile(7, 126+GV[ArrowType]*16, -56+4, 2866, 11, OP_OPAQUE);
+		}
+	}
+}
+
+void MapDrawUpdate() {
+	Screen->SetRenderTarget(0);
+	Screen->DrawTile(0, 0, 0, 8620, 5, 5, 11, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	int x = 16; int y = 16; int i; int var;
+	for (i = 0; i < 25; i++) {
+		var = FR(i, GV[CurrentFloor]);
+		if ( FloorsRoomCleared[var] == 1 || GV[CurrentFR] == var )
+			Screen->FastTile(0, x, y, 8581, 11, OP_OPAQUE);
+		else
+			Screen->FastTile(0, x, y, 8580, 11, OP_OPAQUE);
+		if ( FloorsRoomCleared[var] == 1 || GV[CurrentFR] == var || PassiveItems[1] == 1 ) {
+			Screen->FastTile(0, x, y, 8600, 11, OP_OPAQUE);
+			if ( (FloorsRoomDoors[var] & 1000b) == 0 )
+				Screen->FastTile(0, x, y, 8601, 11, OP_OPAQUE);
+			if ( (FloorsRoomDoors[var] & 0100b) == 0 )
+				Screen->FastTile(0, x, y, 8602, 11, OP_OPAQUE);
+			if ( (FloorsRoomDoors[var] & 0010b) == 0 )
+				Screen->FastTile(0, x, y, 8603, 11, OP_OPAQUE);
+			if ( (FloorsRoomDoors[var] & 0001b) == 0 )
+				Screen->FastTile(0, x, y, 8604, 11, OP_OPAQUE);
+		}
+		if ( GV[CurrentFR] == var )
+			Screen->FastTile(0, x, y, 8605, 11, OP_OPAQUE);
+		else if ( FloorsRoomCleared[var] == 0 && PassiveItems[2] == 1 ) {
+			if ( FloorsRoomContent[var] == FRContent_Treasure )
+				Screen->FastTile(0, x, y, 8606, 11, OP_OPAQUE);
+			if ( FloorsRoomContent[var] == FRContent_Boss )
+				Screen->FastTile(0, x, y, 8607, 11, OP_OPAQUE);
+		}
+		x += 10;
+		if ( x > 56 ) {
+			x = 16;
+			y += 10;
+		}
+	}
+	
+	Screen->SetRenderTarget(-1);
+}
+
+void OpenPlayerDoor() { //open door player is on
+	int x; int y;
+	if ( Link->Y < 0 ) {
+		y = Link->Y+8+16;
+		for (int i = 0; i <= 4; i++) {
+			x = 112;
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			x = 128;
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			y += 16;
+		}
+	}
+	else if ( Link->Y > 160 ) {
+		y = Link->Y+8-16;
+		for (int i = 0; i <= 4; i++) {
+			x = 112;
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			x = 128;
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			y -= 16;
+		}
+	}
+	else if ( Link->X < 0 ) {
+		x = Link->X+8+16;
+		y = 80;
+		for (int i = 0; i <= 6; i++) {
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			else
+				break;
+			x += 16;
+		}
+	}
+	else if ( Link->X > 240 ) {
+		x = Link->X+8-16;
+		y = 80;
+		for (int i = 0; i <= 6; i++) {
+			if ( Screen->ComboD[ComboAt(x, y)] >= 216 && Screen->ComboD[ComboAt(x, y)] <= 219 )
+				Screen->ComboD[ComboAt(x, y)] += 4;
+			else
+				break;
+			x -= 16;
+		}
+	}
+}
+void ClearRoomOpenDoors(){
+	Game->PlaySound(9);
+	FloorsRoomCleared[GV[CurrentFR]] = 1;
+	//open doors
+	for (int i = 0; i < 176; i++) {
+		if ( Screen->ComboD[i] >= 216 && Screen->ComboD[i] <= 219 )
+			Screen->ComboD[i] += 4;
+	}
+}
+
+void PauseGame(){
+	GV[GamePaused] = 1;
+	ffc ffc31 = Screen->LoadFFC(31);
+	ffc31->Data = CMB_ScreenFreezeA;
+	SuspendGhostZHScripts();
+}
+void UnpauseGame(){
+	GV[GamePaused] = 0;
+	ffc ffc31 = Screen->LoadFFC(31);
+	ffc31->Data = 1;
+	ResumeGhostZHScripts();
+}
+
+int FindFreeIndex(int array, int arraysize){
+	for (int i = 0; i < arraysize; i++) {
+		if ( array[i] <= 0 )
+			return i;
+	}
+	return -1;
+}
+void AddPassiveItem(int itm) {
+	PassiveItems[itm] = 1;
+	InventoryOrder[FindFreeIndex(InventoryOrder, 200)] = itm;
+	GV[CurrPassiveItemNum] ++;
+	if ( itm == 1 || itm == 2 )
+		MapDrawUpdate();
+	if ( itm == 5 )
+		GV[GenieWishes] = 3;
+	if ( itm == 11 ) {
+		GV[PlayerMaxHP] += 3;
+		GV[PlayerHP] += 3;
+	}
+	if ( itm == 13 ) {
+		GV[PlayerMaxMP] += 8;
+		GV[PlayerMP] += 8;
+		GV[AttackPowerBase] += 5;
+		UpdateAttackPower();
+	}
+	if ( itm == 14 ) {
+		GV[PlayerMaxHP] += 5;
+		GV[PlayerHP] += 5;
+	}
+}
+void AddUseableItem(int itm) {
+	UseableItems[FindFreeIndex(UseableItems, 4)] = itm;
+}
+void RemovePassiveItem(int itm) {
+	PassiveItems[itm] = 0;
+	for (int i = 0; i < 199; i++) {
+		if ( InventoryOrder[i] == itm ) {
+			for (i = i; i < 199; i++) {
+				InventoryOrder[i] = InventoryOrder[i+1];
+			}
+		}
+	}
+	GV[CurrPassiveItemNum] --;
+	if ( itm == 1 || itm == 2 )
+		MapDrawUpdate();
+	if ( itm == 5 )
+		GV[GenieWishes] = 0;
+	if ( itm == 11 ) {
+		GV[PlayerMaxHP] -= 3;
+		if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+			GV[PlayerHP] = GV[PlayerMaxHP];
+	}
+	if ( itm == 13 ) {
+		GV[PlayerMaxMP] -= 8;
+		if ( GV[PlayerMP] > GV[PlayerMaxMP] )
+			GV[PlayerMP] = GV[PlayerMaxMP];
+		GV[AttackPowerBase] -= 5;
+		UpdateAttackPower();
+	}
+	if ( itm == 14 ) {
+		GV[PlayerMaxHP] -= 5;
+		if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+			GV[PlayerHP] = GV[PlayerMaxHP];
+	}
+	if ( itm == 15 ) {
+		GV[PerilPendantBonus] = 0;
+		UpdateAttackPower();
+	}
+}
+int PassiveItemIDTile(int itm) {
+	return 7899+itm;
+}
+int UseableItemIDTile(int itm) {
+	return 7859+itm;
+}
+
+void ShowItemInfo(bool useable, int itm, int y) {
+	if ( itm == 0 ) {
+		int S1[] = " ";
+		PlayTangoString(S1, TStyle_Info, 16, y);
+	}
+	if ( useable ) {
+		if ( itm == 1 ) {
+			int S1[] = "[[Health Potion:]]@(26)Restore 10 HP.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		else if ( itm == 2 ) {
+			int S1[] = "[[Power potion:]]@(26)Gain 5 attack power for 10 seconds and restore 5 HP.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		else if ( itm == 3 ) {
+			int S1[] = "[[Magic potion:]]@(26)Gain unlimited MP for 10 seconds and gain 1 max MP.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		else if ( itm == 4 ) {
+			int S1[] = "[[Metal plate:]]@(26)Gain 5 defense, that lasts until you leave the room.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		else if ( itm == 5 ) {
+			int S1[] = "[[Lightning bomb:]]@(26)Deal 40 damage to all enemies.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		else if ( itm == 6 ) {
+			int S1[] = "[[Bubbled poison:]]@(26)Fill the room with poison that deals 40 damage over 20 seconds to all enemies.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+	}
+	else {
+		if ( itm == 1 ) {
+			int S1[] = "[[Map:]]@(26)Reveals the layout of the dungeon.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 2 ) {
+			int S1[] = "[[Compass:]]@(26)Shows big treasures and boss locations. Makes a sound in rooms with chests.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 3 ) {
+			int S1[] = "[[Dangerous wallet:]]@(26)Gain 60 rupees whenever you enter a shop. Lose 1 HP for every purchase.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 4 ) {
+			int S1[] = "[[Deluxe card:]]@(26)Shop items cost 20% less.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 5 ) {
+			int S1[] = "[[Genie lamp:]]@(26)The genie can grant you a wish at the start of a fight. Only works 3 times.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 6 ) {
+			int S1[] = "[[Bottled fairy:]]@(26)If you would die, restore 50% HP and remove this item.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 7 ) {
+			int S1[] = "[[Magic lantern:]]@(26)Create damaging flames around you when your MP falls below 10.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 8 ) {
+			int S1[] = "[[Lucky medal:]]@(26)30% chance to restore 3 HP at the start of each fight.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 9 ) {
+			int S1[] = "[[Lightning ring:]]@(26)Every 10 seconds a random enemy gets hit by 30 damage.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 10 ) {
+			int S1[] = "[[Linked Damage:]]@(26)Whenever you damage an enemy all other enemies lose 3 HP.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 11 ) {
+			int S1[] = "[[Item magnet:]]@(26)+3 max HP. Attract dropped items.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 12 ) {
+			if ( GV[CurrentCharacter] == 1 ) {
+				int S1[] = "[[Wondrous pyramid:]]@(26)Include light arrows to your selection.";
+				PlayTangoString(S1, TStyle_Info, 16, y);
+			}
+		}
+		if ( itm == 13 ) {
+			int S1[] = "[[Shell of tributes:]]@(26)+8 max MP. +5 attack power. Lose 1 HP every time you enter a new room.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 14 ) {
+			int S1[] = "[[Cursed heart container:]]@(26)+5 max HP. Bosses start with 50 more HP.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+		if ( itm == 15 ) {
+			int S1[] = "[[Peril pendant:]]@(26)+5 attack power while you are under 50% health.";
+			PlayTangoString(S1, TStyle_Info, 16, y);
+		}
+	}
+}
+void ShowStatInfo(int stat, int y) {
+	if ( stat == 1 ) {
+		int S1[] = "[[Heart Container:]]@(26)Gain 5 max HP.";
+		PlayTangoString(S1, TStyle_Info, 16, y);
+	}
+	if ( stat == 2 ) {
+		int S1[] = "[[Magic Shroom:]]@(26)Gain 5 max MP.";
+		PlayTangoString(S1, TStyle_Info, 16, y);
+	}
+	if ( stat == 3 ) {
+		int S1[] = "[[Fresh Meat:]]@(26)Gain 3 attack power.";
+		PlayTangoString(S1, TStyle_Info, 16, y);
+	}
+}
+
+void UseUseableItem(int itm) {
+	if ( itm == 1 ) { //health potion
+		Game->PlaySound(22);
+		Link->HP += 10*4;
+	}
+	if ( itm == 2 ) { //power potion
+		Game->PlaySound(36);
+		GV[PowerPotionBonus] += 5;
+		GV[PowerPotionTimer] = 10*60;
+		UpdateAttackPower();
+		Link->HP += 5*4;
+	}
+	if ( itm == 3 ) { //magic potion
+		Game->PlaySound(36);
+		GV[MagicPotionTimer] += 15*60;
+		GV[PlayerMaxMP] += 1;
+	}
+	if ( itm == 4 ) { //metal plate
+		GV[PlayerDefense] += 5;
+	}
+	if ( itm == 5 ) { //lightning bomb
+		Game->PlaySound(73);
+		for (int i = 1; i <= Screen->NumNPCs(); i++) {
+			npc enem = Screen->LoadNPC(i);
+			lweapon hit = CreateLWeaponAt(LW_SCRIPT1, CenterX(enem), CenterY(enem));
+			hit->HitWidth = 1; hit->HitHeight = 1;
+			hit->DrawXOffset = -1000;
+			hit->Damage = 40;
+			hit->Misc[15] = 5;
+			lweapon lightning = CreateLWeaponAt(LW_SCRIPT1, CenterX(enem)-8, CenterY(enem)-8);
+			lightning->DrawXOffset = -1000;
+			lightning->CollDetection = false;
+			lightning->Misc[0] = 5;
+			lightning->Misc[15] = 30;
+		}
+	}
+	if ( itm == 6 ) { //bubbled poison
+		Game->PlaySound(75);
+		if ( GV[BubPoisonExpansion] == 0 ) {
+			GV[BubPoisonExpansion] = 4;
+			GV[BubPoisonX] = Link->X;
+			GV[BubPoisonY] = Link->Y;
+		}
+		else
+			GV[BubPoisonBuffer] ++;
+	}
+}
+
+void UseableInventoryIsFull(int newitm) {
+	int S1[] = "Your inventory is full. Select an item to use immediately.";
+	PlayTangoString(S1, TStyle_Standard, 16, 56);
+	int MCArr[15];
+	MCArr[MC_NumOptions] = 5;
+	MCArr[MC_InitOption] = 1;
+	MCArr[MC_Y] = 112;
+	MCArr[MC_Tile1] = UseableItemIDTile(newitm);
+	MCArr[MC_Tile2] = UseableItemIDTile(UseableItems[0]);
+	MCArr[MC_Tile3] = UseableItemIDTile(UseableItems[1]);
+	MCArr[MC_Tile4] = UseableItemIDTile(UseableItems[2]);
+	MCArr[MC_Tile5] = UseableItemIDTile(UseableItems[3]);
+	int showinfo;
+	remchr(GBuffer, 0);
+	GBuffer[0] = ' ';
+	PlayTangoString(GBuffer, TStyle_Info, 16, 24);
+	while(MCArr[MC_ChosenOption] == 0){
+		MultipleChoiceHorizontal(MCArr);
+		if ( MCArr[MC_SelectedOption] != showinfo ) {
+			showinfo = MCArr[MC_SelectedOption];
+			if ( showinfo == 1 )
+				ShowItemInfo(true, newitm, 24);
+			else if ( showinfo == 2 )
+				ShowItemInfo(true, UseableItems[0], 24);
+			else if ( showinfo == 3 )
+				ShowItemInfo(true, UseableItems[1], 24);
+			else if ( showinfo == 4 )
+				ShowItemInfo(true, UseableItems[2], 24);
+			else if ( showinfo == 5 )
+				ShowItemInfo(true, UseableItems[3], 24);
+		}
+		WaitNoAction();
+	}
+	Tango_ClearSlot(0);
+	if ( MCArr[MC_ChosenOption] == 1 ) {
+		UseUseableItem(newitm);
+	}
+	else if ( MCArr[MC_ChosenOption] == 2 ) {
+		UseUseableItem(UseableItems[0]);
+		UseableItems[0] = newitm;
+	}
+	else if ( MCArr[MC_ChosenOption] == 3 ) {
+		UseUseableItem(UseableItems[1]);
+		UseableItems[1] = newitm;
+	}
+	else if ( MCArr[MC_ChosenOption] == 4 ) {
+		UseUseableItem(UseableItems[2]);
+		UseableItems[2] = newitm;
+	}
+	else if ( MCArr[MC_ChosenOption] == 5 ) {
+		UseUseableItem(UseableItems[3]);
+		UseableItems[3] = newitm;
+	}
+}
+
+ffc script DungeonGenerator{
+	void run(){
+		int showfloor = 1; //for show
+		int floor; int i; int j; int k; int l; int var; int mainpath[14]; int otherpath[5]; int pathingvisited[25]; int rngstuff[25];
+		
+		int EnemyRoomList[128]; //screen on map 1
+		int MajorRoomList[128]; //screen on map 2
+		int EventList[200]; //ID
+		int ThemeList[200]; //screen on map 3 . row
+		int EnemyList[200];
+		
+		//clear lists
+		for (i = 0; i < 128; i++) {
+			EnemyRoomList[i] = -1;
+		}
+		for (i = 0; i < 128; i++) {
+			MajorRoomList[i] = -1;
+		}
+		for (i = 0; i < 200; i++) {
+			EventList[i] = -1;
+		}
+		for (i = 0; i < 200; i++) {
+			ThemeList[i] = -1;
+		}
+		for (i = 0; i < 200; i++) {
+			EnemyList[i] = -1;
+		}
+		
+		//set lists
+		for (i = 0; i <= 0x28; i++) {
+			EnemyRoomList[i] = i;
+		}
+		
+		for (i = 0; i <= 0x0F; i++) {
+			MajorRoomList[i] = i;
+		}
+		
+		for (i = 0; i <= 0; i++) {
+			EventList[i] = i;
+		}
+		
+		ThemeList[0] = 0.03;
+		ThemeList[1] = 0.04;
+		ThemeList[2] = 0.05;
+		ThemeList[3] = 0.06;
+		ThemeList[4] = 0.07;
+		ThemeList[5] = 0.08;
+		ThemeList[6] = 0.09;
+		ThemeList[7] = 1.00;
+		ThemeList[8] = 1.01;
+		
+		EnemyList[0] = 182;
+		EnemyList[1] = 183;
+		EnemyList[2] = 184;
+		EnemyList[3] = 185;
+		EnemyList[4] = 186;
+		EnemyList[5] = 187;
+		EnemyList[6] = 188;
+		EnemyList[7] = 189;
+		EnemyList[8] = 190;
+		EnemyList[9] = 192;
+		EnemyList[10] = 193;
+		EnemyList[11] = 194;
+		EnemyList[12] = 195;
+		EnemyList[13] = 196;
+		EnemyList[14] = 197;
+		EnemyList[15] = 198;
+		//for (i = 0; i < 190; i++) { EnemyList[i] = 198; }
+		
+		//reset run and set seed
+		ResetRun();
+		GV[RunSeedX] = Rand(1, 255);
+		GV[RunSeedY] = Rand(1, 255);
+		XORShift_SetSeed(GV[RunSeedX], GV[RunSeedY]);
+		//begin generating all 3 floors
+		for (floor = 1; floor <= 3; floor++) {
+			//place filler blocks
+			var = SRand(4);
+			if ( var == 0 )
+				FloorsRoomLayout[FR(0, floor)] = 15;
+			else if ( var == 1 )
+				FloorsRoomLayout[FR(1, floor)] = 15;
+			else if ( var == 2 )
+				FloorsRoomLayout[FR(5, floor)] = 15;
+			else if ( var == 3 )
+				FloorsRoomLayout[FR(6, floor)] = 15;
+			var = SRand(4);
+			if ( var == 0 )
+				FloorsRoomLayout[FR(3, floor)] = 15;
+			else if ( var == 1 )
+				FloorsRoomLayout[FR(4, floor)] = 15;
+			else if ( var == 2 )
+				FloorsRoomLayout[FR(8, floor)] = 15;
+			else if ( var == 3 )
+				FloorsRoomLayout[FR(9, floor)] = 15;
+			var = SRand(4);
+			if ( var == 0 )
+				FloorsRoomLayout[FR(15, floor)] = 15;
+			else if ( var == 1 )
+				FloorsRoomLayout[FR(16, floor)] = 15;
+			else if ( var == 2 )
+				FloorsRoomLayout[FR(20, floor)] = 15;
+			else if ( var == 3 )
+				FloorsRoomLayout[FR(21, floor)] = 15;
+			var = SRand(4);
+			if ( var == 0 )
+				FloorsRoomLayout[FR(18, floor)] = 15;
+			else if ( var == 1 )
+				FloorsRoomLayout[FR(19, floor)] = 15;
+			else if ( var == 2 )
+				FloorsRoomLayout[FR(23, floor)] = 15;
+			else if ( var == 3 )
+				FloorsRoomLayout[FR(24, floor)] = 15;
+			
+			//place start room
+			if ( floor == 1 )
+				var = SRand(0, 24);
+			else {
+				for (i = 0; i <= 24; i++) {
+					if ( FloorsRoomContent[FR(i, floor-1)] == FRContent_Boss )
+						var = i;
+				}
+			}
+			FloorsRoomLayout[FR(var, floor)] = 1;
+			FloorsRoomContent[FR(var, floor)] = FRContent_Start;
+			FloorsRoomCleared[FR(var, floor)] = 1; //clear start room
+			
+			//find main path
+			for (i = 0; i < 14; i++)
+				mainpath[i] = -1;
+			for (i = 0; i < 25; i++)
+				pathingvisited[i] = 0;
+			mainpath[1] = var; //the starting room
+			pathingvisited[var] = 1;
+			i = 1;
+			var = 0;
+			while(var == 0){
+				mainpath[i+1] = ChoosePath(mainpath[i], floor, pathingvisited, false);
+				if ( mainpath[i+1] != -1 ) { //path found, so go there
+					i ++;
+					pathingvisited[mainpath[i]] = 1;
+				}
+				else if ( i == 12 ) //no path found but be satisfied with 12
+					var = 12;
+				else { //no path found, so backtrack
+					if ( i > 1 )
+						mainpath[i] = -1;
+					i --;
+				}
+				if ( i >= 13 ) //end at 13
+					var = 13;
+				if ( i <= 0 ) {
+					//pathing is dumb, retry
+					for (i = 2; i < 14; i++)
+						mainpath[i] = -1;
+					for (i = 0; i < 25; i++)
+						pathingvisited[i] = 0;
+					pathingvisited[mainpath[1]] = 1;
+					i = 1;
+				}
+			}
+			for (i = 0; i < 25; i++)
+				pathingvisited[i] = 0;
+			//create main path from stack
+			for (i = 2; i <= var; i++) {
+				FloorsRoomLayout[FR(mainpath[i], floor)] = i;
+				if ( mainpath[i-1] == mainpath[i]-5 ) { //room before is north
+					FloorsRoomDoors[FR(mainpath[i-1], floor)] |= 0100b;
+					FloorsRoomDoors[FR(mainpath[i], floor)] |= 1000b;
+				}
+				else if ( mainpath[i-1] == mainpath[i]+5 ) { //room before is south
+					FloorsRoomDoors[FR(mainpath[i-1], floor)] |= 1000b;
+					FloorsRoomDoors[FR(mainpath[i], floor)] |= 0100b;
+				}
+				else if ( mainpath[i-1] == mainpath[i]-1 ) { //room before is west
+					FloorsRoomDoors[FR(mainpath[i-1], floor)] |= 0001b;
+					FloorsRoomDoors[FR(mainpath[i], floor)] |= 0010b;
+				}
+				else if ( mainpath[i-1] == mainpath[i]+1 ) { //room before is east
+					FloorsRoomDoors[FR(mainpath[i-1], floor)] |= 0010b;
+					FloorsRoomDoors[FR(mainpath[i], floor)] |= 0001b;
+				}
+				if ( i == var )
+					FloorsRoomContent[FR(mainpath[i], floor)] = FRContent_Boss;
+			}
+			
+			//remove filler blocks
+			for (i = 0; i <= 24; i++) {
+				if ( FloorsRoomLayout[FR(i, floor)] == 15 )
+					FloorsRoomLayout[FR(i, floor)] = 0;
+			}
+			
+			//find treasure paths
+			for (i = 0; i < 2; i++) {
+				var = 0;
+				if ( floor == 1 ) j = 50;
+				if ( floor == 2 ) j = 20;
+				if ( floor == 3 ) j = 0;
+				if ( SRand(100) >= j ) { //chance to skip 3 tiles try
+					for (j = 0; j < 20; j++) { //3 tiles try
+						k = SRand(1, 12);
+						if ( FloorsRoomContent[FR(mainpath[k], floor)] != FRContent_Boss ) {
+							for (l = 0; l < 5; l++)
+								otherpath[l] = -1;
+							for (l = 0; l < 25; l++)
+								pathingvisited[l] = 0;
+							otherpath[1] = mainpath[k];
+							l = 1;
+							while(l > 0){
+								otherpath[l+1] = ChoosePath(otherpath[l], floor, pathingvisited, false);
+								if ( otherpath[l+1] != -1 ) {
+									l ++;
+									pathingvisited[otherpath[l]] = 1;
+								}
+								else
+									l = 0; //exit loop
+								if ( l == 4 ) {
+									var = 4;
+									j = 20; //exit loop
+									l = 0; //exit loop
+								}
+							}
+						}
+					}
+				}
+				if ( var == 0 ) {
+					for (j = 0; j < 50; j++) { //2 tiles try
+						k = SRand(1, 12);
+						if ( FloorsRoomContent[FR(mainpath[k], floor)] != FRContent_Boss ) {
+							for (l = 0; l < 5; l++)
+								otherpath[l] = -1;
+							for (l = 0; l < 25; l++)
+								pathingvisited[l] = 0;
+							otherpath[1] = mainpath[k];
+							l = 1;
+							while(l > 0){
+								otherpath[l+1] = ChoosePath(otherpath[l], floor, pathingvisited, false);
+								if ( otherpath[l+1] != -1 ) {
+									l ++;
+									pathingvisited[otherpath[l]] = 1;
+								}
+								else
+									l = 0; //exit loop
+								if ( l == 3 ) {
+									var = 3;
+									j = 50; //exit loop
+									l = 0; //exit loop
+								}
+							}
+						}
+					}
+				}
+				if ( var == 0 ) {
+					for (j = 0; j < 5; j++)
+						otherpath[j] = -1;
+					for (j = 0; j < 25; j++)
+						pathingvisited[j] = 0;
+					while(var == 0){ //1 tile bruteforce
+						j = SRand(1, 12);
+						otherpath[1] = mainpath[j];
+						otherpath[2] = ChoosePath(otherpath[1], floor, pathingvisited, false);
+						if ( otherpath[2] != -1 )
+							var = 2;
+						WaitNoAction();
+					}
+				}
+				//create treasure path from stack
+				for (j = 2; j <= var; j++) {
+					FloorsRoomLayout[FR(otherpath[j], floor)] = 14;
+					if ( otherpath[j-1] == otherpath[j]-5 ) { //room before is north
+						FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0100b;
+						FloorsRoomDoors[FR(otherpath[j], floor)] |= 1000b;
+					}
+					else if ( otherpath[j-1] == otherpath[j]+5 ) { //room before is south
+						FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 1000b;
+						FloorsRoomDoors[FR(otherpath[j], floor)] |= 0100b;
+					}
+					else if ( otherpath[j-1] == otherpath[j]-1 ) { //room before is west
+						FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0001b;
+						FloorsRoomDoors[FR(otherpath[j], floor)] |= 0010b;
+					}
+					else if ( otherpath[j-1] == otherpath[j]+1 ) { //room before is east
+						FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0010b;
+						FloorsRoomDoors[FR(otherpath[j], floor)] |= 0001b;
+					}
+					if ( j == var )
+						FloorsRoomContent[FR(otherpath[j], floor)] = FRContent_Treasure;
+				}
+			}
+			
+			//find shop path
+			var = 0;
+			for (j = 0; j < 20; j++) { //2 tiles try
+				k = SRand(25);
+				while(FloorsRoomContent[FR(k, floor)] == FRContent_Boss || FloorsRoomContent[FR(k, floor)] == FRContent_Treasure
+				|| FloorsRoomLayout[FR(k, floor)] == 0)
+					k = SRand(25);
+				for (l = 0; l < 5; l++)
+					otherpath[l] = -1;
+				for (l = 0; l < 25; l++)
+					pathingvisited[l] = 0;
+				otherpath[1] = k;
+				l = 1;
+				while(l > 0){
+					otherpath[l+1] = ChoosePath(otherpath[l], floor, pathingvisited, false);
+					if ( otherpath[l+1] != -1 ) {
+						l ++;
+						pathingvisited[otherpath[l]] = 1;
+					}
+					else
+						l = 0; //exit loop
+					if ( l == 3 ) {
+						var = 3;
+						j = 20; //exit loop
+						l = 0; //exit loop
+					}
+				}
+			}
+			if ( var == 0 ) {
+				for (j = 0; j < 5; j++)
+					otherpath[j] = -1;
+				for (j = 0; j < 25; j++)
+					pathingvisited[j] = 0;
+				while(var == 0){ //1 tile bruteforce
+					j = SRand(25);
+					while(FloorsRoomContent[FR(j, floor)] == FRContent_Boss || FloorsRoomContent[FR(j, floor)] == FRContent_Treasure
+					|| FloorsRoomLayout[FR(j, floor)] == 0)
+						j = SRand(25);
+					otherpath[1] = j;
+					otherpath[2] = ChoosePath(otherpath[1], floor, pathingvisited, false);
+					if ( otherpath[2] != -1 )
+						var = 2;
+				}
+			}
+			//create shop path from stack
+			for (j = 2; j <= var; j++) {
+				FloorsRoomLayout[FR(otherpath[j], floor)] = 14;
+				if ( otherpath[j-1] == otherpath[j]-5 ) { //room before is north
+					FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0100b;
+					FloorsRoomDoors[FR(otherpath[j], floor)] |= 1000b;
+				}
+				else if ( otherpath[j-1] == otherpath[j]+5 ) { //room before is south
+					FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 1000b;
+					FloorsRoomDoors[FR(otherpath[j], floor)] |= 0100b;
+				}
+				else if ( otherpath[j-1] == otherpath[j]-1 ) { //room before is west
+					FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0001b;
+					FloorsRoomDoors[FR(otherpath[j], floor)] |= 0010b;
+				}
+				else if ( otherpath[j-1] == otherpath[j]+1 ) { //room before is east
+					FloorsRoomDoors[FR(otherpath[j-1], floor)] |= 0010b;
+					FloorsRoomDoors[FR(otherpath[j], floor)] |= 0001b;
+				}
+				if ( j == var )
+					FloorsRoomContent[FR(otherpath[j], floor)] = FRContent_Shop;
+			}
+			
+			//find random rooms
+			for (i = 0; i < 50; i++) {
+				k = SRand(25);
+				while(FloorsRoomContent[FR(k, floor)] == FRContent_Boss || FloorsRoomContent[FR(k, floor)] == FRContent_Treasure
+				|| FloorsRoomLayout[FR(k, floor)] == 0)
+					k = SRand(25);
+				for (l = 0; l < 5; l++)
+					otherpath[l] = -1;
+				for (l = 0; l < 25; l++)
+					pathingvisited[l] = 0;
+				otherpath[1] = k;
+				otherpath[2] = ChoosePath(otherpath[1], floor, pathingvisited, false);
+				if ( otherpath[2] != -1 ) {
+					//create room
+					FloorsRoomLayout[FR(otherpath[2], floor)] = 14;
+					if ( otherpath[1] == otherpath[2]-5 ) { //room before is north
+						FloorsRoomDoors[FR(otherpath[1], floor)] |= 0100b;
+						FloorsRoomDoors[FR(otherpath[2], floor)] |= 1000b;
+					}
+					else if ( otherpath[1] == otherpath[2]+5 ) { //room before is south
+						FloorsRoomDoors[FR(otherpath[1], floor)] |= 1000b;
+						FloorsRoomDoors[FR(otherpath[2], floor)] |= 0100b;
+					}
+					else if ( otherpath[1] == otherpath[2]-1 ) { //room before is west
+						FloorsRoomDoors[FR(otherpath[1], floor)] |= 0001b;
+						FloorsRoomDoors[FR(otherpath[2], floor)] |= 0010b;
+					}
+					else if ( otherpath[1] == otherpath[2]+1 ) { //room before is east
+						FloorsRoomDoors[FR(otherpath[1], floor)] |= 0010b;
+						FloorsRoomDoors[FR(otherpath[2], floor)] |= 0001b;
+					}
+				}
+			}
+			
+			//create final rooms
+			for (i = 0; i < 25; i++)
+				rngstuff[i] = -1;
+			var = 0;
+			for (i = 0; i < 25; i++) {
+				if ( FloorsRoomLayout[FR(i, floor)] == 0 ) {
+					rngstuff[i] = SRand(250);
+					var ++;
+				}
+			}
+			while(var > 0){
+				for (i = 0; i < 250; i++) {
+					for (j = 0; j < 25; j++) {
+						if ( i == rngstuff[j] ) {
+							for (k = 0; k < 5; k++)
+								otherpath[k] = -1;
+							otherpath[1] = j;
+							otherpath[2] = ChoosePath(otherpath[1], floor, pathingvisited, true);
+							if ( otherpath[2] != -1 ) {
+								FloorsRoomLayout[FR(otherpath[1], floor)] = 14;
+								if ( otherpath[1] == otherpath[2]-5 ) { //room before is north
+									FloorsRoomDoors[FR(otherpath[1], floor)] |= 0100b;
+									FloorsRoomDoors[FR(otherpath[2], floor)] |= 1000b;
+								}
+								else if ( otherpath[1] == otherpath[2]+5 ) { //room before is south
+									FloorsRoomDoors[FR(otherpath[1], floor)] |= 1000b;
+									FloorsRoomDoors[FR(otherpath[2], floor)] |= 0100b;
+								}
+								else if ( otherpath[1] == otherpath[2]-1 ) { //room before is west
+									FloorsRoomDoors[FR(otherpath[1], floor)] |= 0001b;
+									FloorsRoomDoors[FR(otherpath[2], floor)] |= 0010b;
+								}
+								else if ( otherpath[1] == otherpath[2]+1 ) { //room before is east
+									FloorsRoomDoors[FR(otherpath[1], floor)] |= 0010b;
+									FloorsRoomDoors[FR(otherpath[2], floor)] |= 0001b;
+								}
+								var --; //exit loop when floor is filled
+							}
+						}
+					}
+				}
+			}
+			
+			//place events on main path
+			i = SRand(3, 4);
+			for (j = 0; j < i; j++) {
+				k = SRand(2, 12);
+				while(FloorsRoomContent[FR(mainpath[k], floor)] > 0)
+					k = SRand(2, 12);
+				FloorsRoomContent[FR(mainpath[k], floor)] = FRContent_Event;
+			}
+			//fill rest of main path with enemies
+			for (i = 2; i <= 12; i++) {
+				if ( FloorsRoomContent[FR(mainpath[i], floor)] == 0 )
+					FloorsRoomContent[FR(mainpath[i], floor)] = FRContent_Enemy;
+			}
+			//place events elsewhere
+			for (i = 0; i < 25; i++)
+				rngstuff[i] = 0;
+			var = 0;
+			for (i = 0; i < 25; i++) {
+				if ( FloorsRoomContent[FR(i, floor)] == 0 ) {
+					rngstuff[var] = i;
+					var ++;
+				}
+			}
+			i = SRand(2, 3);
+			for (j = 0; j < i; j++) {
+				k = SRand(var);
+				while(FloorsRoomContent[FR(rngstuff[k], floor)] > 0)
+					k = SRand(var);
+				FloorsRoomContent[FR(rngstuff[k], floor)] = FRContent_Event;
+			}
+			//fill rest of dungeon with enemies
+			for (i = 0; i <= 24; i++) {
+				if ( FloorsRoomContent[FR(i, floor)] == 0 )
+					FloorsRoomContent[FR(i, floor)] = FRContent_Enemy;
+			}
+			
+			//choose floor theme
+			i = ArrayEntries(ThemeList, 200);
+			var = Rand(0, i-1); //not seeded
+			
+			GV[Floor1Theme-1+floor] = var; //make sure no duplicate themes
+			if ( floor == 2 ) {
+				while(var == GV[Floor1Theme])
+					var = Rand(0, i-1);
+			}
+			if ( floor == 3 ) {
+				while(var == GV[Floor1Theme] || var == GV[Floor2Theme])
+					var = Rand(0, i-1);
+			}
+			
+			j = Floor(ThemeList[var]); //screen
+			k = (ThemeList[var] - j) * 100; //row
+			
+			for (l = 1; l <= 5; l++) {
+				Game->SetComboData(3, 0, (floor-1)*16+l, Game->GetComboData(3, j, k*16+l));
+				Game->SetComboCSet(3, 0, (floor-1)*16+l, Game->GetComboCSet(3, j, k*16+l));
+			}
+			//background
+			for (i = 0; i < 176; i++) {
+				Game->SetComboData(FloorToMap(floor), 0x70, i, Game->GetComboData(3, 0, (floor-1)*16+1));
+				Game->SetComboCSet(FloorToMap(floor), 0x70, i, Game->GetComboCSet(3, 0, (floor-1)*16+1));
+			}
+			
+			//create screens
+			for (i = 0; i <= 24; i++) {
+				//major rooms
+				if ( FloorsRoomContent[FR(i, floor)] == FRContent_Start || FloorsRoomContent[FR(i, floor)] == FRContent_Boss
+				|| FloorsRoomContent[FR(i, floor)] == FRContent_Shop ) {
+					j = ArrayEntries(MajorRoomList, 128);
+					var = SRand(0, j-1);
+					MakeScreen(i, floor, 2, MajorRoomList[var], false);
+				}
+				//fight rooms
+				if ( FloorsRoomContent[FR(i, floor)] == FRContent_Enemy || FloorsRoomContent[FR(i, floor)] == FRContent_Treasure ) {
+					j = ArrayEntries(EnemyRoomList, 128);
+					var = SRand(0, j-1);
+					MakeScreen(i, floor, 1, EnemyRoomList[var], true);
+					
+					//choose enemies
+					j = ArrayEntries(EnemyList, 200);
+					var = SRand(0, j-1);
+					FloorsRoomVar2[FR(i, floor)] = EnemyList[var]; //enemy 1
+					var = SRand(0, j-1);
+					FloorsRoomVar3[FR(i, floor)] = EnemyList[var]; //enemy 2
+					var = SRand(0, j-1);
+					FloorsRoomVar4[FR(i, floor)] = EnemyList[var]; //enemy 3
+					k = SRand(100);
+					if ( k >= 70 ) {
+						var = SRand(0, j-1);
+						FloorsRoomVar5[FR(i, floor)] = EnemyList[var]; //enemy 4
+					}
+					
+					//choose rewards
+					FloorsRoomVar1[FR(i, floor)] = SRand(10, 15);
+					if ( FloorsRoomContent[FR(i, floor)] == FRContent_Enemy ) {
+						k = SRand(100);
+						if ( k >= 70 )
+							FloorsRoomItemReward[FR(i, floor)] = SRand(2, MaxNumOfUseableItems);
+					}
+					else {
+						FloorsRoomItemReward[FR(i, floor)] = SRandomPassiveItem(false, false);
+					}
+				}
+				//event rooms
+				if ( FloorsRoomContent[FR(i, floor)] == FRContent_Event ) {
+					j = ArrayEntries(EventList, 200);
+					var = SRand(0, j-1);
+					FloorsRoomVar1[FR(i, floor)] = EventList[var]; //set the room's var 1 to the event ID
+					if ( EventList[var] == 0 )
+						MakeScreen(i, floor, 2, 0x10, false);
+				}
+			}
+			
+			//determine shop
+			GV[Shop_F0I0+18*floor+1] = SRandomPassiveItem(true, false);
+			
+			var = SRand(160, 220);
+			GV[Shop_F0P0+18*floor+1] = var-var%10;
+			
+			GV[Shop_F0I0+18*floor+2] = 1; //map
+			GV[Shop_F0P0+18*floor+2] = 60-(floor-1)*10;
+			GV[Shop_F0I0+18*floor+3] = 2; //compass
+			GV[Shop_F0P0+18*floor+3] = 60-(floor-1)*10;
+			
+			GV[Shop_F0I0+18*floor+4] = 1; //potion
+			var = SRand(30, 50);
+			GV[Shop_F0P0+18*floor+4] = var-var%5;
+			GV[Shop_F0I0+18*floor+5] = SRand(2, MaxNumOfUseableItems);
+			var = SRand(15, 35);
+			GV[Shop_F0P0+18*floor+5] = var-var%5;
+			GV[Shop_F0I0+18*floor+6] = SRand(2, MaxNumOfUseableItems);
+			var = SRand(15, 35);
+			GV[Shop_F0P0+18*floor+6] = var-var%5;
+			
+			GV[Shop_F0I0+18*floor+7] = 1; //health stat
+			GV[Shop_F0P0+18*floor+7] = 75;
+			GV[Shop_F0I0+18*floor+8] = 1; //magic stat
+			GV[Shop_F0P0+18*floor+8] = 75;
+			GV[Shop_F0I0+18*floor+9] = 1; //attack stat
+			GV[Shop_F0P0+18*floor+9] = 75;
+			
+		} //end of 3 floor loop
+		
+		//choose bosses
+		GV[Floor1Boss] = Boss_Aquamenti;
+		GV[Floor2Boss] = Boss_Digdogger;
+		GV[Floor3Master] = Master_Ganon;
+		
+		//choose boss rewards
+		GV[Floor1BossReward1] = SRandomPassiveItem(false, true);
+		
+		GV[Floor1BossReward2] = SRandomPassiveItem(false, true);
+		while ( GV[Floor1BossReward2] == GV[Floor1BossReward1] )
+			GV[Floor1BossReward2] = SRandomPassiveItem(false, true);
+		
+		GV[Floor1BossReward3] = SRandomPassiveItem(false, true);
+		while ( GV[Floor1BossReward3] == GV[Floor1BossReward2] || GV[Floor1BossReward3] == GV[Floor1BossReward1] )
+			GV[Floor1BossReward3] = SRandomPassiveItem(false, true);
+		
+		GV[Floor2BossReward1] = SRandomPassiveItem(false, true);
+		GV[Floor2BossReward2] = SRandomPassiveItem(false, true);
+		GV[Floor2BossReward3] = SRandomPassiveItem(false, true);
+		
+		//choose midis
+		Game->DMapMIDI[1] = Rand(11, 52); //not seeded
+		Game->DMapMIDI[2] = Rand(11, 52); //not seeded
+		while(Game->DMapMIDI[2] == Game->DMapMIDI[1]){
+			Game->DMapMIDI[2] = Rand(11, 52);
+		}
+		Game->DMapMIDI[3] = Rand(11, 52); //not seeded
+		while(Game->DMapMIDI[3] == Game->DMapMIDI[1] || Game->DMapMIDI[3] == Game->DMapMIDI[2]){
+			Game->DMapMIDI[3] = Rand(11, 52);
+		}
+		
+		//set up rng passive items table
+		var = 0;
+		for (i = 3; i <= MaxNumOfPassiveItems; i++) { //count remaining passive items
+			if ( PassiveItems[i] == 0 )
+				var ++;
+		}
+		for (i = 3; i < var+3; i++) { //put remaining passive items into table
+			j = 3;
+			k = 0;
+			while(k==0){
+				if ( PassiveItems[j] == 0 ) {
+					RNGPassiveItemsTable[i] = j;
+					PassiveItems[j] = 1;
+					k = 1;
+				}
+				else
+					j++;
+			}
+		}
+		for (i = var+3; i > 3; i--) { //shuffle table
+			j = SRand(3, i);
+			k = RNGPassiveItemsTable[j];
+			RNGPassiveItemsTable[j] = RNGPassiveItemsTable[i];
+			RNGPassiveItemsTable[i] = k;
+		}
+		for (i = 0; i < 200; i++) { //reset passive items
+			PassiveItems[i] = 0;
+		}
+		
+		//warp player
+		NoAction();
+		GV[CurrentFloor] ++;
+		for (i = 0; i <= 24; i++) {
+			if ( FloorsRoomContent[FR(i, GV[CurrentFloor])] == FRContent_Start )
+				Link->PitWarp(GV[CurrentFloor], RoomToScreen(i));
+		}
+	}
+}
+
+int FR(int room, int floor){
+	return room + ((floor-1) * 25);
+}
+int NorthRoomIndex(int i){
+	if ( i < 5 )
+		return -1;
+	return i-5;
+}
+int SouthRoomIndex(int i){
+	if ( i > 19 )
+		return -1;
+	return i+5;
+}
+int WestRoomIndex(int i){
+	if ( i == 0 || i == 5 || i == 10 || i == 15 || i == 20 )
+		return -1;
+	return i-1;
+}
+int EastRoomIndex(int i){
+	if ( i == 4 || i == 9 || i == 14 || i == 19 || i == 24 )
+		return -1;
+	return i+1;
+}
+int ChoosePath(int room, int floor, int pathingvisited, bool finalrooms){
+	int pathvars[11]; //pathoptions up/down/left/right, iteration, index, numoptions, pathoptions a/b/c/d
+	pathvars[0] = -1; pathvars[1] = -1; pathvars[2] = -1; pathvars[3] = -1; pathvars[6] = 0;
+	for (pathvars[4] = 0; pathvars[4] < 4; pathvars[4]++) { //check all directions for options
+		if ( pathvars[4] == 0 )
+			pathvars[5] = NorthRoomIndex(room);
+		else if ( pathvars[4] == 1 )
+			pathvars[5] = SouthRoomIndex(room);
+		else if ( pathvars[4] == 2 )
+			pathvars[5] = WestRoomIndex(room);
+		else
+			pathvars[5] = EastRoomIndex(room);
+		if ( pathvars[5] != -1 ) {
+			if ( !finalrooms ) {
+				if ( FloorsRoomLayout[FR(pathvars[5], floor)] == 0 ) {
+					if ( pathingvisited[pathvars[5]] == 0 ) {
+						pathvars[pathvars[4]] = pathvars[5];
+						pathvars[6] ++;
+					}
+				}
+			}
+			else {
+				if ( FloorsRoomLayout[FR(pathvars[5], floor)] > 0 ) {
+					if ( FloorsRoomContent[FR(pathvars[5], floor)] != FRContent_Boss ) {
+						pathvars[pathvars[4]] = pathvars[5];
+						pathvars[6] ++;
+					}
+				}
+			}
+		}
+	}
+	if ( pathvars[6] == 0 )
+		return -1;
+	for (pathvars[4] = 0; pathvars[4] < pathvars[6]; pathvars[4]++) { //put options into a/b/c/d
+		if ( pathvars[0] != -1 ) {
+			pathvars[7+pathvars[4]] = pathvars[0];
+			pathvars[0] = -1;
+		}
+		else if ( pathvars[1] != -1 ) {
+			pathvars[7+pathvars[4]] = pathvars[1];
+			pathvars[1] = -1;
+		}
+		else if ( pathvars[2] != -1 ) {
+			pathvars[7+pathvars[4]] = pathvars[2];
+			pathvars[2] = -1;
+		}
+		else if ( pathvars[3] != -1 ) {
+			pathvars[7+pathvars[4]] = pathvars[3];
+			pathvars[3] = -1;
+		}
+	}
+	pathvars[5] = SRand(pathvars[6]);
+	return pathvars[7+pathvars[5]];
+}
+int ArrayEntries(int array, int max) {
+	int size;
+	for (int i = 0; i < max; i++) {
+		if ( array[i] == -1 )
+			return size;
+		size ++;
+	}
+	return max;
+}
+int RoomToScreen(int room) {
+	int row;
+	if ( room < 5 )
+		row = 0;
+	else if ( room < 10 )
+		row = 1;
+	else if ( room < 15 )
+		row = 2;
+	else if ( room < 20 )
+		row = 3;
+	else
+		row = 4;
+	int column = room - row*5;
+	return row*16+column;
+}
+int ScreenToRoom(int screen) {
+	if ( screen == 0x00 ) return 0;
+	if ( screen == 0x01 ) return 1;
+	if ( screen == 0x02 ) return 2;
+	if ( screen == 0x03 ) return 3;
+	if ( screen == 0x04 ) return 4;
+	if ( screen == 0x10 ) return 5;
+	if ( screen == 0x11 ) return 6;
+	if ( screen == 0x12 ) return 7;
+	if ( screen == 0x13 ) return 8;
+	if ( screen == 0x14 ) return 9;
+	if ( screen == 0x20 ) return 10;
+	if ( screen == 0x21 ) return 11;
+	if ( screen == 0x22 ) return 12;
+	if ( screen == 0x23 ) return 13;
+	if ( screen == 0x24 ) return 14;
+	if ( screen == 0x30 ) return 15;
+	if ( screen == 0x31 ) return 16;
+	if ( screen == 0x32 ) return 17;
+	if ( screen == 0x33 ) return 18;
+	if ( screen == 0x34 ) return 19;
+	if ( screen == 0x40 ) return 20;
+	if ( screen == 0x41 ) return 21;
+	if ( screen == 0x42 ) return 22;
+	if ( screen == 0x43 ) return 23;
+	if ( screen == 0x44 ) return 24;
+}
+int FloorToMap(int floor) {
+	return 3+floor;
+}
+int MapToFloor(int map) {
+	return map-3;
+}
+void MakeScreen(int room, int floor, int sourcemap, int sourcescreen, bool flip) {
+	int i; int j; int fliptype; int rewardpos[176]; int k;
+	int destmap = FloorToMap(floor);
+	int destscreen = RoomToScreen(room);
+	
+	if ( flip )
+		fliptype = SRand(0, 3); //0 = none, 1 = h, 2 = v, 3 = both
+	for (i = 0; i < 176; i++) {
+		j = i;
+		if ( fliptype == 1 || fliptype == 3 )
+			j = Floor(j/16)*16 + 15 - j%16;
+		if ( fliptype > 1 )
+			j = (10 - Floor(j/16))*16 + j%16;
+		if ( Game->GetComboData(sourcemap, sourcescreen, i) == ThemeCombo_FloorA )
+			Game->SetComboData(destmap, destscreen, j, 0);
+		else if ( Game->GetComboData(sourcemap, sourcescreen, i) == ThemeCombo_FloorB ) {
+			Game->SetComboData(destmap, destscreen, j, Game->GetComboData(3, 0, (floor-1)*16+2));
+			Game->SetComboCSet(destmap, destscreen, j, Game->GetComboCSet(3, 0, (floor-1)*16+2));
+		}
+		else if ( Game->GetComboData(sourcemap, sourcescreen, i) == ThemeCombo_WallA ) {
+			Game->SetComboData(destmap, destscreen, j, Game->GetComboData(3, 0, (floor-1)*16+3));
+			Game->SetComboCSet(destmap, destscreen, j, Game->GetComboCSet(3, 0, (floor-1)*16+3));
+		}
+		else if ( Game->GetComboData(sourcemap, sourcescreen, i) == ThemeCombo_WallB ) {
+			Game->SetComboData(destmap, destscreen, j, Game->GetComboData(3, 0, (floor-1)*16+4));
+			Game->SetComboCSet(destmap, destscreen, j, Game->GetComboCSet(3, 0, (floor-1)*16+4));
+		}
+		else if ( Game->GetComboData(sourcemap, sourcescreen, i) == ThemeCombo_Reward ) {
+			rewardpos[k] = j;
+			k ++;
+		}
+	}
+	if ( k > 0 ) {
+		i = rewardpos[SRand(k)];
+		Game->SetComboData(destmap, destscreen, i, 120 + Game->GetComboData(3, 0, (floor-1)*16+1) % 4);
+		Game->SetComboCSet(destmap, destscreen, i, Game->GetComboCSet(3, 0, (floor-1)*16+1));
+	}
+	
+	//place doors
+	int doorcombo = Game->GetComboData(3, 0, (floor-1)*16+5);
+	int doorcset = Game->GetComboCSet(3, 0, (floor-1)*16+5);
+	if ( (FloorsRoomDoors[FR(room, floor)] & 1000b) > 0 ) { //north door
+		i = -1;
+		if ( NorthRoomIndex(room) != -1 ) {
+			if ( Game->GetComboData(FloorToMap(floor), RoomToScreen(room-5), 167) == doorcombo )
+				i = 7;
+			else if ( Game->GetComboData(FloorToMap(floor), RoomToScreen(room-5), 168) == doorcombo )
+				i = 8;
+		}
+		if ( i == -1 )
+			i = SRand(7, 8);
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i += 16;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i += 16;
+		while(Game->GetComboSolid(FloorToMap(floor), RoomToScreen(room), i) == 1111b){
+			Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+			Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+			i += 16;
+		}
+	}
+	if ( (FloorsRoomDoors[FR(room, floor)] & 0100b) > 0 ) { //south door
+		i = -1;
+		if ( SouthRoomIndex(room) != -1 ) {
+			if ( Game->GetComboData(FloorToMap(floor), RoomToScreen(room+5), 7) == doorcombo )
+				i = 167;
+			else if ( Game->GetComboData(FloorToMap(floor), RoomToScreen(room+5), 8) == doorcombo )
+				i = 168;
+		}
+		if ( i == -1 )
+			i = SRand(167, 168);
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i -= 16;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i -= 16;
+		while(Game->GetComboSolid(FloorToMap(floor), RoomToScreen(room), i) == 1111b){
+			Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+			Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+			i -= 16;
+		}
+	}
+	if ( (FloorsRoomDoors[FR(room, floor)] & 0010b) > 0 ) { //west door
+		i = 80;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i ++;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i ++;
+		while(Game->GetComboSolid(FloorToMap(floor), RoomToScreen(room), i) == 1111b){
+			Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+			Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+			i ++;
+		}
+	}
+	if ( (FloorsRoomDoors[FR(room, floor)] & 0001b) > 0 ) { //east door
+		i = 95;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i --;
+		Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+		Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+		i --;
+		while(Game->GetComboSolid(FloorToMap(floor), RoomToScreen(room), i) == 1111b){
+			Game->SetComboData(FloorToMap(floor), RoomToScreen(room), i, doorcombo);
+			Game->SetComboCSet(FloorToMap(floor), RoomToScreen(room), i, doorcset);
+			i --;
+		}
+	}
+}
+int SRandomPassiveItem(bool InShop, bool DontTrack){
+	int itm;
+	if ( InShop )
+		itm = SRand(5, MaxNumOfPassiveItems); //not including dangerwallet and deluxecard
+	else
+		itm = SRand(3, MaxNumOfPassiveItems);
+	while ( PassiveItems[itm] == 1 ) {
+		if ( InShop )
+			itm = SRand(5, MaxNumOfPassiveItems); //not including dangerwallet and deluxecard
+		else
+			itm = SRand(3, MaxNumOfPassiveItems);
+	}
+	if ( !DontTrack )
+		PassiveItems[itm] = 1;
+	return itm;
+}
+
+bool PointWithinRect(int px, int py, int x1, int y1, int x2, int y2){
+	if ( px < x1 ) return false;
+	if ( px > x2 ) return false;
+	if ( py < y1 ) return false;
+	if ( py > y2 ) return false;
+	return true;
+}
+
+void PlayTangoString(int string, int style, int x, int y){
+	Tango_ClearSlot(0);
+	Tango_LoadString(0, string);
+	Tango_SetSlotStyle(0, style);
+	Tango_SetSlotPosition(0, x, y);
+	Tango_ActivateSlot(0);
+	if ( style == 0 ) {
+		int timer;
+		while(Tango_SlotIsActive(0)){
+			if(Link->InputA && !Tango_SlotIsFinished(0))
+				Link->PressA;
+			if(Tango_SlotIsFinished(0))
+				timer++;
+			if((Link->PressA || Link->PressB) && timer > 50){
+				Tango_ClearSlot(0);
+				break;
+			}
+			Waitframe();
+		}
+	}
+}
+
+
+
+ffc script Chest{
+	void run(){
+		PauseGame();
+		bool useable;
+		if ( FloorsRoomContent[GV[CurrentFR]] == FRContent_Enemy )
+			useable = true;
+		ShowItemInfo(useable, FloorsRoomItemReward[GV[CurrentFR]], 24);
+		int MCArr[15];
+		MCArr[MC_NumOptions] = 2;
+		MCArr[MC_InitOption] = 1;
+		MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+		if ( useable ) {
+			int MCS1[] = "Take useable item";
+			int MCS2[] = "Or don't";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				Screen->DrawTile(6, 116, MCArr[MC_Y]-24, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+				Screen->FastTile(6, 116+4, MCArr[MC_Y]-24+4, UseableItemIDTile(FloorsRoomItemReward[GV[CurrentFR]]), 8, OP_OPAQUE);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				if ( UseableItems[FindFreeIndex(UseableItems, 4)] != -1 )
+					AddUseableItem(FloorsRoomItemReward[GV[CurrentFR]]);
+				else {
+					//inventory is full
+					UseableInventoryIsFull(FloorsRoomItemReward[GV[CurrentFR]]);
+				}
+			}
+			NoAction();
+			UnpauseGame();
+			Quit();
+		}
+		else {
+			int MCS1[] = "Take passive item";
+			int MCS2[] = "Take 20 rupees instead";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				Screen->DrawTile(6, 116, MCArr[MC_Y]-24, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+				Screen->FastTile(6, 116+4, MCArr[MC_Y]-24+4, PassiveItemIDTile(FloorsRoomItemReward[GV[CurrentFR]]), 8, OP_OPAQUE);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				AddPassiveItem(FloorsRoomItemReward[GV[CurrentFR]]);
+			}
+			else {
+				Game->DCounter[CR_RUPEES] += 20;
+			}
+			NoAction();
+			UnpauseGame();
+			Quit();
+		}
+	}
+}
+
+const int MC_NumOptions = 0;
+const int MC_InitOption = 1;
+const int MC_X = 2;
+const int MC_Y = 3;
+const int MC_SelectedOption = 4;
+const int MC_ChoiceWait = 5;
+const int MC_ChosenOption = 6;
+const int MC_Tile1 = 7;
+const int MC_Tile2 = 8;
+const int MC_Tile3 = 9;
+const int MC_Tile4 = 10;
+const int MC_Tile5 = 11;
+const int MC_Tile6 = 12;
+void MultipleChoice(int MCArr, int MCS1, int MCS2, int MCS3, int MCS4, int MCS5, int MCS6){
+	if ( MCArr[MC_ChoiceWait] < 30 ) {
+		MCArr[MC_ChoiceWait] ++;
+		if ( MCArr[MC_ChoiceWait] == 30 )
+			MCArr[MC_SelectedOption] = MCArr[MC_InitOption];
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 ) {
+		if ( Link->PressUp ) { Game->PlaySound(5); MCArr[MC_SelectedOption] --; }
+		if ( Link->PressDown ) { Game->PlaySound(5); MCArr[MC_SelectedOption] ++; }
+		if ( MCArr[MC_SelectedOption] < 1 )
+			MCArr[MC_SelectedOption] = MCArr[MC_NumOptions];
+		if ( MCArr[MC_SelectedOption] > MCArr[MC_NumOptions] )
+			MCArr[MC_SelectedOption] = 1;
+		if ( Link->PressA ) {
+			Game->PlaySound(25);
+			MCArr[MC_ChosenOption] = MCArr[MC_SelectedOption];
+		}
+	}
+	
+	int col; int stringlen;
+	if ( MCArr[MC_SelectedOption] == 1 ) {
+		col = 0x88; stringlen = Tango_GetStringWidth(MCS1, TANGO_FONT_GUI);
+	}
+	else col = 0x01;
+	Screen->DrawTile(6, 16, MCArr[MC_Y], 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawString(6, 128, MCArr[MC_Y]+1, FONT_L2, col, -1, TF_CENTERED, MCS1, OP_OPAQUE);
+	if ( MCArr[MC_NumOptions] > 1 ) {
+		if ( MCArr[MC_SelectedOption] == 2 ) {
+			col = 0x88; stringlen = Tango_GetStringWidth(MCS2, TANGO_FONT_GUI);
+		}
+		else col = 0x01;
+		Screen->DrawTile(6, 16, MCArr[MC_Y]+16, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->DrawString(6, 128, MCArr[MC_Y]+1+16, FONT_L2, col, -1, TF_CENTERED, MCS2, OP_OPAQUE);
+	}
+	if ( MCArr[MC_NumOptions] > 2 ) {
+		if ( MCArr[MC_SelectedOption] == 3 ) {
+			col = 0x88; stringlen = Tango_GetStringWidth(MCS3, TANGO_FONT_GUI);
+		}
+		else col = 0x01;
+		Screen->DrawTile(6, 16, MCArr[MC_Y]+32, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->DrawString(6, 128, MCArr[MC_Y]+1+32, FONT_L2, col, -1, TF_CENTERED, MCS3, OP_OPAQUE);
+	}
+	if ( MCArr[MC_NumOptions] > 3 ) {
+		if ( MCArr[MC_SelectedOption] == 4 ) {
+			col = 0x88; stringlen = Tango_GetStringWidth(MCS4, TANGO_FONT_GUI);
+		}
+		else col = 0x01;
+		Screen->DrawTile(6, 16, MCArr[MC_Y]+48, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->DrawString(6, 128, MCArr[MC_Y]+1+48, FONT_L2, col, -1, TF_CENTERED, MCS4, OP_OPAQUE);
+	}
+	if ( MCArr[MC_NumOptions] > 4 ) {
+		if ( MCArr[MC_SelectedOption] == 5 ) {
+			col = 0x88; stringlen = Tango_GetStringWidth(MCS5, TANGO_FONT_GUI);
+		}
+		else col = 0x01;
+		Screen->DrawTile(6, 16, MCArr[MC_Y]+64, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->DrawString(6, 128, MCArr[MC_Y]+1+64, FONT_L2, col, -1, TF_CENTERED, MCS5, OP_OPAQUE);
+	}
+	if ( MCArr[MC_NumOptions] > 5 ) {
+		if ( MCArr[MC_SelectedOption] == 6 ) {
+			col = 0x88; stringlen = Tango_GetStringWidth(MCS6, TANGO_FONT_GUI);
+		}
+		else col = 0x01;
+		Screen->DrawTile(6, 16, MCArr[MC_Y]+80, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->DrawString(6, 128, MCArr[MC_Y]+1+80, FONT_L2, col, -1, TF_CENTERED, MCS6, OP_OPAQUE);
+	}
+	if ( MCArr[MC_SelectedOption] > 0 )
+		Screen->FastTile(6, 120 - 8 - stringlen / 2, MCArr[MC_Y] + (MCArr[MC_SelectedOption]-1) * 16, 8094, 8, OP_OPAQUE);
+}
+void MultipleChoiceHorizontal(int MCArr){
+	if ( MCArr[MC_X] == 0 )
+		MCArr[MC_X] = 116 - (MCArr[MC_NumOptions] - 1) * 12;
+	
+	if ( MCArr[MC_ChoiceWait] < 30 ) {
+		MCArr[MC_ChoiceWait] ++;
+		if ( MCArr[MC_ChoiceWait] == 30 )
+			MCArr[MC_SelectedOption] = MCArr[MC_InitOption];
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 ) {
+		if ( Link->PressLeft ) { Game->PlaySound(5); MCArr[MC_SelectedOption] --; }
+		if ( Link->PressRight ) { Game->PlaySound(5); MCArr[MC_SelectedOption] ++; }
+		if ( MCArr[MC_SelectedOption] < 1 )
+			MCArr[MC_SelectedOption] = MCArr[MC_NumOptions];
+		if ( MCArr[MC_SelectedOption] > MCArr[MC_NumOptions] )
+			MCArr[MC_SelectedOption] = 1;
+		if ( Link->PressA ) {
+			Game->PlaySound(25);
+			MCArr[MC_ChosenOption] = MCArr[MC_SelectedOption];
+		}
+	}
+	
+	for (int i = 0; i < MCArr[MC_NumOptions]; i++) {
+		Screen->DrawTile(6, MCArr[MC_X]+i*24, MCArr[MC_Y], 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, MCArr[MC_X]+i*24+4, MCArr[MC_Y]+4, MCArr[MC_Tile1+i], 8, OP_OPAQUE);
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 ) {
+		Screen->DrawTile(6, MCArr[MC_X] + (MCArr[MC_SelectedOption]-1) * 24, MCArr[MC_Y], 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, MCArr[MC_X] + 4 + (MCArr[MC_SelectedOption]-1) * 24, MCArr[MC_Y]-12, 8114, 8, OP_OPAQUE);
+	}
+}
+void MultipleChoiceHoriMore(int MCArr, int MCS){
+	if ( MCArr[MC_X] == 0 )
+		MCArr[MC_X] = 116 - (MCArr[MC_NumOptions] - 1) * 12;
+	
+	if ( MCArr[MC_ChoiceWait] < 30 ) {
+		MCArr[MC_ChoiceWait] ++;
+		if ( MCArr[MC_ChoiceWait] == 30 )
+			MCArr[MC_SelectedOption] = MCArr[MC_InitOption];
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 ) {
+		if ( MCArr[MC_SelectedOption] != 1000 ) {
+			if ( Link->PressLeft ) {
+				Game->PlaySound(5); MCArr[MC_SelectedOption] --;
+				if ( MCArr[MC_SelectedOption] < 1 )
+					MCArr[MC_SelectedOption] = MCArr[MC_NumOptions];
+			}
+			if ( Link->PressRight ) {
+				Game->PlaySound(5); MCArr[MC_SelectedOption] ++;
+				if ( MCArr[MC_SelectedOption] > MCArr[MC_NumOptions] )
+					MCArr[MC_SelectedOption] = 1;
+			}
+			if ( Link->PressDown ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 1000;
+			}
+		}
+		else {
+			if ( Link->PressUp ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = Round(MCArr[MC_NumOptions]/2);
+			}
+		}
+		if ( Link->PressA ) {
+			Game->PlaySound(25);
+			MCArr[MC_ChosenOption] = MCArr[MC_SelectedOption];
+		}
+	}
+	
+	for (int i = 0; i < MCArr[MC_NumOptions]; i++) {
+		Screen->DrawTile(6, MCArr[MC_X]+i*24, MCArr[MC_Y], 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, MCArr[MC_X]+i*24+4, MCArr[MC_Y]+4, MCArr[MC_Tile1+i], 8, OP_OPAQUE);
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 && MCArr[MC_SelectedOption] != 1000 ) {
+		Screen->DrawTile(6, MCArr[MC_X] + (MCArr[MC_SelectedOption]-1) * 24, MCArr[MC_Y], 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		Screen->FastTile(6, MCArr[MC_X] + 4 + (MCArr[MC_SelectedOption]-1) * 24, MCArr[MC_Y]-12, 8114, 8, OP_OPAQUE);
+	}
+	
+	int col; int stringlen;
+	if ( MCArr[MC_SelectedOption] == 1000 ) {
+		col = 0x88; stringlen = Tango_GetStringWidth(MCS, TANGO_FONT_GUI);
+	}
+	else col = 0x01;
+	Screen->DrawTile(6, 16, MCArr[MC_Y]+28, 8140, 14, 1, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawString(6, 128, MCArr[MC_Y]+28+1, FONT_L2, col, -1, TF_CENTERED, MCS, OP_OPAQUE);
+	
+	if ( MCArr[MC_SelectedOption] == 1000 )
+		Screen->FastTile(6, 120 - 8 - stringlen / 2, MCArr[MC_Y]+28, 8094, 8, OP_OPAQUE);
+}
+void MultipleChoiceShop(int MCArr){
+	int var;
+	if ( MCArr[MC_ChoiceWait] < 30 ) {
+		MCArr[MC_ChoiceWait] ++;
+		if ( MCArr[MC_ChoiceWait] == 30 )
+			MCArr[MC_SelectedOption] = MCArr[MC_InitOption];
+	}
+	
+	if ( MCArr[MC_SelectedOption] > 0 ) {
+		if ( Link->PressUp ) {
+			if ( MCArr[MC_SelectedOption] < 7 ) {
+				if ( MCArr[MC_SelectedOption] < 4 ) {
+					Game->PlaySound(5);
+					MCArr[MC_SelectedOption] += 3;
+				}
+				else {
+					Game->PlaySound(5);
+					MCArr[MC_SelectedOption] -= 3;
+				}
+			}
+		}
+		else if ( Link->PressDown ) {
+			if ( MCArr[MC_SelectedOption] < 7 ) {
+				if ( MCArr[MC_SelectedOption] < 4 ) {
+					Game->PlaySound(5);
+					MCArr[MC_SelectedOption] += 3;
+				}
+				else {
+					Game->PlaySound(5);
+					MCArr[MC_SelectedOption] -= 3;
+				}
+			}
+		}
+		else if ( Link->PressLeft ) {
+			if ( MCArr[MC_SelectedOption] == 1 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 9;
+			}
+			else if ( MCArr[MC_SelectedOption] > 1 && MCArr[MC_SelectedOption] <= 3 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] --;
+			}
+			else if ( MCArr[MC_SelectedOption] > 4 && MCArr[MC_SelectedOption] <= 6 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] --;
+			}
+			else if ( MCArr[MC_SelectedOption] > 7 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] --;
+			}
+			else if ( MCArr[MC_SelectedOption] == 7 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 3;
+			}
+			else if ( MCArr[MC_SelectedOption] == 4 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 9;
+			}
+		}
+		else if ( Link->PressRight ) {
+			if ( MCArr[MC_SelectedOption] == 9 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 1;
+			}
+			else if ( MCArr[MC_SelectedOption] < 3 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] ++;
+			}
+			else if ( MCArr[MC_SelectedOption] >= 4 && MCArr[MC_SelectedOption] < 9 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] ++;
+			}
+			else if ( MCArr[MC_SelectedOption] == 3 ) {
+				Game->PlaySound(5);
+				MCArr[MC_SelectedOption] = 7;
+			}
+		}
+		if ( Link->PressA ) {
+			MCArr[MC_ChosenOption] = MCArr[MC_SelectedOption];
+			MCArr[MC_InitOption] = MCArr[MC_SelectedOption];
+		}
+		if ( Link->PressB )
+			MCArr[MC_ChosenOption] = -1;
+	}
+	
+	Screen->DrawTile(6, 16, 0, 8320, 14, 7, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	
+	Screen->FastTile(6, 128, 7, 8075, 8, OP_OPAQUE);
+	int SD[] = "Cancel";
+	Screen->DrawString(6, 160, 8, FONT_L2, 0x01, -1, TF_CENTERED, SD, OP_OPAQUE);
+	Screen->FastTile(6, 186, 7, 8074, 7, OP_OPAQUE);
+	int SE[] = "Buy";
+	Screen->DrawString(6, 210, 8, FONT_L2, 0x01, -1, TF_CENTERED, SE, OP_OPAQUE);
+	
+	int pos1x = 68; int pos1y = 22;
+	int pos2x = 68; int pos2y = 72;
+	int pos3x = 172; int pos3y = 58;
+	
+	Screen->DrawTile(6, pos1x-24-4, pos1y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos1x-4, pos1y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos1x+24-4, pos1y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	
+	Screen->DrawTile(6, pos2x-24-4, pos2y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos2x-4, pos2y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos2x+24-4, pos2y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	
+	Screen->DrawTile(6, pos3x-24-4, pos3y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos3x-4, pos3y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	Screen->DrawTile(6, pos3x+24-4, pos3y-4, 8160, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	
+	int SA[] = "Passive items";
+	int SB[] = "Useable items";
+	int SC[] = "Stats";
+	Screen->DrawString(6, pos1x+8, pos1y-16, FONT_L2, 0x01, -1, TF_CENTERED, SA, OP_OPAQUE);
+	Screen->DrawString(6, pos2x+8, pos2y-16, FONT_L2, 0x01, -1, TF_CENTERED, SB, OP_OPAQUE);
+	Screen->DrawString(6, pos3x+8, pos3y-16, FONT_L2, 0x01, -1, TF_CENTERED, SC, OP_OPAQUE);
+	
+	var = Shop_F0I0+18*GV[CurrentFloor]+1;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos1x-24, pos1y, PassiveItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos1x+8-24, pos1y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+2;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos1x, pos1y, PassiveItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos1x+8, pos1y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+3;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos1x+24, pos1y, PassiveItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos1x+8+24, pos1y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	
+	var = Shop_F0I0+18*GV[CurrentFloor]+4;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos2x-24, pos2y, UseableItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos2x+8-24, pos2y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+5;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos2x, pos2y, UseableItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos2x+8, pos2y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+6;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos2x+24, pos2y, UseableItemIDTile(GV[var]), 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos2x+8+24, pos2y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	
+	var = Shop_F0I0+18*GV[CurrentFloor]+7;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos3x-24, pos3y, 7840, 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos3x+8-24, pos3y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+8;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos3x, pos3y, 7841, 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos3x+8, pos3y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	var = Shop_F0I0+18*GV[CurrentFloor]+9;
+	if ( GV[var] > 0 ) {
+		Screen->FastTile(6, pos3x+24, pos3y, 7842, 8, OP_OPAQUE);
+		remchr(GBuffer, 0);
+		if ( PassiveItems[4] == 0 ) itoa(GBuffer, GV[var+9]);
+		else itoa(GBuffer, Floor(GV[var+9]/100*80)); //deluxe card
+		Screen->DrawString(6, pos3x+8+24, pos3y+19, FONT_L2, 0x64, -1, TF_CENTERED, GBuffer, OP_OPAQUE);
+	}
+	
+	if ( MCArr[MC_SelectedOption] == 1 )
+		Screen->DrawTile(6, pos1x-24-4, pos1y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 2 )
+		Screen->DrawTile(6, pos1x-4, pos1y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 3 )
+		Screen->DrawTile(6, pos1x+24-4, pos1y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 4 )
+		Screen->DrawTile(6, pos2x-24-4, pos2y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 5 )
+		Screen->DrawTile(6, pos2x-4, pos2y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 6 )
+		Screen->DrawTile(6, pos2x+24-4, pos2y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 7 )
+		Screen->DrawTile(6, pos3x-24-4, pos3y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 8 )
+		Screen->DrawTile(6, pos3x-4, pos3y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+	if ( MCArr[MC_SelectedOption] == 9 )
+		Screen->DrawTile(6, pos3x+24-4, pos3y-4, 8162, 2, 2, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+}
+
+ffc script Shop{
+	void run(){
+		PauseGame();
+		Game->PlayMIDI(2);
+		int MCArr[15]; int i; int j;
+		int fairyX = 112;
+		int fairyY = 64;
+		int playerInRadius;
+		
+		int random = Rand(6);
+		if ( random == 0 ) {
+			int S1[] = "Rupees shine like stars, don't they? Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		if ( random == 1 ) {
+			int S1[] = "Rupees taste like little stars! Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		if ( random == 2 ) {
+			int S1[] = "Twinkle, twinkle, little rupee! Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		if ( random == 3 ) {
+			int S1[] = "Would you like some sparkles? Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		if ( random == 4 ) {
+			int S1[] = "I love the weather here! Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		if ( random == 5 ) {
+			int S1[] = "Good evening, oh cute one! Feel free to browse my shop. I'll take leave when you're done here.";
+			PlayTangoFairyString(S1, TStyle_Standard, 16, 96, fairyX, fairyY);
+		}
+		
+		UnpauseGame();
+		NoAction();
+		ClearRoomOpenDoors();
+		
+		if ( PassiveItems[1] == 1 )
+			GV[Shop_F0I0+18*GV[CurrentFloor]+2] = 0;
+		if ( PassiveItems[2] == 1 )
+			GV[Shop_F0I0+18*GV[CurrentFloor]+3] = 0;
+		while(true){
+			int fairyDestX = Link->X-8;
+			int fairyDestY = Link->Y-32;
+			if ( Distance(Link->X+8, Link->Y+8, 128, 88) < 44 ) {
+				if ( playerInRadius < 20 )
+					playerInRadius ++;
+			}
+			else
+				playerInRadius = 0;
+			if ( playerInRadius > 0 ) {
+				if ( Distance(fairyX, fairyY, fairyDestX, fairyDestY) > 0.6 ) {
+					int angle = Angle(fairyX, fairyY, fairyDestX, fairyDestY);
+					fairyX += VectorX(1, angle);
+					fairyY += VectorY(1, angle);
+				}
+				else
+					playerInRadius = 20;
+				if ( playerInRadius == 20 ) {
+					if ( Link->PressA ) {
+						PauseGame();
+						remchr(GBuffer, 0);
+						GBuffer[0] = ' ';
+						PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+						for (i = 0; i < 15; i++) MCArr[i] = 0;
+						MCArr[MC_NumOptions] = 9;
+						MCArr[MC_InitOption] = 1;
+						while(true){
+							MCArr[MC_ChosenOption] = 0;
+							i = 0;
+							while(MCArr[MC_ChosenOption] == 0){
+								MultipleChoiceShop(MCArr);
+								if ( MCArr[MC_SelectedOption] != i ) {
+									i = MCArr[MC_SelectedOption];
+									if ( i == 1 && GV[Shop_F0I0+18*GV[CurrentFloor]+1] > 0 )
+										ShowItemInfo(false, GV[Shop_F0I0+18*GV[CurrentFloor]+1], 112);
+									else if ( i == 2 && GV[Shop_F0I0+18*GV[CurrentFloor]+2] > 0 )
+										ShowItemInfo(false, GV[Shop_F0I0+18*GV[CurrentFloor]+2], 112);
+									else if ( i == 3 && GV[Shop_F0I0+18*GV[CurrentFloor]+3] > 0 )
+										ShowItemInfo(false, GV[Shop_F0I0+18*GV[CurrentFloor]+3], 112);
+									else if ( i == 4 && GV[Shop_F0I0+18*GV[CurrentFloor]+4] > 0 )
+										ShowItemInfo(true, GV[Shop_F0I0+18*GV[CurrentFloor]+4], 112);
+									else if ( i == 5 && GV[Shop_F0I0+18*GV[CurrentFloor]+5] > 0 )
+										ShowItemInfo(true, GV[Shop_F0I0+18*GV[CurrentFloor]+5], 112);
+									else if ( i == 6 && GV[Shop_F0I0+18*GV[CurrentFloor]+6] > 0 )
+										ShowItemInfo(true, GV[Shop_F0I0+18*GV[CurrentFloor]+6], 112);
+									else if ( i == 7 && GV[Shop_F0I0+18*GV[CurrentFloor]+7] > 0 )
+										ShowStatInfo(1, 112);
+									else if ( i == 8 && GV[Shop_F0I0+18*GV[CurrentFloor]+8] > 0 )
+										ShowStatInfo(2, 112);
+									else if ( i == 9 && GV[Shop_F0I0+18*GV[CurrentFloor]+9] > 0 )
+										ShowStatInfo(3, 112);
+									else {
+										remchr(GBuffer, 0);
+										GBuffer[0] = ' ';
+										PlayTangoString(GBuffer, TStyle_Info, 16, 112);
+									}
+								}
+								FairyDraw(fairyX, fairyY);
+								WaitNoAction();
+							}
+							if ( MCArr[MC_ChosenOption] == -1 )
+								break;
+							if ( MCArr[MC_ChosenOption] == 1 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+1;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									AddPassiveItem(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 2 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+2;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									AddPassiveItem(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 3 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+3;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									AddPassiveItem(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 4 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+4;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									if ( UseableItems[FindFreeIndex(UseableItems, 4)] != -1 )
+										AddUseableItem(GV[i]);
+									else
+										UseableInventoryIsFull(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 5 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+5;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									if ( UseableItems[FindFreeIndex(UseableItems, 4)] != -1 )
+										AddUseableItem(GV[i]);
+									else
+										UseableInventoryIsFull(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 6 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+6;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									if ( UseableItems[FindFreeIndex(UseableItems, 4)] != -1 )
+										AddUseableItem(GV[i]);
+									else
+										UseableInventoryIsFull(GV[i]);
+									GV[i] = 0;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 7 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+7;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									GV[PlayerMaxHP] += 5;
+									GV[PlayerHP] += 5;
+									GV[i] = 0;
+									GV[Shop_F0P0+18*2+7] += 25;
+									GV[Shop_F0P0+18*3+7] += 25;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 8 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+8;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									GV[PlayerMaxMP] += 5;
+									GV[PlayerMP] += 5;
+									GV[i] = 0;
+									GV[Shop_F0P0+18*2+8] += 25;
+									GV[Shop_F0P0+18*3+8] += 25;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+							if ( MCArr[MC_ChosenOption] == 9 ) {
+								i = Shop_F0I0+18*GV[CurrentFloor]+9;
+								j = GV[i+9];
+								if ( PassiveItems[4] == 1 ) j = Floor(GV[i+9]/100*80); //deluxe card
+								if ( GV[i] > 0 && GV[PlayerRupees] >= j ) {
+									Game->PlaySound(25);
+									GV[PlayerRupees] -= j;
+									GV[AttackPowerBase] += 3;
+									UpdateAttackPower();
+									GV[i] = 0;
+									GV[Shop_F0P0+18*2+9] += 25;
+									GV[Shop_F0P0+18*3+9] += 25;
+									if ( PassiveItems[3] == 1 ) { //dangerous wallet
+										GV[PlayerHP] --;
+										lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+										wpn->UseSprite(106);
+										wpn->Misc[14] = 1;
+										wpn->Misc[15] = 1;
+										wpn->Misc[0] = 40;
+										wpn->CollDetection = false;
+									}
+								}
+							}
+						}
+						Tango_ClearSlot(0);
+						UnpauseGame();
+					}
+					else
+						Screen->FastTile(6, Link->X, Link->Y-16, 8074, 7, OP_OPAQUE);
+				}
+			}
+			else {
+				if ( Distance(fairyX, fairyY, 112, 64) > 0.6 ) {
+					int angle = Angle(fairyX, fairyY, 112, 64);
+					fairyX += VectorX(0.8, angle);
+					fairyY += VectorY(0.8, angle);
+				}
+				else {
+					fairyX = 112;
+					fairyY = 64;
+				}
+			}
+			FairyDraw(fairyX, fairyY);
+			Waitframe();
+		}
+	}
+	void FairyDraw(int x, int y){
+		Screen->FastCombo(4, x, y, 1412, 7, OP_OPAQUE);
+		Screen->FastCombo(4, x+16, y, 1413, 7, OP_OPAQUE);
+		Screen->FastCombo(4, x, y+16, 1414, 7, OP_OPAQUE);
+		Screen->FastCombo(4, x+16, y+16, 1415, 7, OP_OPAQUE);
+	}
+	void PlayTangoFairyString(int string, int style, int x, int y, int fairyX, int fairyY){
+		Tango_ClearSlot(0);
+		Tango_LoadString(0, string);
+		Tango_SetSlotStyle(0, style);
+		Tango_SetSlotPosition(0, x, y);
+		Tango_ActivateSlot(0);
+		if ( style == 0 ) {
+			int timer;
+			while(Tango_SlotIsActive(0)){
+				if(Link->InputA && !Tango_SlotIsFinished(0))
+					Link->PressA;
+				if(Tango_SlotIsFinished(0))
+					timer++;
+				if((Link->PressA || Link->PressB) && timer > 50){
+					Tango_ClearSlot(0);
+					break;
+				}
+				FairyDraw(fairyX, fairyY);
+				Waitframe();
+			}
+		}
+	}
+}
+
+ffc script Boss{
+	void run(){
+		int i; int j; int k;
+		int bossType; //1 = boss, 2 = master
+		int bossID;
+		if ( GV[CurrentFloor] < 3 ) {
+			bossType = 1;
+			bossID = GV[Floor1Boss-1+GV[CurrentFloor]];
+		}
+		else {
+			bossType = 2;
+			bossID = GV[Floor1Boss-1+GV[CurrentFloor]];
+		}
+		
+		if ( bossType == 1 && bossID == Boss_Aquamenti ) {
+			Game->PlayMIDI(5);
+			CreateNPCAt(178, 72, 80);
+			CreateNPCAt(178, 168, 80);
+			RunFFCScript(33, 0);
+			for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+				GV[i] = 0;
+			int FM[] = "Aquamenti - The Dragon Duo";
+			strcpy(GV, FloatingMessageStart, FM, 0);
+			GV[FloatingMessageState] = 1;
+			GV[FloatingMessageColour] = 0x83;
+			GV[FloatingMessageDuration] = 150;
+		}
+		if ( bossType == 1 && bossID == Boss_Digdogger ) {
+			Game->PlayMIDI(4);
+			CreateNPCAt(179, 120, 80);
+			for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+				GV[i] = 0;
+			int FM[] = "Digdogger - The WIP Boss";
+			strcpy(GV, FloatingMessageStart, FM, 0);
+			GV[FloatingMessageState] = 1;
+			GV[FloatingMessageColour] = 0x83;
+			GV[FloatingMessageDuration] = 150;
+		}
+		if ( bossType == 2 && bossID == Master_Ganon ) {
+			Game->PlayMIDI(3);
+			CreateNPCAt(181, 120, 80);
+			for (i = FloatingMessageStart; i <= FloatingMessageStart+50; i++)
+				GV[i] = 0;
+			int FM[] = "Ganon - The Demon King";
+			strcpy(GV, FloatingMessageStart, FM, 0);
+			GV[FloatingMessageState] = 1;
+			GV[FloatingMessageColour] = 0x83;
+			GV[FloatingMessageDuration] = 150;
+		}
+		
+		while(FloorsRoomCleared[GV[CurrentFR]] == 0){
+			Waitframe();
+		}
+		
+		if ( GV[CurrentFloor] == 3 ) {
+			WaitNoAction(45);
+			Link->PitWarp(0, 0x61);
+			WaitNoAction();
+		}
+		
+		Screen->ComboD[87] = 1420;
+		item itm = CreateItemAt(159, ComboX(88), ComboY(88));
+		lweapon chestspawn = CreateLWeaponAt(LW_SPARKLE, ComboX(87), ComboY(87));
+		chestspawn->UseSprite(111);
+		lweapon hcspawn = CreateLWeaponAt(LW_SPARKLE, ComboX(88), ComboY(88));
+		hcspawn->UseSprite(111);
+		
+		while(true){
+			//player infront combo
+			if ( Link->Dir == DIR_UP )
+				i = ComboAt(Link->X+8, Link->Y-1);
+			else if ( Link->Dir == DIR_RIGHT )
+				i = ComboAt(Link->X+16, Link->Y+8);
+			else if ( Link->Dir == DIR_DOWN )
+				i = ComboAt(Link->X+8, Link->Y+16);
+			else if ( Link->Dir == DIR_LEFT )
+				i = ComboAt(Link->X-1, Link->Y+8);
+			else
+				i = ComboAt(Link->X+8, Link->Y+8);
+			if ( Screen->ComboD[i] == 1420 ) {
+				if ( Link->PressA ) {
+					Screen->ComboD[i] ++;
+					NoAction();
+					break;
+				}
+				else
+					Screen->FastTile(6, Link->X, Link->Y-16, 8074, 7, OP_OPAQUE);
+			}
+			Waitframe();
+		}
+		PauseGame();
+		
+		//determine reward items
+		int passiveItm1 = GV[Floor1BossReward1+(GV[CurrentFloor]-1)*3];
+		int passiveItm2 = GV[Floor1BossReward2+(GV[CurrentFloor]-1)*3];
+		int passiveItm3 = GV[Floor1BossReward3+(GV[CurrentFloor]-1)*3];
+		if ( GV[CurrentFloor] > 1 ) {
+			//itm 1
+			//find index in rng items table
+			i = 0; j = 3; k = 0;
+			while ( i == 0 ) {
+				if ( RNGPassiveItemsTable[j] == passiveItm1 )
+					i = j;
+				j++;
+				if ( RNGPassiveItemsTable[j] == 0 )
+					j = 3;
+				k++;
+				if ( k > 1000 ) {
+					break;
+				}
+			}
+			k = 0;
+			//choose next appropriate item
+			while ( PassiveItems[passiveItm1] == 1 ) {
+				i++;
+				if ( RNGPassiveItemsTable[i] == 0 )
+					i = 3;
+				passiveItm1 = RNGPassiveItemsTable[i];
+				k++;
+				if ( k > 1000 ) {
+					passiveItm1 = 0;
+					break;
+				}
+			}
+			
+			//itm 2
+			//find index in rng items table
+			i = 0; j = 3; k = 0;
+			while ( i == 0 ) {
+				if ( RNGPassiveItemsTable[j] == passiveItm2 )
+					i = j;
+				j++;
+				if ( RNGPassiveItemsTable[j] == 0 )
+					j = 3;
+				k++;
+				if ( k > 1000 ) {
+					break;
+				}
+			}
+			k = 0;
+			//choose next appropriate item
+			while ( PassiveItems[passiveItm2] == 1 || passiveItm2 == passiveItm1 ) {
+				i++;
+				if ( RNGPassiveItemsTable[i] == 0 )
+					i = 3;
+				passiveItm2 = RNGPassiveItemsTable[i];
+				k++;
+				if ( k > 1000 ) {
+					passiveItm2 = 0;
+					break;
+				}
+			}
+			
+			//itm 3
+			//find index in rng items table
+			i = 0; j = 3; k = 0;
+			while ( i == 0 ) {
+				if ( RNGPassiveItemsTable[j] == passiveItm3 )
+					i = j;
+				j++;
+				if ( RNGPassiveItemsTable[j] == 0 )
+					j = 3;
+				k++;
+				if ( k > 1000 ) {
+					break;
+				}
+			}
+			k = 0;
+			//choose next appropriate item
+			while ( PassiveItems[passiveItm3] == 1 || passiveItm3 == passiveItm2 || passiveItm3 == passiveItm1 ) {
+				i++;
+				if ( RNGPassiveItemsTable[i] == 0 )
+					i = 3;
+				passiveItm3 = RNGPassiveItemsTable[i];
+				k++;
+				if ( k > 1000 ) {
+					passiveItm3 = 0;
+					break;
+				}
+			}
+		}
+		
+		int S1[] = "Only one item can be taken. Make a choice.";
+		PlayTangoString(S1, TStyle_Standard, 16, 56);
+		int MCArr[15];
+		MCArr[MC_NumOptions] = 3;
+		MCArr[MC_InitOption] = 1;
+		MCArr[MC_Y] = 104;
+		MCArr[MC_Tile1] = PassiveItemIDTile(passiveItm1);
+		MCArr[MC_Tile2] = PassiveItemIDTile(passiveItm2);
+		MCArr[MC_Tile3] = PassiveItemIDTile(passiveItm3);
+		int S2[] = "Take 50 rupees instead.";
+		int showinfo;
+		remchr(GBuffer, 0);
+		GBuffer[0] = ' ';
+		PlayTangoString(GBuffer, TStyle_Info, 16, 24);
+		while(MCArr[MC_ChosenOption] == 0){
+			MultipleChoiceHoriMore(MCArr, S2);
+			if ( MCArr[MC_SelectedOption] != showinfo ) {
+				showinfo = MCArr[MC_SelectedOption];
+				if ( showinfo == 1 )
+					ShowItemInfo(false, passiveItm1, 24);
+				else if ( showinfo == 2 )
+					ShowItemInfo(false, passiveItm2, 24);
+				else if ( showinfo == 3 )
+					ShowItemInfo(false, passiveItm3, 24);
+				else if ( showinfo == 1000 ) {
+					GBuffer[0] = ' ';
+					PlayTangoString(GBuffer, TStyle_Info, 16, 24);
+				}
+			}
+			WaitNoAction();
+		}
+		Tango_ClearSlot(0);
+		if ( MCArr[MC_ChosenOption] == 1 && passiveItm1 != 0 ) {
+			AddPassiveItem(passiveItm1);
+		}
+		else if ( MCArr[MC_ChosenOption] == 2 && passiveItm2 != 0 ) {
+			AddPassiveItem(passiveItm2);
+		}
+		else if ( MCArr[MC_ChosenOption] == 3 && passiveItm3 != 0 ) {
+			AddPassiveItem(passiveItm3);
+		}
+		else {
+			Game->DCounter[CR_RUPEES] += 50;
+		}
+		UnpauseGame();
+		Waitframes(45);
+		
+		Game->PlaySound(9);
+		Screen->ComboD[87] = 452;
+		Screen->ComboC[87] = 4;
+		lweapon stairspawn = CreateLWeaponAt(LW_SPARKLE, ComboX(87), ComboY(87));
+		stairspawn->UseSprite(111);
+		
+		while(Screen->ComboD[ComboAt(Link->X+8, Link->Y+8)] != 452){
+			Waitframe();
+		}
+		
+		//warp player
+		for (i = 0; i < 45; i++) {
+			Screen->Rectangle(7, 0, 0, 255, 175, 0x0F, 1, 0, 0, 0, true, OP_OPAQUE);
+			WaitNoAction();
+		}
+		NoAction();
+		GV[CurrentFloor] ++;
+		GV[BigChestsFound] = 0;
+		GV[ShopFound] = 0;
+		for (i = 0; i <= 24; i++) {
+			if ( FloorsRoomContent[FR(i, GV[CurrentFloor])] == FRContent_Start )
+				Link->PitWarp(GV[CurrentFloor], RoomToScreen(i));
+		}
+	}
+}
+
+item script BossHC{
+	void run(){
+		GV[PlayerMaxHP] += 5;
+		GV[PlayerHP] += 5;
+		int missing = GV[PlayerMaxHP] - GV[PlayerHP];
+		if ( missing > 0 ) {
+			GV[PlayerHP] = GV[PlayerMaxHP];
+			lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+			wpn->UseSprite(106);
+			wpn->Misc[14] = 1;
+			wpn->Misc[15] = missing*-1;
+			wpn->Misc[0] = 40;
+			wpn->CollDetection = false;
+		}
+	}
+}
+
+ffc script WIPEvent{
+	void run(){
+		PauseGame();
+		int event = Rand(4);
+		if ( event == 0 ) {
+			int S1[] = "Wanna play WIP Party?@(26)50% chance: Gain 5 HP.@(26)50% chance: Lose 3 HP.";
+			PlayTangoString(S1, TStyle_Info, 16, 28);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 2;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Take the risk";
+			int MCS2[] = "Don't";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				if ( Rand(100) < 50 ) {
+					Game->PlaySound(80);
+					Link->HP += 20;
+				}
+				else {
+					Game->PlaySound(81);
+					Link->HP -= 12;
+				}
+			}
+		}
+		else if ( event == 1 ) {
+			int S1[] = "Wanna play WIP Party?@(26)50% chance: Get 40 rupees.@(26)50% chance: Lose 30 rupees.";
+			PlayTangoString(S1, TStyle_Info, 16, 28);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 2;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Take the risk";
+			int MCS2[] = "Don't";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				if ( Rand(100) < 50 ) {
+					Game->PlaySound(80);
+					Game->DCounter[CR_RUPEES] += 40;
+				}
+				else {
+					Game->PlaySound(81);
+					GV[PlayerRupees] -= 30;
+					if ( GV[PlayerRupees] < 0 )
+						GV[PlayerRupees] = 0;
+				}
+			}
+		}
+		else if ( event == 2 ) {
+			int S1[] = "Wanna play WIP Party?@(26)50% chance: Get random useable item.@(26)50% chance: Lose 3 max MP.";
+			PlayTangoString(S1, TStyle_Info, 16, 28);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 2;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Take the risk";
+			int MCS2[] = "Don't";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				if ( Rand(100) < 50 ) {
+					Game->PlaySound(80);
+					int randomitem = Rand(1, MaxNumOfUseableItems);
+					if ( UseableItems[FindFreeIndex(UseableItems, 4)] != -1 )
+						AddUseableItem(randomitem);
+					else {
+						//inventory is full
+						UseableInventoryIsFull(randomitem);
+					}
+				}
+				else {
+					Game->PlaySound(81);
+					GV[PlayerMaxMP] -= 3;
+					if ( GV[PlayerMP] > GV[PlayerMaxMP] )
+						GV[PlayerMP] = GV[PlayerMaxMP];
+				}
+			}
+		}
+		else if ( event == 3 ) {
+			int S1[] = "Wanna play WIP Party?@(26)70% chance: Gain 1 attack power.@(26)30% chance: Lose 5 HP.";
+			PlayTangoString(S1, TStyle_Info, 16, 28);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 2;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Take the risk";
+			int MCS2[] = "Don't";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				if ( Rand(100) < 70 ) {
+					Game->PlaySound(80);
+					GV[AttackPowerBase] ++;
+					UpdateAttackPower();
+				}
+				else {
+					Game->PlaySound(81);
+					Link->HP -= 20;
+				}
+			}
+		}
+		ClearRoomOpenDoors();
+		UnpauseGame();
+	}
+}
+
+ffc script DeathScreen{
+	void run(){
+		int i;
+		for (i = 0; i < 60; i++) {
+			if ( i%4 > 1 ) //flash
+				Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir*4 + GV[CharAnimWalkFrame] + 520, 6, OP_OPAQUE);
+			else //not flash
+				Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir*4 + GV[CharAnimWalkFrame], 6, OP_OPAQUE);
+			WaitNoAction();
+		}
+		Game->PlaySound(28);
+		for (i = 0; i < 120; i++) {
+			if ( i%5 == 0 ) {
+				if ( Link->Dir == DIR_UP )
+					Link->Dir = DIR_RIGHT;
+				else if ( Link->Dir == DIR_RIGHT )
+					Link->Dir = DIR_DOWN;
+				else if ( Link->Dir == DIR_DOWN )
+					Link->Dir = DIR_LEFT;
+				else if ( Link->Dir == DIR_LEFT )
+					Link->Dir = DIR_UP;
+			}
+			Screen->FastTile(2, ScrollingLinkX(), ScrollingLinkY(), GV[CharAnimBase] + Link->Dir*4, 6, OP_OPAQUE);
+			WaitNoAction();
+		}
+		lweapon deathsprite = CreateLWeaponAt(LW_SPARKLE, Link->X, Link->Y);
+		deathsprite->UseSprite(23);
+		WaitNoAction(60);
+		int S1[] = "Game over...";
+		PlayTangoString(S1, TStyle_Standard, 16, 56);
+		WaitNoAction(30);
+		int S2[] = "Wanna start a new run?";
+		PlayTangoString(S2, TStyle_Info, 16, 28);
+		int MCArr[15];
+		MCArr[MC_NumOptions] = 2;
+		MCArr[MC_InitOption] = 1;
+		MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+		int MCS1[] = "Yes";
+		int MCS2[] = "No";
+		while(MCArr[MC_ChosenOption] == 0){
+			MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+			WaitNoAction();
+		}
+		Tango_ClearSlot(0);
+		if ( MCArr[MC_ChosenOption] == 1 ) {
+			this->Data = CMB_AWarpA;
+			WaitNoAction();
+		}
+		else {
+			int S3[] = "Thanks so much for playing my demo! I would love to hear any feedback :)";
+			PlayTangoString(S3, TStyle_Standard, 16, 56);
+			WaitNoAction();
+			Game->End();
+		}
+	}
+}
+
+ffc script EndScreen{
+	void run(){
+		WaitNoAction(60);
+		Game->PlaySound(80);
+		WaitNoAction(60);
+		int S1[] = "You've beat the master. Nice job! This is all there is to this demo! I hope you look forward to more.";
+		PlayTangoString(S1, TStyle_Standard, 16, 56);
+		WaitNoAction(30);
+		int S2[] = "Normally the point of this quest would be replayability, but there isn't much content. So no point in replaying.";
+		PlayTangoString(S2, TStyle_Standard, 16, 56);
+		WaitNoAction(30);
+		int S3[] = "I would love to hear any feedback :) Thanks so much for playing!";
+		PlayTangoString(S3, TStyle_Standard, 16, 56);
+		WaitNoAction();
+		Game->End();
+	}
+}
+
+ffc script StartText{
+	void run(){
+		PauseGame();
+		int S1[] = "Welcome to Fight the Monsters 3!";
+		PlayTangoString(S1, TStyle_Standard, 16, 56);
+		int S2[] = "Wanna hear the introduction?";
+		PlayTangoString(S2, TStyle_Info, 16, 28);
+		int MCArr[15];
+		MCArr[MC_NumOptions] = 2;
+		MCArr[MC_InitOption] = 1;
+		MCArr[MC_Y] = 72 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+		int MCS1[] = "Yes";
+		int MCS2[] = "No";
+		while(MCArr[MC_ChosenOption] == 0){
+			MultipleChoice(MCArr, MCS1, MCS2, 0, 0, 0, 0);
+			WaitNoAction();
+		}
+		Tango_ClearSlot(0);
+		if ( MCArr[MC_ChosenOption] == 1 ) {
+			int S3[] = "This is a demo, so a lot of things are WIP (work in progress). It's missing a lot of content and there's placeholders too.";
+			PlayTangoString(S3, TStyle_Standard, 16, 56);
+			int S4[] = "The goal is to explore the mystical dungeon, fight monsters and beat the master at the end of the 3rd floor.";
+			PlayTangoString(S4, TStyle_Standard, 16, 56);
+			int S5[] = "Death is permanent! So be extra careful. If you feel like you've played enough, please stop trying.";
+			PlayTangoString(S5, TStyle_Standard, 16, 56);
+			int S6[] = "In this demo you can only play as Link. Link gains 3 defense at the start of every fight, which fully blocks attacks.";
+			PlayTangoString(S6, TStyle_Standard, 16, 56);
+			int S7[] = "A, B and R are your abilities. Press L to use useable items. Start opens the active subscreen.";
+			PlayTangoString(S7, TStyle_Standard, 16, 56);
+			int S8[] = "There's a lot to take in, but you can learn by doing. Anyway, goodluck and have fun!";
+			PlayTangoString(S8, TStyle_Standard, 16, 56);
+		}
+		UnpauseGame();
+		NoAction();
+	}
+}
+
+ffc script Genie{
+	void run(){
+		int i; int j;
+		int genie[4]; //x, y, state and timer
+		genie[0] = 120-16;
+		genie[1] = 48-16;
+		for (i = 0; i < 2; i++) {
+			for (j = 0; j < 2; j++) {
+				lweapon puff = CreateLWeaponAt(LW_SPARKLE, 112+i*16, 40+j*16);
+				puff->UseSprite(9);
+			}
+		}
+		if ( GV[GenieWishes] == 3 ) {
+			int S1[] = "Meheheh. You, who have summoned me. Make your first wish.";
+			PlayTangoGenieString(S1, TStyle_Standard, 16, 96, genie);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 3;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 64 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Fill my inventory with useable items";
+			int MCS2[] = "Give me 60 rupees";
+			int MCS3[] = "Heal me for 6 HP";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, MCS3, 0, 0, 0);
+				GenieDraw(genie);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				for (i = 0; i < 4; i++) {
+					j = Rand(2, MaxNumOfUseableItems);
+					if ( UseableItems[i] == 0 )
+						AddUseableItem(j);
+				}
+			}
+			if ( MCArr[MC_ChosenOption] == 2 ) {
+				GV[PlayerRupees] += 60;
+				if ( GV[PlayerRupees] > 999 )
+					GV[PlayerRupees] = 999;
+			}
+			if ( MCArr[MC_ChosenOption] == 3 ) {
+				Game->PlaySound(22);
+				GV[PlayerHP] += 6;
+				lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+				wpn->UseSprite(106);
+				wpn->Misc[14] = 1;
+				wpn->Misc[15] = -6;
+				wpn->Misc[0] = 40;
+				wpn->CollDetection = false;
+				if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+					GV[PlayerHP] = GV[PlayerMaxHP];
+			}
+		}
+		if ( GV[GenieWishes] == 2 ) {
+			int S1[] = "Now then. Tell me your second wish.";
+			PlayTangoGenieString(S1, TStyle_Standard, 16, 96, genie);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 3;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 64 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Make me invincible for 1 minute";
+			int MCS2[] = "Poison all enemies for 3 minutes";
+			int MCS3[] = "Heal me for 6 HP";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, MCS3, 0, 0, 0);
+				GenieDraw(genie);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				GV[GenieInvincible] = 60*60+30;
+			}
+			if ( MCArr[MC_ChosenOption] == 2 ) {
+				GV[GeniePoison] = 60*60*3+30;
+				GV[BubPoisonExpansion] = 4;
+				GV[BubPoisonX] = Link->X;
+				GV[BubPoisonY] = Link->Y;
+				GV[BubPoisonTimer] = -1000;
+			}
+			if ( MCArr[MC_ChosenOption] == 3 ) {
+				Game->PlaySound(22);
+				GV[PlayerHP] += 6;
+				lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, Link->X, Link->Y);
+				wpn->UseSprite(106);
+				wpn->Misc[14] = 1;
+				wpn->Misc[15] = -6;
+				wpn->Misc[0] = 40;
+				wpn->CollDetection = false;
+				if ( GV[PlayerHP] > GV[PlayerMaxHP] )
+					GV[PlayerHP] = GV[PlayerMaxHP];
+			}
+		}
+		if ( GV[GenieWishes] == 1 ) {
+			int S1[] = "Time for your final wish. Choose wisely. Meheheh.";
+			PlayTangoGenieString(S1, TStyle_Standard, 16, 96, genie);
+			int MCArr[15];
+			MCArr[MC_NumOptions] = 3;
+			MCArr[MC_InitOption] = 1;
+			MCArr[MC_Y] = 64 + 48 - (MCArr[MC_NumOptions] - 1) * 8;
+			int MCS1[] = "Give me 4 max HP";
+			int MCS2[] = "Give me 4 max MP";
+			int MCS3[] = "Give me 2 attack power";
+			while(MCArr[MC_ChosenOption] == 0){
+				MultipleChoice(MCArr, MCS1, MCS2, MCS3, 0, 0, 0);
+				GenieDraw(genie);
+				WaitNoAction();
+			}
+			Tango_ClearSlot(0);
+			if ( MCArr[MC_ChosenOption] == 1 ) {
+				GV[PlayerMaxHP] += 4;
+				GV[PlayerHP] += 4;
+			}
+			if ( MCArr[MC_ChosenOption] == 2 ) {
+				GV[PlayerMaxMP] += 4;
+				GV[PlayerMP] += 4;
+			}
+			if ( MCArr[MC_ChosenOption] == 3 ) {
+				GV[AttackPowerBase] += 2;
+				UpdateAttackPower();
+			}
+		}
+		Game->PlaySound(9);
+		for (i = 0; i < 2; i++) {
+			for (j = 0; j < 2; j++) {
+				lweapon puff = CreateLWeaponAt(LW_SPARKLE, 112+i*16, 40+j*16);
+				puff->UseSprite(9);
+			}
+		}
+		Waitframes(30);
+		this->Data = 3;
+	}
+	void GenieDraw(int genie){
+		Screen->DrawTile(4, genie[0], genie[1], 5476, 3, 3, 7, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+		genie[3] ++;
+		if ( genie[3] > 10 ) {
+			genie[3] = 0;
+			genie[2] ++;
+			if ( genie[2] == 1 ) genie[1] --;
+			if ( genie[2] == 2 ) genie[1] ++;
+			if ( genie[2] == 3 ) genie[1] ++;
+			if ( genie[2] == 4 ) { genie[1] --; genie[2] = 0; }
+		}
+	}
+	void PlayTangoGenieString(int string, int style, int x, int y, int genie){
+		Tango_ClearSlot(0);
+		Tango_LoadString(0, string);
+		Tango_SetSlotStyle(0, style);
+		Tango_SetSlotPosition(0, x, y);
+		Tango_ActivateSlot(0);
+		if ( style == 0 ) {
+			int timer;
+			while(Tango_SlotIsActive(0)){
+				if(Link->InputA && !Tango_SlotIsFinished(0))
+					Link->PressA;
+				if(Tango_SlotIsFinished(0))
+					timer++;
+				if((Link->PressA || Link->PressB) && timer > 50){
+					Tango_ClearSlot(0);
+					break;
+				}
+				GenieDraw(genie);
+				Waitframe();
+			}
+		}
+	}
+}

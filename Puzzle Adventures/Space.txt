@@ -1,0 +1,33 @@
+Info
+
+Space Adventure is a completely different quest. It has nothing to do with Zelda. In every level you have to reach the goal. There are 100 levels!
+
+This quest is part of the Puzzle Adventures series. For Island Adventure, go here: http://www.purezc.net/index.php?page=quests&id=338
+
+Description
+
+Space Adventure is a completely different quest. It has nothing to do with Zelda. In every level you have to reach the goal. There are 100 levels!
+
+- Many many different puzzles, reaching from creative original puzzles to different kinds of block puzzles
+- You can save in any level
+- Custom graphics
+- A great custom boss at the end of the game
+
+Try this out! How many levels can YOU beat?
+
+Story
+
+No story.
+
+Tips and Cheats
+
+No cheats. If you need any help on a certain level, just ask on this page here or in the help thread.
+http://www.purezc.net/forums/index.php?showtopic=56679
+
+Credits
+
+MoscowModder - Various important Scripts
+Radien - Some tiles from his DoR tileset
+VGMusic.com - Various midis
+
+I made the palette and many of the tiles in this quest myself.

@@ -1,0 +1,1150 @@
+const int EVars_HP = 0;
+const int EVars_MaxHP = 1;
+
+const int LASER1_Yellow = 0x89;
+const int LASER2_Yellow = 0x88;
+const int LASER3_Yellow = 0x01;
+
+void E_Init(ffc this, npc ghost, int EVars){
+	//initialize scripted hp
+	EVars[EVars_MaxHP] = Ghost_HP;
+	//get stronger each floor
+	if ( ghost->Attributes[11] != 1 )
+		EVars[EVars_MaxHP] += (GV[CurrentFloor]-1)*5;
+	//cursed heart container
+	if ( PassiveItems[14] == 1 && ghost->Attributes[11] == 1 )
+		EVars[EVars_MaxHP] += 50;
+	EVars[EVars_HP] = EVars[EVars_MaxHP];
+	Ghost_HP = 1000;
+	E_InitWait4(this, ghost, EVars);
+}
+
+void E_InitWait4(ffc this, npc ghost, int EVars){
+	ghost->DrawXOffset = -10000;
+	E_Waitframes(this, ghost, EVars, 4);
+	ghost->DrawXOffset = 0;
+}
+
+void E_Waitframes(ffc this, npc ghost, int EVars, int num){
+	for (int i = 0; i < num; i++) {
+		E_Waitframe(this, ghost, EVars);
+	}
+}
+
+void E_Waitframe(ffc this, npc ghost, int EVars){
+	bool once;
+	while(!once || ghost->Stun > 0){
+		once = true;
+		//if enemy hp changes
+		if ( Ghost_HP != 1000 ) {
+			if ( 1000-Ghost_HP < 0 && EVars[EVars_HP] == EVars[EVars_MaxHP] ) { 
+				//if it would heal while hp is at max, do nothing
+			}
+			else {
+				EVars[EVars_HP] -= 1000-Ghost_HP;
+				if ( EVars[EVars_HP] > EVars[EVars_MaxHP] )
+					EVars[EVars_HP] = EVars[EVars_MaxHP];
+				lweapon wpn = CreateLWeaponAt(LW_SCRIPT2, CenterX(ghost)-8, CenterY(ghost)-8);
+				wpn->UseSprite(106);
+				wpn->Misc[15] = 1000-Ghost_HP;
+				wpn->Misc[0] = 40;
+				wpn->CollDetection = false;
+				
+				if ( PassiveItems[10] == 1 ) { //linked damage
+					if ( 1000-Ghost_HP > 0 && Ghost_GotHit() ) {
+						for (int i = 1; i <= Screen->NumNPCs(); i++) {
+							npc enem = Screen->LoadNPC(i);
+							if ( GetEnemyProperty(enem, ENPROP_X) != GetEnemyProperty(ghost, ENPROP_X)
+							|| GetEnemyProperty(enem, ENPROP_Y) != GetEnemyProperty(ghost, ENPROP_Y) )
+								SetEnemyProperty(enem, ENPROP_HP, GetEnemyProperty(enem, ENPROP_HP)-3);
+						}
+					}
+				}
+			}
+			Ghost_HP = 1000;
+		}
+		//if scripted hp 0, real hp 0
+		if ( EVars[EVars_HP] <= 0 )
+			Ghost_HP = 0;
+		if ( !Ghost_Waitframe(this, ghost, true, false) ) {
+			if ( ghost->Attributes[11] == 1 ) { //is a boss
+				ghost->DrawXOffset = -10000;
+				if ( ghost->ID == 178 && Screen->D[0] > 0 ) { //aquamenti
+					Screen->D[0] --;
+					int i; int j; int angle; int x = CenterX(ghost)-8; int y = CenterY(ghost)-8;
+					for(i = 1; i <= 12; i++) {
+						for(j = 0; j < 4; j++) {
+							eweapon wpn = Screen->CreateEWeapon(EW_BOMBBLAST);
+							wpn->CollDetection = false;
+							wpn->X = x + (8+4*i) * Cos(360/4*j+angle);
+							wpn->Y = y + (8+4*i) * Sin(360/4*j+angle);
+						}
+						angle += 45;
+						Waitframes(16-i);
+					}
+				}
+				else {
+					Game->PlayMIDI(0);
+					int i; int j; int angle; int x = CenterX(ghost)-8; int y = CenterY(ghost)-8;
+					for(i = 1; i <= 12; i++) {
+						for(j = 0; j < 4; j++) {
+							eweapon wpn = Screen->CreateEWeapon(EW_BOMBBLAST);
+							wpn->CollDetection = false;
+							wpn->X = x + (8+4*i) * Cos(360/4*j+angle);
+							wpn->Y = y + (8+4*i) * Sin(360/4*j+angle);
+						}
+						angle += 45;
+						Waitframes(16-i);
+					}
+					Game->PlaySound(27);
+					FloorsRoomCleared[GV[CurrentFR]] = 1;
+				}
+			}
+			if ( ghost->Attributes[11] == 0 && ghost->ID != 190 ) {
+				if ( PointWithinRect(CenterX(ghost), CenterY(ghost), 8, 8, 277, 167) && !Screen->isSolid(CenterX(ghost), CenterY(ghost)) ) {
+					int random = Rand(100);
+					if ( random < 6 ) { //heart
+						if ( GV[RewardBankHearts] > 0 ) {
+							item itm = CreateItemAt(2, Ghost_X, Ghost_Y);
+							SetItemPickup(itm, IP_TIMEOUT, true);
+							GV[RewardBankHearts] --;
+						}
+					}
+					else if ( random < 6+3 ) { //5 rupees
+						if ( GV[RewardBankRupees] >= 5 ) {
+							item itm = CreateItemAt(1, Ghost_X, Ghost_Y);
+							SetItemPickup(itm, IP_TIMEOUT, true);
+							GV[RewardBankRupees] -= 5;
+						}
+					}
+					else if ( random < 6+3+16 ) { //1 rupee
+						if ( GV[RewardBankRupees] > 0 ) {
+							item itm = CreateItemAt(0, Ghost_X, Ghost_Y);
+							SetItemPickup(itm, IP_TIMEOUT, true);
+							GV[RewardBankRupees] --;
+						}
+					}
+				}
+			}
+			if ( ghost->ID == 190 ) { //jelly1
+				CreateNPCAt(191, Ghost_X, Ghost_Y);
+				CreateNPCAt(191, Ghost_X, Ghost_Y);
+			}
+			if ( ghost->ID == 191 ) { //jelly2
+				int x = Ghost_X; int y = Ghost_Y; int dmg = ghost->WeaponDamage;
+				FireEWeapon(EW_FIREBALL, x, y, DegtoRad(Angle(x, y, Link->X, Link->Y)), 150, dmg, 119, 0, 0);
+				Waitframes(8);
+				FireEWeapon(EW_FIREBALL, x, y, DegtoRad(Angle(x, y, Link->X, Link->Y)), 150, dmg, 119, 0, 0);
+			}
+			Quit();
+		}
+	}
+}
+
+ffc script E_Test{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk8(walk, 50, 6, 50, 0);
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+int AquamentiMovement(ffc this, npc ghost, int DirTimer, int LeftestX, int RightestX){
+	if ( DirTimer > 0 ) {
+		DirTimer --;
+		Ghost_Move(Ghost_Dir, 0.25, 0);
+	}
+	else {
+		DirTimer = Rand(30, 90);
+		Ghost_Dir = Choose(DIR_LEFT, DIR_RIGHT);
+	}
+	if ( Ghost_X <= LeftestX ) {
+		DirTimer = Rand(30, 90);
+		Ghost_Dir = DIR_RIGHT;
+	}
+	if ( Ghost_X >= RightestX ) {
+		DirTimer = Rand(30, 90);
+		Ghost_Dir = DIR_LEFT;
+	}
+	return DirTimer;
+}
+ffc script E_Aquamenti{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Screen->D[0] = 1;
+		
+		int i; int j; int k; int angle; int var;
+		int Side; //0 = left, 1 = right
+		if ( Ghost_X > 120 )
+			Side = 1;
+		int LeftestX;
+		int RightestX;
+		if ( Side == 0 ) { LeftestX = 32; RightestX = 56; }
+		else { LeftestX = 168; RightestX = 192; }
+		int DirTimer = Rand(30, 90);
+		Ghost_Dir = DIR_RIGHT;
+		if ( Side == 1 )
+			Ghost_Dir = DIR_LEFT;
+		
+		Ghost_Transform(this, ghost, 1416+Side*2, -1, 2, 2);
+		E_Waitframes(this, ghost, EVars, 30);
+		
+		while(true){
+			if ( ghost->Misc[0] == 1 ) { //attack 1
+				Ghost_Transform(this, ghost, 1417+Side*2, -1, -1, -1);
+				
+				E_Waitframes(this, ghost, EVars, 2);
+				var = ghost->Misc[0];
+				
+				if ( (Side == 0 && var == 1) || (Side == 1 && var == 2) || Screen->D[0] == 0 ) {
+					angle = DegtoRad(Angle(Ghost_X+8, Ghost_Y, Link->X, Link->Y));
+					for (i = -1; i <= 1; i++) {
+						eweapon fireball = FireEWeapon(EW_FIREBALL, Ghost_X+8, Ghost_Y, angle, 150, ghost->WeaponDamage, -1, -1, 0);
+						if ( i < 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 270, 0.5);
+						if ( i > 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 90, 0.5);
+					}
+				}
+				E_Waitframes(this, ghost, EVars, 75);
+				if ( (Side == 0 && var == 2) || (Side == 1 && var == 1) || Screen->D[0] == 0 ) {
+					angle = DegtoRad(Angle(Ghost_X+8, Ghost_Y, Link->X, Link->Y));
+					for (i = -1; i <= 1; i++) {
+						eweapon fireball = FireEWeapon(EW_FIREBALL, Ghost_X+8, Ghost_Y, angle, 150, ghost->WeaponDamage, -1, -1, 0);
+						if ( i < 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 270, 0.5);
+						if ( i > 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 90, 0.5);
+					}
+				}
+				E_Waitframes(this, ghost, EVars, 75);
+				if ( (Side == 0 && var == 1) || (Side == 1 && var == 2) || Screen->D[0] == 0 ) {
+					angle = DegtoRad(Angle(Ghost_X+8, Ghost_Y, Link->X, Link->Y));
+					for (i = -1; i <= 1; i++) {
+						eweapon fireball = FireEWeapon(EW_FIREBALL, Ghost_X+8, Ghost_Y, angle, 150, ghost->WeaponDamage, -1, -1, 0);
+						if ( i < 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 270, 0.5);
+						if ( i > 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 90, 0.5);
+					}
+				}
+				E_Waitframes(this, ghost, EVars, 75);
+				if ( (Side == 0 && var == 2) || (Side == 1 && var == 1) || Screen->D[0] == 0 ) {
+					angle = DegtoRad(Angle(Ghost_X+8, Ghost_Y, Link->X, Link->Y));
+					for (i = -1; i <= 1; i++) {
+						eweapon fireball = FireEWeapon(EW_FIREBALL, Ghost_X+8, Ghost_Y, angle, 150, ghost->WeaponDamage, -1, -1, 0);
+						if ( i < 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 270, 0.5);
+						if ( i > 0 ) SetEWeaponMovement(fireball, EWM_DRIFT_WAIT, 90, 0.5);
+					}
+				}
+				E_Waitframes(this, ghost, EVars, 25);
+				Ghost_Transform(this, ghost, 1416+Side*2, -1, -1, -1);
+			}
+			else if ( ghost->Misc[0] == 2 ) { //attack 2
+				DirTimer = AquamentiMovement(this, ghost, DirTimer, LeftestX, RightestX);
+				E_Waitframe(this, ghost, EVars);
+				DirTimer = AquamentiMovement(this, ghost, DirTimer, LeftestX, RightestX);
+				E_Waitframe(this, ghost, EVars);
+				
+				if ( (Side == 0 && ghost->Misc[0] == 1) || (Side == 1 && ghost->Misc[0] == 2) || Screen->D[0] == 0 ) {
+					Ghost_Transform(this, ghost, 1417+Side*2, -1, -1, -1);
+					
+					E_Waitframes(this, ghost, EVars, 25);
+					
+					for (i = 0; i < 4; i++) {
+						angle = DegtoRad(Angle(Ghost_X+8, Ghost_Y, Link->X, Link->Y));
+						for (j = -10; j <= 10; j+= 10) {
+							eweapon fireball = FireEWeapon(EW_FIREBALL, Ghost_X+8, Ghost_Y, angle+DegtoRad(j), 180, ghost->WeaponDamage, -1, -1, 0);
+						}
+						E_Waitframes(this, ghost, EVars, 50);
+					}
+					
+					E_Waitframes(this, ghost, EVars, 25);
+					Ghost_Transform(this, ghost, 1416+Side*2, -1, -1, -1);
+				}
+				else {
+					DirTimer = AquamentiMovement(this, ghost, DirTimer, LeftestX, RightestX);
+					E_Waitframe(this, ghost, EVars);
+					DirTimer = AquamentiMovement(this, ghost, DirTimer, LeftestX, RightestX);
+					E_Waitframe(this, ghost, EVars);
+				}
+			}
+			
+			DirTimer = AquamentiMovement(this, ghost, DirTimer, LeftestX, RightestX);
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script AquamentiControl{
+	void run(){
+		int i; int rng;
+		Waitframes(35);
+		while(true){
+			Waitframes(Rand(90, 150));
+			rng = Rand(1, 2);
+			for (i = 1; i <= Screen->NumNPCs(); i++) {
+				npc enem = Screen->LoadNPC(i);
+				enem->Misc[0] = rng;
+			}
+			if ( rng == 1 ) {
+				Waitframes(2);
+				rng = Rand(1, 2);
+				for (i = 1; i <= Screen->NumNPCs(); i++) {
+					npc enem = Screen->LoadNPC(i);
+					enem->Misc[0] = rng;
+				}
+				Waitframes(2);
+				for (i = 1; i <= Screen->NumNPCs(); i++) {
+					npc enem = Screen->LoadNPC(i);
+					enem->Misc[0] = 0;
+				}
+				Waitframes(248);
+			}
+			else if ( rng == 2 ) {
+				Waitframes(2);
+				if ( Link->X >= 120 )
+					rng = 1;
+				else
+					rng = 2;
+				for (i = 1; i <= Screen->NumNPCs(); i++) {
+					npc enem = Screen->LoadNPC(i);
+					enem->Misc[0] = rng;
+				}
+				Waitframes(2);
+				for (i = 1; i <= Screen->NumNPCs(); i++) {
+					npc enem = Screen->LoadNPC(i);
+					enem->Misc[0] = 0;
+				}
+				Waitframes(298);
+			}
+		}
+	}
+}
+
+ffc script E_Digdogger{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_Transform(this, ghost, -1, -1, 2, 2);
+		
+		int AttackTimer = Rand(150, 250)-100;
+		int KidsTimer = Rand(300, 400)-100;
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk8(walk, 40, 6, 50, 0);
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(150, 250);
+				for (int i = 0; i < 8; i++) {
+					FireEWeapon(EW_FIREBALL, CenterX(ghost)-8, CenterY(ghost)-8, DegtoRad(360/8*i), 100, ghost->WeaponDamage, -1, -1, 0);
+				}
+			}
+			AttackTimer --;
+			
+			if ( Screen->NumNPCs() < 8 ) {
+				if ( KidsTimer == 0 ) {
+					KidsTimer = Rand(300, 400);
+					for (int i = 0; i < 2; i++) {
+						CreateNPCAt(180, CenterX(ghost)-8, CenterY(ghost)-8);
+					}
+				}
+				KidsTimer --;
+			}
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+ffc script E_DigdoggerKid{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_8WAY);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk8(walk, 120, 4, 0, 0);
+			
+			if ( FloorsRoomCleared[GV[CurrentFR]] == 1 )
+				Ghost_HP -= EVars[EVars_HP];
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_Ganon{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		int i; int j; int k; int angle;
+		int DarknessShotTimer = 45;
+		int DarknessTimer = 300;
+		
+		while(true){
+			Ghost_Transform(this, ghost, 1436+Rand(3), -1, 2, 2);
+			ghost->DrawXOffset = -1000;
+			ghost->CollDetection = false;
+			
+			DarknessShotTimer = 45;
+			DarknessTimer = 300;
+			while(DarknessTimer > 0){
+				if ( DarknessShotTimer == 0 ) {
+					DarknessShotTimer = 45;
+					i = FindSpawnPoint(true, false, false, false);
+					FireEWeapon(EW_FIREBALL, ComboX(i), ComboY(i), DegtoRad(Angle(ComboX(i), ComboY(i), Link->X, Link->Y)), 150, ghost->WeaponDamage, -1, -1, 0);
+				}
+				else
+					DarknessShotTimer --;
+				DarknessTimer --;
+				E_Waitframe(this, ghost, EVars);
+			}
+			
+			i = FindSpawnPoint(true, false, false, false);
+			if ( ComboX(i) == 208 ) i--;
+			if ( ComboY(i) == 128 ) i-=16;
+			Ghost_X = ComboX(i);
+			Ghost_Y = ComboY(i);
+			
+			ghost->DrawXOffset = 0;
+			ghost->CollDetection = true;
+			
+			E_Waitframes(this, ghost, EVars, 25);
+			
+			i = Rand(2);
+			if ( i == 0 ) {
+				angle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY());
+				for(i=0; i<24; i++){
+					FireEWeapon(EW_FIREBALL, CenterX(ghost)-8, CenterY(ghost)-8, DegtoRad(angle+Rand(-10-i, 10+i)), 250, ghost->WeaponDamage, -1, -1, 0);
+					E_Waitframes(this, ghost, EVars, 4);
+				}
+			}
+			else if ( i == 1 ) {
+				angle = Rand(360);
+				for(i=0; i<10; i++){
+					FireEWeapon(EW_FIREBALL, CenterX(ghost)-8, CenterY(ghost)-8, DegtoRad(angle+360/10*i), 180, ghost->WeaponDamage, -1, -1, 0);
+				}
+				E_Waitframes(this, ghost, EVars, 45);
+				for(i=0; i<6; i++){
+					angle = DegtoRad(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()));
+					FireEWeapon(EW_FIREBALL, CenterX(ghost)-8, CenterY(ghost)-8, angle, 180, ghost->WeaponDamage, -1, -1, 0);
+					E_Waitframes(this, ghost, EVars, 12);
+				}
+			}
+			
+			E_Waitframes(this, ghost, EVars, 200);
+		}
+	}
+}
+
+ffc script E_YuurandBat{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_IGNORE_SOLIDITY);
+		
+		int vX;
+		int vY;
+		while(true){
+			float homing = Rand(10, 14)*0.001;
+			float topSpeed = 75*0.01;
+			vX = Clamp(vX+Sign(CenterLinkX()-CenterX(ghost))*homing, -topSpeed, topSpeed);
+			vY = Clamp(vY+Sign(CenterLinkY()-CenterY(ghost))*homing, -topSpeed, topSpeed);
+			Ghost_MoveXY(vX, vY, 0);
+			if((vX<0&&!Ghost_CanMove(DIR_LEFT, 1, 0)) || (vX>0&&!Ghost_CanMove(DIR_RIGHT, 1, 0)))
+				vX = -vX;
+			if((vY<0&&!Ghost_CanMove(DIR_UP, 1, 0)) || (vY>0&&!Ghost_CanMove(DIR_DOWN, 1, 0)))
+				vY = -vY;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_ZombieBomb{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i;
+		int AttackTimer = Rand(150, 250);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 40, 6, 50, 0);
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(150, 250);
+				for(i=0; i<6; i++){
+					eweapon wpn = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(360/6*i), 65, 0, 114, 0, EWF_NO_COLLISION);
+					SetEWeaponMovement(wpn, EWM_THROW, 2.5, 0);
+					SetEWeaponLifespan(wpn, EWL_TIMER, 65);
+					SetEWeaponDeathEffect(wpn, EWD_EXPLODE, ghost->WeaponDamage);
+				}
+			}
+			else
+				AttackTimer --;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_ZombieSlowWpns{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i;
+		int AttackTimer = Rand(150, 250);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 40, 6, 50, 0);
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(150, 250);
+				for(i=0; i<12; i++){
+					eweapon wpn = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(Rand(360)), Rand(12, 18), ghost->WeaponDamage, 115, 0, 0);
+					SetEWeaponLifespan(wpn, EWL_TIMER, 165);
+					SetEWeaponDeathEffect(wpn, EWD_VANISH, 0);
+					E_Waitframes(this, ghost, EVars, 5);
+				}
+				E_Waitframes(this, ghost, EVars, 25);
+			}
+			else
+				AttackTimer --;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_ZombieBubbles{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i;
+		int BubbleRadius;
+		int BubbleAngle = Rand(360);
+		
+		E_Waitframes(this, ghost, EVars, 20);
+		
+		eweapon Bubble1 = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, ghost->WeaponDamage, 116, 0, 0);
+		eweapon Bubble2 = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, ghost->WeaponDamage, 116, 0, 0);
+		Bubble1->DrawXOffset = -1000;
+		Bubble2->DrawXOffset = -1000;
+		SetEWeaponLifespan(Bubble1, EWL_TIMER, 2);
+		SetEWeaponLifespan(Bubble2, EWL_TIMER, 2);
+		SetEWeaponDeathEffect(Bubble1, EWD_VANISH, 0);
+		SetEWeaponDeathEffect(Bubble2, EWD_VANISH, 0);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 40, 6, 50, 0);
+			
+			BubbleAngle ++;
+			if ( BubbleAngle > 360 )
+				BubbleAngle -= 360;
+			if ( BubbleRadius < 52 )
+				BubbleRadius += 0.8;
+			
+			if ( !Bubble1->isValid() ) {
+				Bubble1 = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, ghost->WeaponDamage, 116, 0, 0);
+				SetEWeaponLifespan(Bubble1, EWL_TIMER, 2);
+				SetEWeaponDeathEffect(Bubble1, EWD_VANISH, 0);
+			}
+			if ( !Bubble2->isValid() ) {
+				Bubble2 = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, ghost->WeaponDamage, 116, 0, 0);
+				SetEWeaponLifespan(Bubble2, EWL_TIMER, 2);
+				SetEWeaponDeathEffect(Bubble2, EWD_VANISH, 0);
+			}
+			Bubble1->HitXOffset = Ghost_X + BubbleRadius * Cos(BubbleAngle);
+			Bubble1->HitYOffset = Ghost_Y + BubbleRadius * Sin(BubbleAngle);
+			Bubble2->HitXOffset = Ghost_X + BubbleRadius * Cos(BubbleAngle+180);
+			Bubble2->HitYOffset = Ghost_Y + BubbleRadius * Sin(BubbleAngle+180);
+			Bubble1->DrawXOffset = Bubble1->HitXOffset;
+			Bubble1->DrawYOffset = Bubble1->HitYOffset;
+			Bubble2->DrawXOffset = Bubble2->HitXOffset;
+			Bubble2->DrawYOffset = Bubble2->HitYOffset;
+			SetEWeaponLifespan(Bubble1, EWL_TIMER, 2);
+			SetEWeaponLifespan(Bubble2, EWL_TIMER, 2);
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_Torch{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i;
+		int AttackTimer = Rand(80, 160);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 50, 8, 0, 0);
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(80, 160);
+				E_Waitframes(this, ghost, EVars, 20);
+				for(i=0; i<4; i++){
+					eweapon wpn = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(360/4*i), 150, ghost->WeaponDamage, 35, 13, 0);
+				}
+				E_Waitframes(this, ghost, EVars, 20);
+			}
+			else
+				AttackTimer --;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_TorchBlue{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i; int angle; int x; int y;
+		int AttackTimer = Rand(120, 200);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 50, 8, 0, 0);
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(120, 200);
+				E_Waitframes(this, ghost, EVars, 20);
+				angle = DegtoRad(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()));
+				x = Ghost_X; y = Ghost_Y;
+				for(i=0; i<6; i++){
+					FireEWeapon(EW_SCRIPT10, x, y, angle, 150, ghost->WeaponDamage, 81, 13, 0);
+					E_Waitframes(this, ghost, EVars, 5);
+				}
+				
+				E_Waitframes(this, ghost, EVars, 20);
+			}
+			else
+				AttackTimer --;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_Jellyeye{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_IGNORE_SOLIDITY);
+		
+		int angle;
+		int AttackTimer = Rand(90, 150);
+		
+		int vX;
+		int vY;
+		while(true){
+			float homing = Rand(6, 10)*0.001;
+			float topSpeed = 25*0.01;
+			vX = Clamp(vX+Sign(CenterLinkX()-CenterX(ghost))*homing, -topSpeed, topSpeed);
+			vY = Clamp(vY+Sign(CenterLinkY()-CenterY(ghost))*homing, -topSpeed, topSpeed);
+			Ghost_MoveXY(vX, vY, 0);
+			if((vX<0&&!Ghost_CanMove(DIR_LEFT, 1, 0)) || (vX>0&&!Ghost_CanMove(DIR_RIGHT, 1, 0)))
+				vX = -vX;
+			if((vY<0&&!Ghost_CanMove(DIR_UP, 1, 0)) || (vY>0&&!Ghost_CanMove(DIR_DOWN, 1, 0)))
+				vY = -vY;
+			
+			if ( AttackTimer == 0 ) {
+				AttackTimer = Rand(90, 150);
+				Ghost_Transform(this, ghost, 1457, -1, -1, -1);
+				Ghost_SetAllDefenses(ghost, NPCDT_IGNORE);
+				E_Waitframes(this, ghost, EVars, 20);
+				angle = DegtoRad(Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY()));
+				FireEWeapon(EW_FIREBALL, Ghost_X, Ghost_Y, angle, 100, ghost->WeaponDamage, 117, 0, 0);
+				E_Waitframes(this, ghost, EVars, 80);
+				Ghost_Transform(this, ghost, 1456, -1, -1, -1);
+				Ghost_SetAllDefenses(ghost, NPCDT_NONE);
+			}
+			else
+				AttackTimer --;
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_SunMoon{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_IGNORE_SOLIDITY);
+		Ghost_SetFlag(GHF_MOVE_OFFSCREEN);
+		
+		int i; int j; int k;
+		int offscreentime;
+		int shot = -1;
+		int form = Rand(2);
+		
+		if ( form == 1 )
+			Ghost_Transform(this, ghost, 1459, 7, -1, -1);
+		while(true){
+			if ( shot < 1 && (shot == -1 || (Ghost_X > 119 && Ghost_X < 121)) ) {
+				shot = 1;
+				
+				if ( form == 0 ) {
+					i = Rand(360);
+					for(k = 0; k < 50; k++){
+						for(j = 0; j < 5; j++){
+							DrawLaser(4, CenterX(ghost), CenterY(ghost), 1, 360/5*j+i, LASER3_Yellow);
+						}
+						E_Waitframe(this, ghost, EVars);
+					}
+					Game->PlaySound(74);
+					for(k = 0; k < 25; k++){
+						for(j = 0; j < 5; j++){
+							Laser3Color(4, CenterX(ghost), CenterY(ghost), 6, 360/5*j+i, ghost->WeaponDamage, LASER1_Yellow, LASER2_Yellow, LASER3_Yellow);
+						}
+						E_Waitframe(this, ghost, EVars);
+					}
+				}
+				else {
+					E_Waitframes(this, ghost, EVars, 20);
+					j = Angle(Ghost_X, Ghost_Y, Link->X, Link->Y);
+					for (i = -8; i <=8; i+=8) {
+						eweapon wpn = FireEWeapon(EW_FIREBALL, Ghost_X, Ghost_Y, DegtoRad(j+180+i), 150, ghost->WeaponDamage, 118, 0, 0);
+						SetEWeaponMovement(wpn, EWM_VEER, j+i/2, 0.04);
+					}
+				}
+				
+				E_Waitframes(this, ghost, EVars, 50);
+			}
+			
+			// translate point back to origin:
+			Ghost_X -= 120;
+			Ghost_Y -= 360;
+			// rotate point
+			int xnew = Ghost_X * Cos(0.275) - Ghost_Y * Sin(0.275);
+			int ynew = Ghost_X * Sin(0.275) + Ghost_Y * Cos(0.275);
+			// translate point back:
+			Ghost_X = xnew + 120;
+			Ghost_Y = ynew + 360;
+			
+			if ( !PointWithinRect(Ghost_X+8, Ghost_Y+8, 0, 0, 255, 175) ) {
+				if ( offscreentime > 30 && shot == 1 ) {
+					shot = 0;
+					offscreentime = 0;
+					
+					if ( form == 0 ) {
+						form = 1;
+						Ghost_Transform(this, ghost, 1459, 7, -1, -1);
+					}
+					else {
+						form = 0;
+						Ghost_Transform(this, ghost, 1458, 8, -1, -1);
+					}
+					
+					int r = Rand(250, 310);
+					Ghost_X = 120 + r * Cos(225);
+					Ghost_Y = 360 + r * Sin(225);
+				}
+				offscreentime ++;
+			}
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_Jelly1{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		
+		int walk;
+		while(true){
+			walk = Ghost_HaltingWalk4(walk, 50, 5, 80, 0, 16, Rand(6)<<4);
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+ffc script E_Jelly2{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		
+		E_Waitframes(this, ghost, EVars, 30);
+		
+		int walk;
+		while(true){
+			walk = Ghost_HaltingWalk4(walk, 80, 5, 50, 0, 16, (Rand(8)<<3)+2);
+			
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_Armos{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		
+		int walk;
+		int lx = Link->X; int ly = Link->Y;
+		while(true){
+			if ( lx != Link->X || ly != Link->Y )
+				walk = Ghost_ConstantWalk4(walk, 120, 6, 50, 0);
+			
+			lx = Link->X; ly = Link->Y;
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_SkeletonFish{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		Ghost_SetFlag(GHF_IGNORE_SOLIDITY);
+		
+		int move = Rand(2);
+		while(true){
+			Ghost_SetFlag(GHF_MOVE_OFFSCREEN);
+			if ( move == 0 )
+				Ghost_Move(DIR_LEFT, 1, 0);
+			if ( move == 1 )
+				Ghost_Move(DIR_RIGHT, 1, 0);
+			Ghost_UnsetFlag(GHF_MOVE_OFFSCREEN);
+			
+			if ( Ghost_X > 256 && move == 1 ) {
+				move = 0;
+				E_Waitframes(this, ghost, EVars, 50);
+				Ghost_Y = Link->Y;
+			}
+			if ( Ghost_X < -16 && move == 0 ) {
+				move = 1;
+				E_Waitframes(this, ghost, EVars, 50);
+				Ghost_Y = Link->Y;
+			}
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_PumpIllusion{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_8WAY);
+		
+		int ShootTimer = Rand(80, 120);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk8(walk, 50, 8, 0, 0);
+			
+			if ( ShootTimer == 0 ) {
+				ShootTimer = Rand(80, 120);
+				eweapon wpn = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(Rand(360)), 50, 0, 120, 0, EWF_NO_COLLISION);
+				SetEWeaponMovement(wpn, EWM_RANDOM, DegtoRad(10), 140);
+				SetEWeaponDeathEffect(wpn, EWD_VANISH, 0);
+			}
+			else
+				ShootTimer --;
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_PumpFire{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i; int j;
+		int ShootTimer = Rand(160, 220);
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 50, 8, 0, 0);
+			
+			if ( ShootTimer == 0 ) {
+				ShootTimer = Rand(200, 260);
+				i = Rand(360);
+				for(j = 0; j < 10; j++){
+					eweapon wpn = FireEWeapon(EW_SCRIPT1, Ghost_X, Ghost_Y, DegtoRad(360/20*j+i), 275, ghost->WeaponDamage, 82, 0, EWF_NO_COLLISION);
+					eweapon wpn2 = FireEWeapon(EW_SCRIPT1, Ghost_X, Ghost_Y, DegtoRad(360/20*j+i+180), 275, ghost->WeaponDamage, 82, 0, EWF_NO_COLLISION);
+					SetEWeaponLifespan(wpn, EWL_TIMER, 75+3*j);
+					SetEWeaponLifespan(wpn2, EWL_TIMER, 75+3*j);
+					SetEWeaponDeathEffect(wpn, EWD_FIRE, 121);
+					SetEWeaponDeathEffect(wpn2, EWD_FIRE, 121);
+					wpn->Misc[0] = 1;
+					wpn2->Misc[0] = 1;
+				}
+			}
+			else
+				ShootTimer --;
+			E_Waitframe(this, ghost, EVars);
+		}
+	}
+}
+
+ffc script E_PumpFlower{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+		Ghost_SetFlag(GHF_SET_DIRECTION);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i; int j;
+		int ShootTimer = Rand(90, 150);
+		npc enems[60];
+		int healX[60];
+		int healY[60];
+		for (i = 0; i < 20; i++) {
+			healX[i] = 10000;
+		}
+		
+		int walk;
+		while(true){
+			walk = Ghost_ConstantWalk4(walk, 50, 8, 0, 0);
+			
+			if ( ShootTimer == 0 ) {
+				for (i = 0; i < 20; i++) {
+					PumpFlowerWaitframe(this, ghost, EVars, enems, healX, healY);
+				}
+				ShootTimer = 45;
+				while(!Ghost_GotHit()){
+					Screen->DrawTile(1, Ghost_X-16, Ghost_Y-16, 7389, 3, 3, 8, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+					if ( ShootTimer == 60 ) {
+						ShootTimer = 0;
+						for (i = 1; i <= Screen->NumNPCs(); i++) {
+							j = 0;
+							while(healX[j] != 10000 && j < 59)
+								j ++;
+							enems[j] = Screen->LoadNPC(i);
+							if ( GetEnemyProperty(enems[j], ENPROP_X) != GetEnemyProperty(ghost, ENPROP_X)
+							|| GetEnemyProperty(enems[j], ENPROP_Y) != GetEnemyProperty(ghost, ENPROP_Y) ) {
+								healX[j] = Ghost_X;
+								healY[j] = Ghost_Y;
+							}
+						}
+					}
+					else
+						ShootTimer ++;
+					PumpFlowerWaitframe(this, ghost, EVars, enems, healX, healY);
+				}
+				ShootTimer = Rand(200, 250);
+			}
+			else
+				ShootTimer --;
+			PumpFlowerWaitframe(this, ghost, EVars, enems, healX, healY);
+		}
+	}
+}
+void PumpFlowerWaitframe(ffc this, npc ghost, int EVars, npc enems, int healX, int healY){
+	int x; int y;
+	for (int i = 0; i < 60; i++) {
+		if ( healX[i] != 10000 ) {
+			if ( enems[i]->isValid() ) {
+				x = GetEnemyProperty(enems[i], ENPROP_X);
+				y = GetEnemyProperty(enems[i], ENPROP_Y);
+				if ( PointWithinRect(x+8, y+8, 0, 0, 255, 175) ) {
+					healX[i] += VectorX(3.2, Angle(healX[i], healY[i], x, y));
+					healY[i] += VectorY(3.2, Angle(healX[i], healY[i], x, y));
+				}
+				Screen->FastTile(2, healX[i], healY[i], 7141, 7, OP_TRANS);
+				if ( Distance(healX[i], healY[i], x, y) < 3 ) {
+					SetEnemyProperty(enems[i], ENPROP_HP, GetEnemyProperty(enems[i], ENPROP_HP)+4);
+					healX[i] = 10000;
+				}
+			}
+			else
+				healX[i] = 10000;
+		}
+	}
+	E_Waitframe(this, ghost, EVars);
+}
+
+ffc script E_WizzBubble{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_MOVE_OFFSCREEN);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i; int rng;	
+		Ghost_Dir = AngleDir4(Angle(Ghost_X, Ghost_Y, Link->X, Link->Y));
+		while(true){
+			E_Waitframes(this, ghost, EVars, 30);
+			
+			for (i = 0; i < 16; i++) {
+				if ( i % 4 <= 2 )
+					ghost->DrawXOffset = -1000;
+				else
+					ghost->DrawXOffset = 0;
+				E_Waitframe(this, ghost, EVars);
+			}
+			Ghost_X = -32;
+			Ghost_Y = -32;
+			E_Waitframes(this, ghost, EVars, Rand(60, 100));
+			
+			i = FindSpawnPoint(true, false, false, false);
+			Ghost_X = ComboX(i);
+			Ghost_Y = ComboY(i);
+			Ghost_Dir = AngleDir4(Angle(Ghost_X, Ghost_Y, Link->X, Link->Y));
+			for (i = 0; i < 16; i++) {
+				if ( i % 4 < 2 )
+					ghost->DrawXOffset = 0;
+				else
+					ghost->DrawXOffset = -1000;
+				E_Waitframe(this, ghost, EVars);
+			}
+			ghost->DrawXOffset = 0;
+			E_Waitframes(this, ghost, EVars, 20);
+			
+			Ghost_Data += 4;
+			rng = Rand(2);
+			eweapon wpn = FireNonAngularEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, Ghost_Dir, 150, ghost->WeaponDamage, 122+rng, 0, 0);
+			SetEWeaponLifespan(wpn, EWL_SLOW_TO_HALT, 3);
+			if ( rng == 0 ) SetEWeaponDeathEffect(wpn, EWD_4_FIRES_DIAG, 1000);
+			else SetEWeaponDeathEffect(wpn, EWD_4_FIRES_HV, 1000);
+			E_Waitframes(this, ghost, EVars, 30);
+			
+			Ghost_Data -= 4;
+			E_Waitframes(this, ghost, EVars, 80);
+		}
+	}
+}
+
+ffc script E_WizzBlue{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		int EVars[10];
+		E_Init(this, ghost, EVars);
+		
+		Ghost_SetFlag(GHF_MOVE_OFFSCREEN);
+		Ghost_SetFlag(GHF_4WAY);
+		
+		int i; int rng;	
+		Ghost_Dir = AngleDir4(Angle(Ghost_X, Ghost_Y, Link->X, Link->Y));
+		while(true){
+			E_Waitframes(this, ghost, EVars, 30);
+			
+			
+			for (i = 0; i < 16; i++) {
+				if ( i % 4 <= 2 )
+					ghost->DrawXOffset = -1000;
+				else
+					ghost->DrawXOffset = 0;
+				E_Waitframe(this, ghost, EVars);
+			}
+			Ghost_X = -32;
+			Ghost_Y = -32;
+			E_Waitframes(this, ghost, EVars, Rand(60, 100));
+			
+			i = FindSpawnPoint(true, false, false, false);
+			Ghost_X = ComboX(i);
+			Ghost_Y = ComboY(i);
+			Ghost_Dir = AngleDir4(Angle(Ghost_X, Ghost_Y, Link->X, Link->Y));
+			for (i = 0; i < 16; i++) {
+				if ( i % 4 < 2 )
+					ghost->DrawXOffset = 0;
+				else
+					ghost->DrawXOffset = -1000;
+				E_Waitframe(this, ghost, EVars);
+			}
+			ghost->DrawXOffset = 0;
+			E_Waitframes(this, ghost, EVars, 20);
+			
+			Ghost_Data += 4;
+			for (i = 0; i < 4; i++) {
+				eweapon wpn = FireEWeapon(EW_FIREBALL, Ghost_X, Ghost_Y, DegtoRad(45+360/4*i), 180, ghost->WeaponDamage, 118, 0, 0);
+				SetEWeaponMovement(wpn, EWM_HOMING_REAIM, 1, 23);
+			}
+			E_Waitframes(this, ghost, EVars, 30);
+			
+			Ghost_Data -= 4;
+			E_Waitframes(this, ghost, EVars, 80);
+		}
+	}
+}

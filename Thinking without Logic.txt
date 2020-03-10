@@ -1,0 +1,46 @@
+Title:
+Thinking without Logic
+
+Information:
+This short sidescroller has been made for the One Month VG Crossover Quest Contest in january 2016. It takes place in the world of Portal
+and features a bunch of challenges, puzzles and surprises.
+
+Description:
+The main inspiration for this quest is Portal 1 and references in the quest are limited to Portal 1. The quest is fairly short and should be
+beatable in about 20 minutes I'd guess. Most chambers follow different logics because you are in a dream, so be ready for random
+things to happen. The controls are being told to you ingame.
+
+This quest borrows the scripted engine of one of my other quests. I'm glad that I've made my script somewhat commented out and easily
+understandable, and so I've copied it and modified it for this quest. I will definetly reuse this engine again in the future for a bigger game, so
+I'm happy about the new things that I created for this.
+
+Story:
+The player character is put to sleep by Aperture Science with their new dream manipulation system. The tests now take place within your
+dream. Science can be done asleep now!
+
+
+
+
+
+
+
+
+
+
+Title:
+Thinking without Logic
+
+Crossover Material:
+It takes place in the world of Portal.
+
+Screenshot:
+[img]http://i.imgur.com/YFBStzi.png[/img]
+
+Description:
+Tested in 2.50.1 and 2.50.2. Should also work in 2.50 and future versions too. This is a rather short sidescroller that features
+a bunch of puzzles, challenges and surprises. The main inspiration for this quest is Portal 1. I made this quest in just a few days,
+because at first I wasn't planning on participating, but then I got the idea for this quest.
+
+It borrows the scripted engine of one of my other quests. I'm glad that I've made my script somewhat commented out and easily
+understandable, and so I've copied it and modified it for this quest. I will definetly reuse this engine again in the future for a bigger quest,
+so I'm happy about the new things that I created for this.

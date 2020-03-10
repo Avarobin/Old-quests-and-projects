@@ -1,0 +1,2354 @@
+import "std.zh"
+
+int currentChamber = 0;
+int playerPositionX = 0;
+int playerPositionY = 0;
+int playerDirection = 0; //0 = left, 1 = right
+bool buttonLeft = false;
+bool buttonRight = false;
+int deadX = -1;
+int deadY = -1;
+int playerPositionX2 = 0;
+int playerPositionY2 = 0;
+int playerDirection2 = 0; //0 = left, 1 = right
+int playerPositionX3 = 0;
+int playerPositionY3 = 0;
+int playerDirection3 = 0; //0 = left, 1 = right
+int playerPositionX4 = 0;
+int playerPositionY4 = 0;
+int playerDirection4 = 0; //0 = left, 1 = right
+int playerPositionX5 = 0;
+int playerPositionY5 = 0;
+int playerDirection5 = 0; //0 = left, 1 = right
+
+ffc script StartGameWarper{
+    void run(){
+        if ( currentChamber == 0 )
+            Screen->SetSideWarp(0, 0, 0, WT_IAWARP);
+        if ( currentChamber == 1 )
+            Screen->SetSideWarp(0, 1, 0, WT_IAWARP);
+        if ( currentChamber == 2 )
+            Screen->SetSideWarp(0, 2, 0, WT_IAWARP);
+        if ( currentChamber == 3 )
+            Screen->SetSideWarp(0, 3, 0, WT_IAWARP);
+        if ( currentChamber == 4 )
+            Screen->SetSideWarp(0, 4, 0, WT_IAWARP);
+        if ( currentChamber == 5 )
+            Screen->SetSideWarp(0, 5, 0, WT_IAWARP);
+        if ( currentChamber == 6 )
+            Screen->SetSideWarp(0, 6, 0, WT_IAWARP);
+        if ( currentChamber == 7 )
+            Screen->SetSideWarp(0, 22, 0, WT_IAWARP);
+        if ( currentChamber == 8 )
+            Screen->SetSideWarp(0, 38, 0, WT_IAWARP);
+        if ( currentChamber == 9 )
+            Screen->SetSideWarp(0, 54, 0, WT_IAWARP);
+        if ( currentChamber == 10 )
+            Screen->SetSideWarp(0, 70, 0, WT_IAWARP);
+        if ( currentChamber == 11 )
+            Screen->SetSideWarp(0, 86, 0, WT_IAWARP);
+        if ( currentChamber == 12 )
+            Screen->SetSideWarp(0, 102, 0, WT_IAWARP);
+        if ( currentChamber == 13 )
+            Screen->SetSideWarp(0, 118, 0, WT_IAWARP);
+        if ( currentChamber == 14 )
+            Screen->SetSideWarp(0, 119, 0, WT_IAWARP);
+        if ( currentChamber == 15 )
+            Screen->SetSideWarp(0, 120, 0, WT_IAWARP);
+        if ( currentChamber == 16 )
+            Screen->SetSideWarp(0, 121, 0, WT_IAWARP);
+        if ( currentChamber == 17 )
+            Screen->SetSideWarp(0, 122, 0, WT_IAWARP);
+        if ( currentChamber == 18 )
+            Screen->SetSideWarp(0, 123, 0, WT_IAWARP);
+        if ( currentChamber == 19 )
+            Screen->SetSideWarp(0, 124, 0, WT_IAWARP);
+        if ( currentChamber == 20 )
+            Screen->SetSideWarp(0, 125, 0, WT_IAWARP);
+        this->Data = 176;
+    }
+}
+
+ffc script Ending{
+    void run(){
+        if ( Screen->D[0] == 0 ) {
+            Screen->D[0] = 1;
+            Screen->Message(76);
+        }
+        bool saving = false;
+        while(true){
+            if ( saving == true ) {
+                saving = false;
+                Game->Save();
+                Waitframe();
+                Game->End();
+            }
+            if ( currentChamber >= 2 && Link->PressL == true && saving == false ) { //L saves the game
+                Game->PlaySound(66);
+                Screen->DrawTile(5, 224, 0, 618, 2, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                saving = true;
+            }
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Game{
+    void run(){
+        Link->CollDetection = false;
+        playerPositionX = Link->X;
+        playerPositionY = Link->Y;
+        playerDirection = 1;
+        deadX = -1;
+        deadY = -1;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        int walkingAnimation = 0;
+        int walkingFrames = 0;
+        bool checkMove = false;
+        bool checkGround = false;
+
+        int jumpCount = 0;
+        int controlsDisplay = 2000;
+        int controlsDisplayWait = 120;
+        int deadFrames = -1;
+        bool saving = false;
+        bool chamber3righthold = false;
+        int chamber3logic = 0;
+        bool chamber4fall = false;
+        int shooterTimer = 0;
+
+        int bluePortalX = -1;
+        int bluePortalY = -1;
+        int bluePortalDir = 0;
+        int orangePortalX = -1;
+        int orangePortalY = -1;
+        int orangePortalDir = 0;
+        int blueShotX = -1;
+        int blueShotY = -1;
+        int blueShotDir = 0;
+        int orangeShotX = -1;
+        int orangeShotY = -1;
+        int orangeShotDir = 0;
+        int shotDelay = 0;
+        int shotAnimationFrame = 0;
+
+        bool inPortal = false;
+        bool inPortalFallIn = false;
+        bool inPortalGoOutBlue = false;
+        bool inPortalGoOutOrange = false;
+        bool inPortalJumpIn = false;
+        bool inPortalLeftIn = false;
+        bool inPortalRightIn = false;
+        int inPortalInFrames = 0;
+        bool inPortalGoOutPositioner = false;
+
+        int chamber6buttons = 0;
+        int chamber9laserCount = 0;
+        bool chamber10highJump = false;
+        int chamber11downfall = 0;
+        int chamber11laterMusic = 0;
+        bool chamber11trick = false;
+        bool cake = false;
+        int cakeTimer = 0;
+        int greenPearlX = 32;
+        int greenPearlY = 64;
+        bool movedLeft = false;
+        bool movedRight = false;
+        int greenLaserY = -16;
+        int greenLaserState = 0;
+
+        if ( currentChamber == 0 && Screen->D[0] == 0 ) {
+            Screen->Message(1);
+            controlsDisplay = 256;
+        }
+        while(true){
+            checkMove = false;
+            checkGround = false;
+            movedLeft = false;
+            movedRight = false;
+
+            if ( chamber3righthold == true ) {
+                NoAction();
+                Link->InputRight = true;
+                buttonRight = true;
+            }
+            if ( buttonRight == false && Link->PressRight == true && chamber4fall == false ) { //button presses
+                buttonRight = true;
+                buttonLeft = false;
+            }
+            if ( buttonLeft == false && Link->PressLeft == true && chamber4fall == false ) {
+                buttonLeft = true;
+                buttonRight = false;
+            }
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for right
+                playerDirection = 1;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX+13, playerPositionY+2) == false && Screen->isSolid(playerPositionX+13, playerPositionY+15) == false ) {
+                    playerPositionX += 1;
+                    movedRight = true;
+                }
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for left
+                playerDirection = 0;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX+2, playerPositionY+2) == false && Screen->isSolid(playerPositionX+2, playerPositionY+15) == false ) {
+                    playerPositionX -= 1;
+                    movedLeft = true;
+                }
+            }
+
+            if ( theItem->Z > 200 && inPortal == false ) { //jumping
+                if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionX >= bluePortalX-3 && playerPositionX <= bluePortalX+3 && bluePortalDir == DIR_DOWN && (playerPositionY == bluePortalY+16 || playerPositionY == bluePortalY+15)) || (playerPositionX >= orangePortalX-3 && playerPositionX <= orangePortalX+3 && orangePortalDir == DIR_DOWN && (playerPositionY == orangePortalY+16 || playerPositionY == orangePortalY+15))) ) { //jump into portal
+                    theItem->Jump = 0;
+                    inPortal = true;
+                    inPortalJumpIn = true;
+                    inPortalInFrames = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY) == true || Screen->isSolid(playerPositionX+12, playerPositionY) == true ) ) {
+                    playerPositionY -= 1;
+                    theItem->Jump = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY-1) == true || Screen->isSolid(playerPositionX+12, playerPositionY-1) == true ) ) {
+                    playerPositionY -= 2;
+                    theItem->Jump = 0;
+                }
+                //else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY-2) == true || Screen->isSolid(playerPositionX+12, playerPositionY-2) == true ) ) {
+                //    playerPositionY -= 3;
+                //    theItem->Jump = 0;
+                //}
+                //else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY-3) == true || Screen->isSolid(playerPositionX+12, playerPositionY-3) == true ) ) {
+                //    playerPositionY -= 4;
+                //    theItem->Jump = 0;
+                //}
+                else if ( Screen->isSolid(playerPositionX+3, playerPositionY+1) == false && Screen->isSolid(playerPositionX+12, playerPositionY+1) == false )
+                    playerPositionY -= theItem->Z - 200;
+                theItem->Z = 200;
+            }
+
+            if ( (Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true) ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+                checkGround = true;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true || currentChamber == 16 ) && Link->PressUp == true && currentChamber != 4 && currentChamber != 7 && inPortal == false ) { //if on ground and press up then jump
+                Game->PlaySound(62);
+                if ( currentChamber == 2 )
+                    playerPositionY = 64;
+                if ( chamber10highJump == true )
+                    theItem->Jump = 4.5;
+                else if ( currentChamber != 16 )
+                    theItem->Jump = 3.2;
+                else
+                    theItem->Jump = 2;
+                jumpCount ++;
+                if ( currentChamber == 10 && chamber10highJump == false )
+                    chamber10highJump = true;
+                else if ( currentChamber == 10 && chamber10highJump == true )
+                    chamber10highJump = false;
+                if ( currentChamber == 14 ) {
+                    bool searchForCeiling = false;
+                    while(searchForCeiling == false){
+                        if ( Screen->isSolid(playerPositionX+3, playerPositionY) == false && Screen->isSolid(playerPositionX+12, playerPositionY+1) == false )
+                            playerPositionY --;
+                        else
+                            searchForCeiling = true;
+                    }
+                }
+            }
+
+            if ( theItem->Z < 200 && ((currentChamber != 4 && currentChamber != 7) || (Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+17)] != 98 && Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+17)] != 98)) && inPortal == false ) { //falling
+                if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+17) == true || Screen->isSolid(playerPositionX+12, playerPositionY+17) == true ) && 200 - theItem->Z > 1 )
+                    playerPositionY += 1;
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+18) == true || Screen->isSolid(playerPositionX+12, playerPositionY+18) == true ) && 200 - theItem->Z > 2 )
+                    playerPositionY += 2;
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+19) == true || Screen->isSolid(playerPositionX+12, playerPositionY+19) == true ) && 200 - theItem->Z > 3 )
+                    playerPositionY += 3;
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+20) == true || Screen->isSolid(playerPositionX+12, playerPositionY+20) == true ) && 200 - theItem->Z > 4 )
+                    playerPositionY += 4;
+                else
+                    playerPositionY += 200 - theItem->Z;
+                theItem->Z = 200;
+            }
+
+            if ( currentChamber == 0 && Screen->D[0] == 1 ) {
+                Game->PlaySound(63);
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+                Screen->D[0] = 2;
+            }
+            if ( currentChamber == 0 && Screen->D[0] == 0 && jumpCount >= 5 && checkGround == true && Link->PressUp == false ) {
+                Screen->Message(16);
+                Screen->D[0] = 1;
+            }
+
+            if ( currentChamber == 1 && Screen->D[0] == 0 ) { //messages
+                Screen->D[0] = 1;
+                Screen->Message(13);
+                NoAction();
+            }
+            if ( currentChamber == 2 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(19);
+                NoAction();
+            }
+            if ( currentChamber == 3 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(23);
+                NoAction();
+            }
+            if ( currentChamber == 4 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(7);
+                NoAction();
+            }
+            if ( currentChamber == 5 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(10);
+                NoAction();
+            }
+            if ( currentChamber == 6 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(26);
+                NoAction();
+            }
+            if ( currentChamber == 7 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(29);
+                NoAction();
+            }
+            if ( currentChamber == 8 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(32);
+                NoAction();
+            }
+            if ( currentChamber == 9 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(36);
+                NoAction();
+            }
+            if ( currentChamber == 10 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(39);
+                NoAction();
+            }
+            if ( currentChamber == 11 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(43);
+                NoAction();
+            }
+            if ( currentChamber == 12 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(48);
+                NoAction();
+            }
+            if ( currentChamber == 13 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(51);
+                NoAction();
+            }
+            if ( currentChamber == 14 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(54);
+                NoAction();
+            }
+            if ( currentChamber == 15 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(57);
+                NoAction();
+            }
+            if ( currentChamber == 16 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(61);
+                NoAction();
+            }
+            if ( currentChamber == 17 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(64);
+                NoAction();
+            }
+            if ( currentChamber == 18 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(66);
+                NoAction();
+            }
+            if ( currentChamber == 19 && Screen->D[0] == 0 ) {
+                Screen->D[0] = 1;
+                Screen->Message(71);
+                NoAction();
+            }
+
+            if ( currentChamber == 0 && controlsDisplay != 2000 ) {
+                Screen->DrawTile(5, controlsDisplay, 112, 665, 4, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                if ( controlsDisplay <= 152 )
+                    controlsDisplayWait --;
+                if ( controlsDisplay > 152 || controlsDisplayWait <= 0 )
+                    controlsDisplay -= 3;
+            }
+            if ( currentChamber == 1 ) {
+                if ( controlsDisplay == 2000 && Screen->D[1] == 0 ) {
+                    controlsDisplay = 256;
+                    Screen->D[1] = 1;
+                }
+                Screen->DrawTile(5, controlsDisplay, 112, 705, 5, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                if ( controlsDisplay <= 146 && controlsDisplay != 2000 )
+                    controlsDisplayWait --;
+                if ( (controlsDisplay > 146 || controlsDisplayWait <= 0) && controlsDisplay != 2000 )
+                    controlsDisplay -= 3;
+            }
+            if ( currentChamber == 2 ) {
+                if ( controlsDisplay == 2000 && Screen->D[1] == 0 ) {
+                    controlsDisplay = 256;
+                    Screen->D[1] = 1;
+                }
+                Screen->DrawTile(5, controlsDisplay, 112, 725, 4, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                if ( controlsDisplay <= 152 )
+                    controlsDisplayWait --;
+                if ( (controlsDisplay > 152 || controlsDisplayWait <= 0) && controlsDisplay != 2000 )
+                    controlsDisplay -= 3;
+            }
+            if ( currentChamber == 5 && Link->Item[124] == true ) {
+                if ( controlsDisplay == 2000 && Screen->D[1] == 0 ) {
+                    controlsDisplay = 256;
+                    Screen->D[1] = 1;
+                }
+                Screen->DrawTile(5, controlsDisplay, 112, 745, 5, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                if ( controlsDisplay <= 146 )
+                    controlsDisplayWait --;
+                if ( (controlsDisplay > 146 || controlsDisplayWait <= 0) && controlsDisplay != 2000 )
+                    controlsDisplay -= 3;
+            }
+
+            if ( currentChamber >= 1 && Link->PressR == true ) { //R resets the level
+                Screen->SetSideWarp(0, Game->GetCurScreen(), 0, WT_IWARPZAP);
+                this->Data = 176;
+                if ( currentChamber == 12 && Screen->State[ST_SECRET] == false ) {
+                    Screen->TriggerSecrets();
+                    Screen->State[ST_SECRET] = true;
+                    Screen->FastCombo(1, 16, 64, 36, 2, OP_OPAQUE);
+                    Screen->FastCombo(1, 32, 64, 25, 2, OP_OPAQUE);
+                    Screen->FastCombo(1, 48, 64, 25, 2, OP_OPAQUE);
+                    Screen->FastCombo(1, 64, 64, 39, 2, OP_OPAQUE);
+                }
+            }
+
+            if ( saving == true ) {
+                saving = false;
+                Game->Save();
+            }
+            if ( currentChamber >= 2 && Link->PressL == true && saving == false ) { //L saves the game
+                Game->PlaySound(66);
+                Screen->DrawTile(5, 224, 0, 618, 2, 1, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+                saving = true;
+            }
+
+            if ( Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+13)] == 92 && deadFrames == -1 //down spikes
+            && RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13,
+            ComboX(ComboAt(playerPositionX+8, playerPositionY+13)),
+            ComboY(ComboAt(playerPositionX+8, playerPositionY+13)) + 8,
+            ComboX(ComboAt(playerPositionX+8, playerPositionY+13)) + 15,
+            ComboY(ComboAt(playerPositionX+8, playerPositionY+13)) + 15) == true ) {
+                Game->PlaySound(64);
+                deadX = playerPositionX;
+                deadY = playerPositionY;
+                deadFrames = 0;
+                Game->NumDeaths ++;
+            }
+            if ( Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+4)] == 94 && deadFrames == -1 //up spikes
+            && RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13,
+            ComboX(ComboAt(playerPositionX+8, playerPositionY+4)),
+            ComboY(ComboAt(playerPositionX+8, playerPositionY+4)),
+            ComboX(ComboAt(playerPositionX+8, playerPositionY+4)) + 15,
+            ComboY(ComboAt(playerPositionX+8, playerPositionY+4)) + 8) == true ) {
+                Game->PlaySound(64);
+                deadX = playerPositionX;
+                deadY = playerPositionY;
+                deadFrames = 0;
+                Game->NumDeaths ++;
+            }
+            if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+8)] == 93 && deadFrames == -1 //left spikes
+            && RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13,
+            ComboX(ComboAt(playerPositionX+5, playerPositionY+8)),
+            ComboY(ComboAt(playerPositionX+5, playerPositionY+8)),
+            ComboX(ComboAt(playerPositionX+5, playerPositionY+8)) + 7,
+            ComboY(ComboAt(playerPositionX+5, playerPositionY+8)) + 15) == true ) {
+                Game->PlaySound(64);
+                deadX = playerPositionX;
+                deadY = playerPositionY;
+                deadFrames = 0;
+                Game->NumDeaths ++;
+            }
+            if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+8)] == 95 && deadFrames == -1 //right spikes
+            && RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13,
+            ComboX(ComboAt(playerPositionX+10, playerPositionY+8)) + 8,
+            ComboY(ComboAt(playerPositionX+10, playerPositionY+8)),
+            ComboX(ComboAt(playerPositionX+10, playerPositionY+8)) + 15,
+            ComboY(ComboAt(playerPositionX+10, playerPositionY+8)) + 15) == true ) {
+                Game->PlaySound(64);
+                deadX = playerPositionX;
+                deadY = playerPositionY;
+                deadFrames = 0;
+                Game->NumDeaths ++;
+            }
+
+            if ( ((playerPositionX >= 244 || playerPositionY >= 160) || (checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 160)) && deadFrames == -1 ) { //chamber complete
+                currentChamber ++;
+                if ( playerPositionX >= 244 || currentChamber == 20 )
+                    Screen->SetSideWarp(0, Game->GetCurScreen() + 1, 0, WT_IWARPZAP);
+                if ( playerPositionY >= 160 )
+                    Screen->SetSideWarp(0, Game->GetCurScreen() + 16, 0, WT_IWARPZAP);
+                this->Data = 176;
+                if ( checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 160 )
+                    Game->PlayMIDI(0);
+            }
+
+            if ( currentChamber == 1 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) { //buttons
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[79] = 1;
+            }
+            if ( currentChamber == 2 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                if ( Screen->ComboD[68] != 1 )
+                    Screen->ComboD[68] = 1;
+                else if ( Screen->ComboD[137] != 1 )
+                    Screen->ComboD[137] = 1;
+                else if ( Screen->ComboD[79] != 1 )
+                    Screen->ComboD[79] = 1;
+            }
+            if ( currentChamber == 3 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[127] = 1;
+            }
+            if ( currentChamber == 4 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[143] = 1;
+            }
+            if ( currentChamber == 5 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[63] = 1;
+            }
+            if ( currentChamber == 5 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 134 && deadFrames == -1 ) {
+                Game->PlaySound(22);
+                Link->Item[124] = true;
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->TriggerSecrets();
+                Screen->State[ST_SECRET] = true;
+            }
+            if ( currentChamber == 6 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                if ( chamber6buttons == 0 ) {
+                    Screen->ComboD[52] = 100;
+                    chamber6buttons = 1;
+                }
+                else if ( chamber6buttons == 1 ) {
+                    Screen->ComboD[77] = 100;
+                    chamber6buttons = 2;
+                }
+                else if ( chamber6buttons == 2 ) {
+                    Screen->ComboD[72] = 100;
+                    chamber6buttons = 3;
+                }
+                else if ( chamber6buttons == 3 ) {
+                    Screen->ComboD[146] = 100;
+                    chamber6buttons = 4;
+                }
+                else if ( chamber6buttons == 4 )
+                    Screen->ComboD[164] = 1;
+            }
+            if ( currentChamber == 7 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[168] = 1;
+            }
+            if ( currentChamber == 8 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[173] = 1;
+            }
+            if ( currentChamber == 9 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[171] = 1;
+            }
+            if ( currentChamber == 10 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                if ( Screen->ComboD[39] == 108 )
+                    Screen->ComboD[39] = 1;
+                else
+                    Screen->ComboD[167] = 1;
+            }
+            if ( currentChamber == 11 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[168] = 1;
+            }
+            if ( currentChamber == 12 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[165] = 1;
+            }
+            if ( currentChamber == 13 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[95] = 1;
+            }
+            if ( currentChamber == 14 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[47] = 1;
+            }
+            if ( currentChamber == 16 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[79] = 1;
+            }
+            if ( currentChamber == 17 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                Screen->ComboD[95] = 1;
+            }
+            if ( currentChamber == 19 && checkGround == true && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] == 100 && deadFrames == -1 ) {
+                Game->PlaySound(65);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+15)] ++;
+                if ( ComboAt(playerPositionX+8, playerPositionY+15) == 130 )
+                    Screen->ComboD[135] = 1;
+                if ( ComboAt(playerPositionX+8, playerPositionY+15) == 36 )
+                    Screen->ComboD[137] = 1;
+                if ( ComboAt(playerPositionX+8, playerPositionY+15) == 60 )
+                    Screen->ComboD[139] = 1;
+            }
+
+            if ( currentChamber == 3 && playerPositionY <= 47 && playerPositionX <= 120 && chamber3righthold == false && chamber3logic != 2 )
+                chamber3righthold = true;
+            if ( currentChamber == 3 ) {
+                if ( playerPositionY <= 48 && chamber3logic != 2 )
+                    chamber3logic = 1;
+                if ( chamber3logic == 1 && checkGround == true )
+                    chamber3logic = 0;
+                if ( chamber3logic == 1 && playerPositionY >= 116 ) {
+                    chamber3logic = 2;
+                    Screen->ComboD[135] = 100;
+                    Screen->ComboD[36] = 92;
+                }
+            }
+
+            if ( currentChamber == 3 && checkGround == true )
+                chamber3righthold = false;
+
+            if ( currentChamber == 4 && checkGround == false && Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+16)] != 98 && Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+16)] != 98 )
+                chamber4fall = true;
+            else if ( currentChamber == 4 )
+                chamber4fall = false;
+
+            if ( (Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+16)] == 98 || Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+16)] == 98) && inPortal == false ) {
+                theItem->Z = 200;
+                theItem->Jump = 0;
+            }
+            if ( (currentChamber == 4 || currentChamber == 7) && Link->InputDown == true && Screen->isSolid(playerPositionX+3, playerPositionY+16) == false && Screen->isSolid(playerPositionX+12, playerPositionY+16) == false && (Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+16)] == 98 || Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+16)] == 98 || Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+15)] == 98 || Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+15)] == 98) )
+                playerPositionY ++;
+            if ( (currentChamber == 4 || currentChamber == 7) && Link->InputUp == true && Screen->isSolid(playerPositionX+3, playerPositionY+2) == false && Screen->isSolid(playerPositionX+12, playerPositionY+2) == false && (Screen->ComboI[ComboAt(playerPositionX+3, playerPositionY+15)] == 98 || Screen->ComboI[ComboAt(playerPositionX+12, playerPositionY+15)] == 98) )
+                playerPositionY --;
+
+            if ( currentChamber == 4 && shooterTimer == 60 ) { //laser shooters
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 32;
+                weapon->Y = 64;
+                weapon->Dir = DIR_RIGHT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+            }
+            if ( currentChamber == 6 && shooterTimer == 60 ) {
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 224;
+                weapon->Y = 96;
+                weapon->Dir = DIR_LEFT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+            }
+            if ( currentChamber == 8 && shooterTimer == 60 ) {
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 96;
+                weapon->Y = 48;
+                weapon->Dir = DIR_LEFT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+                eweapon weapon2 = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon2->X = 16;
+                weapon2->Y = 112;
+                weapon2->Dir = DIR_RIGHT;
+                weapon2->DrawXOffset = 1000;
+                weapon2->Step = 150;
+            }
+            if ( currentChamber == 9 && shooterTimer == 60 ) {
+                chamber9laserCount ++;
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 80;
+                weapon->Y = 16;
+                weapon->Dir = DIR_DOWN;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+                eweapon weapon2 = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon2->X = 112;
+                weapon2->Y = 16;
+                weapon2->Dir = DIR_DOWN;
+                weapon2->DrawXOffset = 1000;
+                weapon2->Step = 150;
+            }
+            if ( currentChamber == 10 && shooterTimer == 60 ) {
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 16;
+                weapon->Y = 80;
+                weapon->Dir = DIR_RIGHT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+            }
+            if ( currentChamber == 13 && shooterTimer == 60 ) {
+                Game->PlaySound(68);
+                shooterTimer = 0;
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 96;
+                weapon->Y = 64;
+                weapon->Dir = DIR_LEFT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+            }
+            if ( currentChamber == 16 && shooterTimer == 0 ) {
+                eweapon weapon = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon->X = 160;
+                weapon->Y = 64;
+                weapon->Dir = DIR_LEFT;
+                weapon->DrawXOffset = 1000;
+                weapon->Step = 150;
+                eweapon weapon2 = Screen->CreateEWeapon(EW_SCRIPT1);
+                weapon2->X = 192;
+                weapon2->Y = 16;
+                weapon2->Dir = DIR_DOWN;
+                weapon2->DrawXOffset = 1000;
+                weapon2->Step = 150;
+            }
+            shooterTimer ++;
+
+            for ( int i = 1; i <= Screen->NumEWeapons(); i++ ){
+                eweapon weap = Screen->LoadEWeapon(i);
+                if ( weap->ID == EW_SCRIPT1 && (weap->Dir == DIR_LEFT || weap->Dir == DIR_RIGHT) )
+                    Screen->FastCombo(1, weap->X, weap->Y, 128, 2, OP_OPAQUE);
+                else if ( weap->ID == EW_SCRIPT1 && (weap->Dir == DIR_DOWN || weap->Dir == DIR_UP) )
+                    Screen->FastCombo(1, weap->X, weap->Y, 127, 2, OP_OPAQUE);
+                if ( RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13, weap->X+7, weap->Y+7, weap->X+8, weap->Y+8) == true && deadFrames == -1 ) {
+                    Game->PlaySound(64);
+                    deadX = playerPositionX;
+                    deadY = playerPositionY;
+                    deadFrames = 0;
+                    Game->NumDeaths ++;
+                }
+                if ( Screen->isSolid(weap->X+8, weap->Y+8) == true && Screen->ComboD[ComboAt(weap->X+8, weap->Y+8)] == 80 ) {
+                    Game->PlaySound(61);
+                    Screen->ComboD[ComboAt(weap->X+8, weap->Y+8)] = 192;
+                    weap->DeadState = 0;
+                }
+                if ( Screen->isSolid(weap->X+8, weap->Y+8) == true && RectCollision(weap->X+6, weap->Y+6, weap->X+9, weap->Y+9, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true && bluePortalX != -1 && orangePortalX != -1 ) {
+                    if ( bluePortalDir == DIR_UP ) {
+                        weap->X = bluePortalX;
+                        weap->Y = bluePortalY-10;
+                    }
+                    if ( bluePortalDir == DIR_RIGHT ) {
+                        weap->X = bluePortalX+10;
+                        weap->Y = bluePortalY;
+                    }
+                    if ( bluePortalDir == DIR_DOWN ) {
+                        weap->X = bluePortalX;
+                        weap->Y = bluePortalY+10;
+                    }
+                    if ( bluePortalDir == DIR_LEFT ) {
+                        weap->X = bluePortalX-10;
+                        weap->Y = bluePortalY;
+                    }
+                    weap->Dir = bluePortalDir;
+                }
+                else if ( Screen->isSolid(weap->X+8, weap->Y+8) == true && RectCollision(weap->X+6, weap->Y+6, weap->X+9, weap->Y+9, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true && bluePortalX != -1 && orangePortalX != -1 ) {
+                    if ( orangePortalDir == DIR_UP ) {
+                        weap->X = orangePortalX;
+                        weap->Y = orangePortalY-10;
+                    }
+                    if ( orangePortalDir == DIR_RIGHT ) {
+                        weap->X = orangePortalX+10;
+                        weap->Y = orangePortalY;
+                    }
+                    if ( orangePortalDir == DIR_DOWN ) {
+                        weap->X = orangePortalX;
+                        weap->Y = orangePortalY+10;
+                    }
+                    if ( orangePortalDir == DIR_LEFT ) {
+                        weap->X = orangePortalX-10;
+                        weap->Y = orangePortalY;
+                    }
+                    weap->Dir = orangePortalDir;
+                }
+                else if ( Screen->isSolid(weap->X+8, weap->Y+8) == true && currentChamber != 10 && currentChamber != 16 )
+                    weap->DeadState = 0;
+                else if ( Screen->isSolid(weap->X+8, weap->Y+8) == true && currentChamber == 16 ) {
+                    if ( weap->Dir == DIR_UP ) {
+                        weap->Dir = DIR_DOWN;
+                        weap->Y += 2;
+                    }
+                    else if ( weap->Dir == DIR_RIGHT ) {
+                        weap->Dir = DIR_LEFT;
+                        weap->X -= 2;
+                    }
+                    else if ( weap->Dir == DIR_DOWN ) {
+                        weap->Dir = DIR_UP;
+                        weap->Y -= 2;
+                    }
+                    else if ( weap->Dir == DIR_LEFT ) {
+                        weap->Dir = DIR_RIGHT;
+                        weap->X += 2;
+                    }
+                }
+            }
+
+            if ( Link->Item[124] )
+                Screen->FastTile(6, 0, 0, 563, 2, OP_OPAQUE);
+
+            if ( blueShotX != -1 ) { //move the shots
+                if ( blueShotDir == DIR_UP )
+                    blueShotY -= 3;
+                if ( blueShotDir == DIR_DOWN )
+                    blueShotY += 3;
+                if ( blueShotDir == DIR_LEFT )
+                    blueShotX -= 3;
+                if ( blueShotDir == DIR_RIGHT )
+                    blueShotX += 3;
+            }
+            if ( orangeShotX != -1 ) {
+                if ( orangeShotDir == DIR_UP )
+                    orangeShotY -= 3;
+                if ( orangeShotDir == DIR_DOWN )
+                    orangeShotY += 3;
+                if ( orangeShotDir == DIR_LEFT )
+                    orangeShotX -= 3;
+                if ( orangeShotDir == DIR_RIGHT )
+                    orangeShotX += 3;
+            }
+
+            if ( blueShotX != -1 && Screen->isSolid(blueShotX+8, blueShotY+8) == true && currentChamber != 10 ) { //blue shot hitting a wall
+                if ( inPortal == true || Screen->ComboD[ComboAt(blueShotX+8, blueShotY+8)] == 108 || Screen->ComboD[ComboAt(blueShotX+8, blueShotY+8)] == 80
+                || (blueShotDir == DIR_UP && (Screen->ComboI[ComboAt(blueShotX+8, blueShotY+16)] == 99 || Screen->ComboD[ComboAt(blueShotX+8, blueShotY+16)] == 126))
+                || (blueShotDir == DIR_DOWN && (Screen->ComboI[ComboAt(blueShotX+8, blueShotY)] == 99 || Screen->ComboD[ComboAt(blueShotX+8, blueShotY)] == 100 || Screen->ComboD[ComboAt(blueShotX+8, blueShotY)] == 101))
+                || (blueShotDir == DIR_LEFT && (Screen->ComboI[ComboAt(blueShotX+16, blueShotY+8)] == 99 || Screen->ComboD[ComboAt(blueShotX+16, blueShotY+8)] == 124))
+                || (blueShotDir == DIR_RIGHT && (Screen->ComboI[ComboAt(blueShotX, blueShotY+8)] == 99 || Screen->ComboD[ComboAt(blueShotX, blueShotY+8)] == 125)) )
+                    Game->PlaySound(67);
+                else if ( blueShotDir == DIR_UP ) {
+                    Game->PlaySound(69);
+                    bluePortalX = blueShotX;
+                    bluePortalY = ComboY(ComboAt(blueShotX+8, blueShotY+8));
+                    bluePortalDir = DIR_DOWN;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(bluePortalX, bluePortalY+16) == true || Screen->isSolid(bluePortalX, bluePortalY) == false )
+                            bluePortalX ++;
+                        else if ( Screen->isSolid(bluePortalX+15, bluePortalY+16) == true || Screen->isSolid(bluePortalX+15, bluePortalY) == false )
+                            bluePortalX --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( blueShotDir == DIR_DOWN ) {
+                    Game->PlaySound(69);
+                    bluePortalX = blueShotX;
+                    bluePortalY = ComboY(ComboAt(blueShotX+8, blueShotY+8));
+                    bluePortalDir = DIR_UP;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(bluePortalX, bluePortalY-1) == true || Screen->isSolid(bluePortalX, bluePortalY) == false )
+                            bluePortalX ++;
+                        else if ( Screen->isSolid(bluePortalX+15, bluePortalY-1) == true || Screen->isSolid(bluePortalX+15, bluePortalY) == false )
+                            bluePortalX --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( blueShotDir == DIR_LEFT ) {
+                    Game->PlaySound(69);
+                    bluePortalX = ComboX(ComboAt(blueShotX+8, blueShotY+8));
+                    bluePortalY = blueShotY;
+                    bluePortalDir = DIR_RIGHT;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(bluePortalX+16, bluePortalY) == true || Screen->isSolid(bluePortalX, bluePortalY) == false )
+                            bluePortalY ++;
+                        else if ( Screen->isSolid(bluePortalX+16, bluePortalY+15) == true || Screen->isSolid(bluePortalX, bluePortalY+15) == false )
+                            bluePortalY --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( blueShotDir == DIR_RIGHT ) {
+                    Game->PlaySound(69);
+                    bluePortalX = ComboX(ComboAt(blueShotX+8, blueShotY+8));
+                    bluePortalY = blueShotY;
+                    bluePortalDir = DIR_LEFT;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(bluePortalX-1, bluePortalY) == true || Screen->isSolid(bluePortalX, bluePortalY) == false )
+                            bluePortalY ++;
+                        else if ( Screen->isSolid(bluePortalX-1, bluePortalY+15) == true || Screen->isSolid(bluePortalX, bluePortalY+15) == false )
+                            bluePortalY --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                if ( RectCollision(bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true ) {
+                    orangePortalX = -1;
+                    orangePortalY = -1;
+                }
+                blueShotX = -1;
+                blueShotY = -1;
+            }
+            if ( orangeShotX != -1 && Screen->isSolid(orangeShotX+8, orangeShotY+8) == true && currentChamber != 10 ) { //orange shot hitting a wall
+                if ( inPortal == true || Screen->ComboD[ComboAt(orangeShotX+8, orangeShotY+8)] == 108 || Screen->ComboD[ComboAt(orangeShotX+8, orangeShotY+8)] == 80
+                || (orangeShotDir == DIR_UP && (Screen->ComboI[ComboAt(orangeShotX+8, orangeShotY+16)] == 99 || Screen->ComboD[ComboAt(orangeShotX+8, orangeShotY+16)] == 126))
+                || (orangeShotDir == DIR_DOWN && (Screen->ComboI[ComboAt(orangeShotX+8, orangeShotY)] == 99 || Screen->ComboD[ComboAt(orangeShotX+8, orangeShotY)] == 100 || Screen->ComboD[ComboAt(orangeShotX+8, orangeShotY)] == 101))
+                || (orangeShotDir == DIR_LEFT && (Screen->ComboI[ComboAt(orangeShotX+16, orangeShotY+8)] == 99 || Screen->ComboD[ComboAt(orangeShotX+16, orangeShotY+8)] == 124))
+                || (orangeShotDir == DIR_RIGHT && (Screen->ComboI[ComboAt(orangeShotX, orangeShotY+8)] == 99 || Screen->ComboD[ComboAt(orangeShotX, orangeShotY+8)] == 125)) )
+                    Game->PlaySound(67);
+                else if ( orangeShotDir == DIR_UP ) {
+                    Game->PlaySound(70);
+                    orangePortalX = orangeShotX;
+                    orangePortalY = ComboY(ComboAt(orangeShotX+8, orangeShotY+8));
+                    orangePortalDir = DIR_DOWN;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(orangePortalX, orangePortalY+16) == true || Screen->isSolid(orangePortalX, orangePortalY) == false )
+                            orangePortalX ++;
+                        else if ( Screen->isSolid(orangePortalX+15, orangePortalY+16) == true || Screen->isSolid(orangePortalX+15, orangePortalY) == false )
+                            orangePortalX --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( orangeShotDir == DIR_DOWN ) {
+                    Game->PlaySound(70);
+                    orangePortalX = orangeShotX;
+                    orangePortalY = ComboY(ComboAt(orangeShotX+8, orangeShotY+8));
+                    orangePortalDir = DIR_UP;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(orangePortalX, orangePortalY-1) == true || Screen->isSolid(orangePortalX, orangePortalY) == false )
+                            orangePortalX ++;
+                        else if ( Screen->isSolid(orangePortalX+15, orangePortalY-1) == true || Screen->isSolid(orangePortalX+15, orangePortalY) == false )
+                            orangePortalX --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( orangeShotDir == DIR_LEFT ) {
+                    Game->PlaySound(70);
+                    orangePortalX = ComboX(ComboAt(orangeShotX+8, orangeShotY+8));
+                    orangePortalY = orangeShotY;
+                    orangePortalDir = DIR_RIGHT;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(orangePortalX+16, orangePortalY) == true || Screen->isSolid(orangePortalX, orangePortalY) == false )
+                            orangePortalY ++;
+                        else if ( Screen->isSolid(orangePortalX+16, orangePortalY+15) == true || Screen->isSolid(orangePortalX, orangePortalY+15) == false )
+                            orangePortalY --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                else if ( orangeShotDir == DIR_RIGHT ) {
+                    Game->PlaySound(70);
+                    orangePortalX = ComboX(ComboAt(orangeShotX+8, orangeShotY+8));
+                    orangePortalY = orangeShotY;
+                    orangePortalDir = DIR_LEFT;
+                    bool wrongplace = true;
+                    while(wrongplace == true && playerPositionY < 145){
+                        if ( Screen->isSolid(orangePortalX-1, orangePortalY) == true || Screen->isSolid(orangePortalX, orangePortalY) == false )
+                            orangePortalY ++;
+                        else if ( Screen->isSolid(orangePortalX-1, orangePortalY+15) == true || Screen->isSolid(orangePortalX, orangePortalY+15) == false )
+                            orangePortalY --;
+                        else
+                            wrongplace = false;
+                    }
+                }
+                if ( RectCollision(orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true ) {
+                    bluePortalX = -1;
+                    bluePortalY = -1;
+                }
+                orangeShotX = -1;
+                orangeShotY = -1;
+            }
+
+            if ( Link->Item[124] && blueShotX == -1 && Link->PressB == true && shotDelay == 0 && inPortal == false ) { //shoot blue portal
+                if ( Link->InputUp == true && Link->InputDown == false && currentChamber != 7 ) {
+                    Game->PlaySound(71);
+                    shotDelay = 30;
+                    shotAnimationFrame = 2;
+                    blueShotX = playerPositionX;
+                    blueShotY = playerPositionY - 6;
+                    blueShotDir = DIR_UP;
+                }
+                else if ( Link->InputUp == false && Link->InputDown == true && currentChamber != 7 ) {
+                    Game->PlaySound(71);
+                    shotDelay = 30;
+                    shotAnimationFrame = 0;
+                    blueShotX = playerPositionX;
+                    blueShotY = playerPositionY + 6;
+                    blueShotDir = DIR_DOWN;
+                }
+                else if ( playerDirection == 0 ) {
+                    Game->PlaySound(71);
+                    shotDelay = 30;
+                    shotAnimationFrame = 1;
+                    blueShotX = playerPositionX - 6;
+                    blueShotY = playerPositionY;
+                    blueShotDir = DIR_LEFT;
+                }
+                else if ( playerDirection == 1 ) {
+                    Game->PlaySound(71);
+                    shotDelay = 30;
+                    shotAnimationFrame = 1;
+                    blueShotX = playerPositionX + 6;
+                    blueShotY = playerPositionY;
+                    blueShotDir = DIR_RIGHT;
+                }
+            }
+            if ( Link->Item[124] && orangeShotX == -1 && Link->PressA == true && shotDelay == 0 && inPortal == false ) { //shoot orange portal
+                if ( Link->InputUp == true && Link->InputDown == false && currentChamber != 7 ) {
+                    Game->PlaySound(72);
+                    shotDelay = 30;
+                    shotAnimationFrame = 2;
+                    orangeShotX = playerPositionX;
+                    orangeShotY = playerPositionY - 6;
+                    orangeShotDir = DIR_UP;
+                }
+                else if ( Link->InputUp == false && Link->InputDown == true && currentChamber != 7 ) {
+                    Game->PlaySound(72);
+                    shotDelay = 30;
+                    shotAnimationFrame = 0;
+                    orangeShotX = playerPositionX;
+                    orangeShotY = playerPositionY + 6;
+                    orangeShotDir = DIR_DOWN;
+                }
+                else if ( playerDirection == 0 ) {
+                    Game->PlaySound(72);
+                    shotDelay = 30;
+                    shotAnimationFrame = 1;
+                    orangeShotX = playerPositionX - 6;
+                    orangeShotY = playerPositionY;
+                    orangeShotDir = DIR_LEFT;
+                }
+                else if ( playerDirection == 1 ) {
+                    Game->PlaySound(72);
+                    shotDelay = 30;
+                    shotAnimationFrame = 1;
+                    orangeShotX = playerPositionX + 6;
+                    orangeShotY = playerPositionY;
+                    orangeShotDir = DIR_RIGHT;
+                }
+            }
+
+            if ( bluePortalX != -1 && bluePortalDir == DIR_DOWN ) //draw portals and portal shots
+                Screen->FastCombo(1, bluePortalX, bluePortalY+1, 136, 2, OP_OPAQUE);
+            if ( bluePortalX != -1 && bluePortalDir == DIR_LEFT )
+                Screen->FastCombo(1, bluePortalX-1, bluePortalY, 137, 2, OP_OPAQUE);
+            if ( bluePortalX != -1 && bluePortalDir == DIR_UP )
+                Screen->FastCombo(1, bluePortalX, bluePortalY-1, 138, 2, OP_OPAQUE);
+            if ( bluePortalX != -1 && bluePortalDir == DIR_RIGHT )
+                Screen->FastCombo(1, bluePortalX+1, bluePortalY, 139, 2, OP_OPAQUE);
+            if ( orangePortalX != -1 && orangePortalDir == DIR_DOWN )
+                Screen->FastCombo(1, orangePortalX, orangePortalY+1, 140, 2, OP_OPAQUE);
+            if ( orangePortalX != -1 && orangePortalDir == DIR_LEFT )
+                Screen->FastCombo(1, orangePortalX-1, orangePortalY, 141, 2, OP_OPAQUE);
+            if ( orangePortalX != -1 && orangePortalDir == DIR_UP )
+                Screen->FastCombo(1, orangePortalX, orangePortalY-1, 142, 2, OP_OPAQUE);
+            if ( orangePortalX != -1 && orangePortalDir == DIR_RIGHT )
+                Screen->FastCombo(1, orangePortalX+1, orangePortalY, 143, 2, OP_OPAQUE);
+            if ( blueShotX != -1 )
+                Screen->FastCombo(1, blueShotX, blueShotY, 132, 2, OP_OPAQUE);
+            if ( orangeShotX != -1 )
+                Screen->FastCombo(1, orangeShotX, orangeShotY, 133, 2, OP_OPAQUE);
+
+            if ( bluePortalX != -1 && orangePortalX != -1 && checkGround == true && inPortal == false && ((playerPositionX >= bluePortalX-3 && playerPositionX <= bluePortalX+3 && bluePortalY == playerPositionY+16 && bluePortalDir == DIR_UP) || (playerPositionX >= orangePortalX-3 && playerPositionX <= orangePortalX+3 && orangePortalY == playerPositionY+16 && orangePortalDir == DIR_UP)) ) { //fall into portal
+                inPortal = true;
+                inPortalFallIn = true;
+                inPortalInFrames = 0;
+            }
+            if ( inPortalFallIn == true ) { //falling into portal
+                if ( RectCollision(playerPositionX+7, playerPositionY+15, playerPositionX+8, playerPositionY+16, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true ) {
+                    if ( inPortalInFrames == 5 ) {
+                        Game->PlaySound(73);
+                        inPortalFallIn = false;
+                        inPortalGoOutOrange = true;
+                        inPortalGoOutPositioner = true;
+                    }
+                    else {
+                        playerPositionY += 2;
+                        inPortalInFrames ++;
+                    }
+                }
+                else if ( RectCollision(playerPositionX+7, playerPositionY+15, playerPositionX+8, playerPositionY+16, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true ) {
+                    if ( inPortalInFrames == 5 ) {
+                        Game->PlaySound(73);
+                        inPortalFallIn = false;
+                        inPortalGoOutBlue = true;
+                        inPortalGoOutPositioner = true;
+                    }
+                    else {
+                        playerPositionY += 2;
+                        inPortalInFrames ++;
+                    }
+                }
+            }
+
+            if ( inPortalJumpIn == true ) { //jumping into portal
+                if ( inPortalInFrames == 8 && RectCollision(playerPositionX+7, playerPositionY, playerPositionX+8, playerPositionY+1, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalJumpIn = false;
+                    inPortalGoOutOrange = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else if ( inPortalInFrames == 8 && RectCollision(playerPositionX+7, playerPositionY, playerPositionX+8, playerPositionY+1, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalJumpIn = false;
+                    inPortalGoOutBlue = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else {
+                    playerPositionY --;
+                    inPortalInFrames ++;
+                }
+            }
+
+            if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionY >= bluePortalY-3 && playerPositionY <= bluePortalY+3 && playerPositionX == bluePortalX+13 && Link->InputLeft && bluePortalDir == DIR_RIGHT) || (playerPositionY >= orangePortalY-3 && playerPositionY <= orangePortalY+3 && playerPositionX == orangePortalX+13 && Link->InputLeft && orangePortalDir == DIR_RIGHT)) ) { //go left into portal
+                if ( RectCollision(playerPositionX, playerPositionY+7, playerPositionX+1, playerPositionY+8, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true )
+                    playerPositionY = bluePortalY;
+                else if ( RectCollision(playerPositionX, playerPositionY+7, playerPositionX+1, playerPositionY+8, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true )
+                    playerPositionY = orangePortalY;
+                inPortal = true;
+                inPortalLeftIn = true;
+                inPortalInFrames = 0;
+            }
+            if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionY >= bluePortalY-3 && playerPositionY <= bluePortalY+3 && playerPositionX == bluePortalX-13 && Link->InputRight && bluePortalDir == DIR_LEFT) || (playerPositionY >= orangePortalY-3 && playerPositionY <= orangePortalY+3 && playerPositionX == orangePortalX-13 && Link->InputRight && orangePortalDir == DIR_LEFT)) ) { //go right into portal
+                if ( RectCollision(playerPositionX+14, playerPositionY+7, playerPositionX+15, playerPositionY+8, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true )
+                    playerPositionY = bluePortalY;
+                else if ( RectCollision(playerPositionX+14, playerPositionY+7, playerPositionX+15, playerPositionY+8, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true )
+                    playerPositionY = orangePortalY;
+                inPortal = true;
+                inPortalRightIn = true;
+                inPortalInFrames = 0;
+            }
+            if ( inPortalLeftIn == true ) { //going left into portal
+                if ( inPortalInFrames == 8 && RectCollision(playerPositionX, playerPositionY+7, playerPositionX+1, playerPositionY+8, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalLeftIn = false;
+                    inPortalGoOutOrange = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else if ( inPortalInFrames == 8 && RectCollision(playerPositionX, playerPositionY+7, playerPositionX+1, playerPositionY+8, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalLeftIn = false;
+                    inPortalGoOutBlue = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else {
+                    playerPositionX --;
+                    inPortalInFrames ++;
+                }
+            }
+            if ( inPortalRightIn == true ) { //going right into portal
+                if ( inPortalInFrames == 8 && RectCollision(playerPositionX+14, playerPositionY+7, playerPositionX+15, playerPositionY+8, bluePortalX, bluePortalY, bluePortalX+15, bluePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalRightIn = false;
+                    inPortalGoOutOrange = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else if ( inPortalInFrames == 8 && RectCollision(playerPositionX+14, playerPositionY+7, playerPositionX+15, playerPositionY+8, orangePortalX, orangePortalY, orangePortalX+15, orangePortalY+15) == true ) {
+                    Game->PlaySound(73);
+                    inPortalRightIn = false;
+                    inPortalGoOutBlue = true;
+                    inPortalGoOutPositioner = true;
+                }
+                else {
+                    playerPositionX ++;
+                    inPortalInFrames ++;
+                }
+            }
+
+            if ( inPortalGoOutBlue == true && bluePortalDir == DIR_UP ) { //jumping out of blue portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = bluePortalX;
+                    playerPositionY = bluePortalY-8;
+                }
+                if ( Screen->isSolid(playerPositionX+8, playerPositionY+15) == false ) {
+                    inPortalGoOutBlue = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 1.6;
+                    playerPositionY --;
+                }
+                else
+                    playerPositionY -= 2;
+            }
+            if ( inPortalGoOutOrange == true && orangePortalDir == DIR_UP ) { //jumping out of orange portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = orangePortalX;
+                    playerPositionY = orangePortalY-8;
+                }
+                if ( Screen->isSolid(playerPositionX+8, playerPositionY+15) == false ) {
+                    inPortalGoOutOrange = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 1.6;
+                    playerPositionY --;
+                }
+                else
+                    playerPositionY -= 2;
+            }
+
+            if ( inPortalGoOutBlue == true && bluePortalDir == DIR_DOWN ) { //falling out of blue portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = bluePortalX;
+                    playerPositionY = bluePortalY+8;
+                }
+                if ( Screen->isSolid(playerPositionX+8, playerPositionY+3) == false ) {
+                    inPortalGoOutBlue = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = -0.6;
+                }
+                else
+                    playerPositionY += 2;
+            }
+            if ( inPortalGoOutOrange == true && orangePortalDir == DIR_DOWN ) { //falling out of orange portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = orangePortalX;
+                    playerPositionY = orangePortalY+8;
+                }
+                if ( Screen->isSolid(playerPositionX+8, playerPositionY+3) == false ) {
+                    inPortalGoOutOrange = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = -0.6;
+                }
+                else
+                    playerPositionY += 2;
+            }
+
+            if ( inPortalGoOutBlue == true && bluePortalDir == DIR_RIGHT ) { //going right out of blue portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = bluePortalX+8;
+                    playerPositionY = bluePortalY;
+                }
+                if ( Screen->isSolid(playerPositionX+2, playerPositionY) == false ) {
+                    inPortalGoOutBlue = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 0;
+                }
+                else
+                    playerPositionX ++;
+            }
+            if ( inPortalGoOutOrange == true && orangePortalDir == DIR_RIGHT ) { //going right out of orange portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = orangePortalX+8;
+                    playerPositionY = orangePortalY;
+                }
+                if ( Screen->isSolid(playerPositionX+2, playerPositionY) == false ) {
+                    inPortalGoOutOrange = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 0;
+                }
+                else
+                    playerPositionX ++;
+            }
+
+            if ( inPortalGoOutBlue == true && bluePortalDir == DIR_LEFT ) { //going left out of blue portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = bluePortalX-8;
+                    playerPositionY = bluePortalY;
+                }
+                if ( Screen->isSolid(playerPositionX+13, playerPositionY) == false ) {
+                    inPortalGoOutBlue = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 0;
+                }
+                else
+                    playerPositionX --;
+            }
+            if ( inPortalGoOutOrange == true && orangePortalDir == DIR_LEFT ) { //going left out of orange portal
+                if ( inPortalGoOutPositioner == true ) {
+                    inPortalGoOutPositioner = false;
+                    playerPositionX = orangePortalX-8;
+                    playerPositionY = orangePortalY;
+                }
+                if ( Screen->isSolid(playerPositionX+13, playerPositionY) == false ) {
+                    inPortalGoOutOrange = false;
+                    inPortal = false;
+                    if ( currentChamber == 8 ) {
+                        bluePortalX = -1;
+                        bluePortalY = -1;
+                        orangePortalX = -1;
+                        orangePortalY = -1;
+                    }
+                    theItem->Jump = 0;
+                }
+                else
+                    playerPositionX --;
+            }
+
+            if ( currentChamber == 9 && chamber9laserCount == 4 ) {
+                chamber9laserCount = 0;
+                playerPositionX = 208;
+                playerPositionY = 32;
+                inPortal = false;
+                inPortalFallIn = false;
+                inPortalGoOutBlue = false;
+                inPortalGoOutOrange = false;
+                inPortalJumpIn = false;
+                inPortalLeftIn = false;
+                inPortalRightIn = false;
+                inPortalInFrames = 0;
+                inPortalGoOutPositioner = false;
+            }
+
+            if ( RectCollision(blueShotX, blueShotY, blueShotX+15, blueShotY+15, 0, 0, 255, 175) == false ) { //reset portal projectiles when they leave screen
+                blueShotX = -1;
+                blueShotY = -1;
+            }
+            if ( RectCollision(orangeShotX, orangeShotY, orangeShotX+15, orangeShotY+15, 0, 0, 255, 175) == false ) {
+                orangeShotX = -1;
+                orangeShotY = -1;
+            }
+
+            if ( currentChamber == 11 && chamber11downfall == 0 )
+                chamber11downfall = 1;
+            else if ( currentChamber == 11 && chamber11downfall == 1 ) {
+                Game->PlayMIDI(3);
+                chamber11downfall = 2;
+            }
+
+            if ( currentChamber == 11 ) {
+                if ( chamber11laterMusic == 601 )
+                    Game->PlayMIDI(4);
+                if ( chamber11laterMusic == 600 ) {
+                    Screen->Message(46);
+                    NoAction();
+                }
+                chamber11laterMusic ++;
+                if ( playerPositionX+8 >= 176 && playerPositionY >= 88 && chamber11trick == false && inPortal == false ) {
+                    playerPositionY = 56;
+                    theItem->Jump = 0;
+                }
+                if ( blueShotX >= 120 && blueShotX <= 128 && blueShotY >= 80 && blueShotY <= 112 && blueShotDir == DIR_RIGHT ) {
+                    blueShotX = 182;
+                    chamber11trick = true;
+                }
+                if ( orangeShotX >= 120 && orangeShotX <= 128 && orangeShotY >= 80 && orangeShotY <= 112 && orangeShotDir == DIR_RIGHT ) {
+                    orangeShotX = 182;
+                    chamber11trick = true;
+                }
+            }
+
+            if ( currentChamber == 15 && playerPositionX == 62 && playerPositionY == 128 && Link->InputLeft == true && cake == false )
+                cake = true;
+            if ( cake == true )
+                Screen->DrawTile(0, 70, 95, 575, 3, 2, 2, -1, -1, 0, 0, 0, 0, true, OP_OPAQUE);
+            if ( cake == true && cakeTimer == 600 ) {
+                Screen->ComboD[95] = 1;
+                lweapon bomb = CreateLWeaponAt(LW_BOMBBLAST, 240, 80);
+                cakeTimer ++;
+            }
+            else if ( cake == true )
+                cakeTimer ++;
+
+            if ( currentChamber == 18 ) {
+                Screen->FastTile(1, greenPearlX, greenPearlY, 655, 2, OP_OPAQUE);
+                if ( RectCollision(playerPositionX+5, playerPositionY+4, playerPositionX+10, playerPositionY+13, greenPearlX+7, greenPearlY+7, greenPearlX+8, greenPearlY+8) == true && deadFrames == -1 ) {
+                    Game->PlaySound(64);
+                    deadX = playerPositionX;
+                    deadY = playerPositionY;
+                    deadFrames = 0;
+                    Game->NumDeaths ++;
+                }
+                if ( greenPearlX == 192 && greenPearlY == 48 && Screen->ComboD[95] == 108 ) {
+                    Game->PlaySound(65);
+                    Screen->ComboD[95] = 1;
+                    Screen->ComboD[131] ++;
+                }
+                if ( movedRight == true && Screen->ComboD[95] == 108 ) {
+                    if ( greenPearlX >= 32 && greenPearlX <= 207 && greenPearlY == 64 )
+                        greenPearlX ++;
+                    if ( greenPearlX == 208 && greenPearlY >= 33 && greenPearlY <= 64 )
+                        greenPearlY --;
+                    if ( greenPearlX >= 49 && greenPearlX <= 208 && greenPearlY == 32 )
+                        greenPearlX --;
+                    if ( greenPearlX == 48 && greenPearlY >= 32 && greenPearlY <= 47 )
+                        greenPearlY ++;
+                    if ( greenPearlX >= 48 && greenPearlX <= 191 && greenPearlY == 48 )
+                        greenPearlX ++;
+                }
+                if ( movedLeft == true && Screen->ComboD[95] == 108 ) {
+                    if ( greenPearlX >= 49 && greenPearlX <= 192 && greenPearlY == 48 )
+                        greenPearlX --;
+                    if ( greenPearlX == 48 && greenPearlY >= 33 && greenPearlY <= 48 )
+                        greenPearlY --;
+                    if ( greenPearlX >= 48 && greenPearlX <= 207 && greenPearlY == 32 )
+                        greenPearlX ++;
+                    if ( greenPearlX == 208 && greenPearlY >= 32 && greenPearlY <= 63 )
+                        greenPearlY ++;
+                    if ( greenPearlX >= 33 && greenPearlX <= 208 && greenPearlY == 64 )
+                        greenPearlX --;
+                }
+            }
+
+            if ( currentChamber == 19 ) {
+                Screen->FastCombo(1, 0, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 16, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 32, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 48, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 64, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 80, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 96, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 112, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 128, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 144, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 160, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 176, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 192, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 208, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 224, greenLaserY, 152, 2, OP_OPAQUE);
+                Screen->FastCombo(1, 240, greenLaserY, 152, 2, OP_OPAQUE);
+                if ( playerPositionY >= greenLaserY-8 && playerPositionY <= greenLaserY+6 && deadFrames == -1 ) {
+                    Game->PlaySound(64);
+                    deadX = playerPositionX;
+                    deadY = playerPositionY;
+                    deadFrames = 0;
+                    Game->NumDeaths ++;
+                }
+                if ( greenLaserState == 0 ) {
+                    greenLaserState = 1;
+                    greenLaserY ++;
+                }
+                else if ( greenLaserState == 1 )
+                    greenLaserState = 2;
+                else if ( greenLaserState == 2 )
+                    greenLaserState = 3;
+                else if ( greenLaserState == 3 )
+                    greenLaserState = 0;
+                if ( greenLaserState == 4 ) {
+                    greenLaserState = 5;
+                    greenLaserY --;
+                }
+                else if ( greenLaserState == 5 )
+                    greenLaserState = 6;
+                else if ( greenLaserState == 6 )
+                    greenLaserState = 7;
+                else if ( greenLaserState == 7 )
+                    greenLaserState = 4;
+                if ( greenLaserY >= 176 && greenLaserState <= 3 )
+                    greenLaserState += 4;
+                if ( greenLaserY <= -16 && greenLaserState >= 4 )
+                    greenLaserState -= 4;
+            }
+
+
+
+            if ( deadFrames >= 0 ) { //player death animation
+                NoAction();
+                if ( deadFrames == 60 ) {
+                    Screen->SetSideWarp(0, Game->GetCurScreen(), 0, WT_IWARPZAP);
+                    this->Data = 176;
+                }
+                deadFrames ++;
+            }
+
+            if ( checkGround == true && checkMove == true ) { //walking animation
+                if ( walkingFrames == 6 ) {
+                    walkingAnimation ++;
+                    if ( walkingAnimation == 4 )
+                        walkingAnimation = 0;
+                    walkingFrames = 0;
+                }
+                else
+                    walkingFrames ++;
+            }
+
+            if ( playerDirection == 0 && deadFrames == -1 ) { //draw the player
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 660 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 660, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 700 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 760, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection == 1 && deadFrames == -1 ) {
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 680 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 680, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 720 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX, playerPositionY, 760, 2, OP_OPAQUE);
+            }
+
+            if ( shotDelay > 0 )
+                shotDelay --;
+
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Player2{
+    void run(){
+        Link->CollDetection = false;
+        playerPositionX2 = 16;
+        playerPositionY2 = 64;
+        playerDirection2 = 1;
+        deadX = -1;
+        deadY = -1;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        int walkingAnimation = 0;
+        int walkingFrames = 0;
+        bool checkMove = false;
+        bool checkGround = false;
+
+        int jumpCount = 0;
+        int controlsDisplay = 2000;
+        int controlsDisplayWait = 120;
+        int deadFrames = -1;
+        bool saving = false;
+        bool chamber3righthold = false;
+        int chamber3logic = 0;
+        bool chamber4fall = false;
+        int shooterTimer = 0;
+
+        int bluePortalX = -1;
+        int bluePortalY = -1;
+        int bluePortalDir = 0;
+        int orangePortalX = -1;
+        int orangePortalY = -1;
+        int orangePortalDir = 0;
+        int blueShotX = -1;
+        int blueShotY = -1;
+        int blueShotDir = 0;
+        int orangeShotX = -1;
+        int orangeShotY = -1;
+        int orangeShotDir = 0;
+        int shotDelay = 0;
+        int shotAnimationFrame = 0;
+
+        bool inPortal = false;
+        bool inPortalFallIn = false;
+        bool inPortalGoOutBlue = false;
+        bool inPortalGoOutOrange = false;
+        bool inPortalJumpIn = false;
+        bool inPortalLeftIn = false;
+        bool inPortalRightIn = false;
+        int inPortalInFrames = 0;
+        bool inPortalGoOutPositioner = false;
+
+        int chamber6buttons = 0;
+        int chamber9laserCount = 0;
+        bool chamber10highJump = false;
+        int chamber11downfall = 0;
+        int chamber11laterMusic = 0;
+        bool chamber11trick = false;
+        bool cake = false;
+        int cakeTimer = 0;
+        while(true){
+            checkMove = false;
+            checkGround = false;
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for right
+                playerDirection2 = 1;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX2+13, playerPositionY2+2) == false && Screen->isSolid(playerPositionX2+13, playerPositionY2+15) == false )
+                    playerPositionX2 += 1;
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for left
+                playerDirection2 = 0;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX2+2, playerPositionY2+2) == false && Screen->isSolid(playerPositionX2+2, playerPositionY2+15) == false )
+                    playerPositionX2 -= 1;
+            }
+
+            if ( theItem->Z > 200 && inPortal == false ) { //jumping
+                if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionX2 >= bluePortalX-3 && playerPositionX2 <= bluePortalX+3 && bluePortalDir == DIR_DOWN && (playerPositionY2 == bluePortalY+16 || playerPositionY2 == bluePortalY+15)) || (playerPositionX2 >= orangePortalX-3 && playerPositionX2 <= orangePortalX+3 && orangePortalDir == DIR_DOWN && (playerPositionY2 == orangePortalY+16 || playerPositionY2 == orangePortalY+15))) ) { //jump into portal
+                    theItem->Jump = 0;
+                    inPortal = true;
+                    inPortalJumpIn = true;
+                    inPortalInFrames = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2) == true ) ) {
+                    playerPositionY2 -= 1;
+                    theItem->Jump = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2-1) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2-1) == true ) ) {
+                    playerPositionY2 -= 2;
+                    theItem->Jump = 0;
+                }
+                //else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2-2) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2-2) == true ) ) {
+                //    playerPositionY2 -= 3;
+                //    theItem->Jump = 0;
+                //}
+                //else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2-3) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2-3) == true ) ) {
+                //    playerPositionY2 -= 4;
+                //    theItem->Jump = 0;
+                //}
+                else if ( Screen->isSolid(playerPositionX2+3, playerPositionY2+1) == false && Screen->isSolid(playerPositionX2+12, playerPositionY2+1) == false )
+                    playerPositionY2 -= theItem->Z - 200;
+                theItem->Z = 200;
+            }
+
+            if ( (Screen->isSolid(playerPositionX2+3, playerPositionY2+16) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+16) == true) ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+                checkGround = true;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2+16) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+16) == true || currentChamber == 16 ) && Link->PressUp == true && currentChamber != 4 && currentChamber != 7 && inPortal == false ) { //if on ground and press up then jump
+                if ( currentChamber == 2 )
+                    playerPositionY2 = 64;
+                if ( chamber10highJump == true )
+                    theItem->Jump = 4.5;
+                else if ( currentChamber != 16 )
+                    theItem->Jump = 3.2;
+                else
+                    theItem->Jump = 2;
+                jumpCount ++;
+                if ( currentChamber == 10 && chamber10highJump == false )
+                    chamber10highJump = true;
+                else if ( currentChamber == 10 && chamber10highJump == true )
+                    chamber10highJump = false;
+                if ( currentChamber == 14 ) {
+                    bool searchForCeiling = false;
+                    while(searchForCeiling == false){
+                        if ( Screen->isSolid(playerPositionX2+3, playerPositionY2+1) == false && Screen->isSolid(playerPositionX2+12, playerPositionY2+1) == false )
+                            playerPositionY2 --;
+                        else
+                            searchForCeiling = true;
+                    }
+                }
+            }
+
+            if ( theItem->Z < 200 && ((currentChamber != 4 && currentChamber != 7) || (Screen->ComboI[ComboAt(playerPositionX2+3, playerPositionY2+17)] != 98 && Screen->ComboI[ComboAt(playerPositionX2+12, playerPositionY2+17)] != 98)) && inPortal == false ) { //falling
+                if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2+17) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+17) == true ) && 200 - theItem->Z > 1 )
+                    playerPositionY2 += 1;
+                else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2+18) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+18) == true ) && 200 - theItem->Z > 2 )
+                    playerPositionY2 += 2;
+                else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2+19) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+19) == true ) && 200 - theItem->Z > 3 )
+                    playerPositionY2 += 3;
+                else if ( ( Screen->isSolid(playerPositionX2+3, playerPositionY2+20) == true || Screen->isSolid(playerPositionX2+12, playerPositionY2+20) == true ) && 200 - theItem->Z > 4 )
+                    playerPositionY2 += 4;
+                else
+                    playerPositionY2 += 200 - theItem->Z;
+                theItem->Z = 200;
+            }
+
+            if ( checkGround == true && checkMove == true ) { //walking animation
+                if ( walkingFrames == 6 ) {
+                    walkingAnimation ++;
+                    if ( walkingAnimation == 4 )
+                        walkingAnimation = 0;
+                    walkingFrames = 0;
+                }
+                else
+                    walkingFrames ++;
+            }
+
+            if ( playerDirection2 == 0 && deadFrames == -1 ) { //draw the player
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 660 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 660, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 700 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 760, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection2 == 1 && deadFrames == -1 ) {
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 680 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 680, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 720 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX2, playerPositionY2, 760, 2, OP_OPAQUE);
+            }
+
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Player3{
+    void run(){
+        Link->CollDetection = false;
+        playerPositionX3 = 80;
+        playerPositionY3 = 32;
+        playerDirection3 = 0;
+        deadX = -1;
+        deadY = -1;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        int walkingAnimation = 0;
+        int walkingFrames = 0;
+        bool checkMove = false;
+        bool checkGround = false;
+
+        int jumpCount = 0;
+        int controlsDisplay = 2000;
+        int controlsDisplayWait = 120;
+        int deadFrames = -1;
+        bool saving = false;
+        bool chamber3righthold = false;
+        int chamber3logic = 0;
+        bool chamber4fall = false;
+        int shooterTimer = 0;
+
+        int bluePortalX = -1;
+        int bluePortalY = -1;
+        int bluePortalDir = 0;
+        int orangePortalX = -1;
+        int orangePortalY = -1;
+        int orangePortalDir = 0;
+        int blueShotX = -1;
+        int blueShotY = -1;
+        int blueShotDir = 0;
+        int orangeShotX = -1;
+        int orangeShotY = -1;
+        int orangeShotDir = 0;
+        int shotDelay = 0;
+        int shotAnimationFrame = 0;
+
+        bool inPortal = false;
+        bool inPortalFallIn = false;
+        bool inPortalGoOutBlue = false;
+        bool inPortalGoOutOrange = false;
+        bool inPortalJumpIn = false;
+        bool inPortalLeftIn = false;
+        bool inPortalRightIn = false;
+        int inPortalInFrames = 0;
+        bool inPortalGoOutPositioner = false;
+
+        int chamber6buttons = 0;
+        int chamber9laserCount = 0;
+        bool chamber10highJump = false;
+        int chamber11downfall = 0;
+        int chamber11laterMusic = 0;
+        bool chamber11trick = false;
+        bool cake = false;
+        int cakeTimer = 0;
+        while(true){
+            checkMove = false;
+            checkGround = false;
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for right
+                playerDirection3 = 1;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX3+13, playerPositionY3+2) == false && Screen->isSolid(playerPositionX3+13, playerPositionY3+15) == false )
+                    playerPositionX3 += 1;
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for left
+                playerDirection3 = 0;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX3+2, playerPositionY3+2) == false && Screen->isSolid(playerPositionX3+2, playerPositionY3+15) == false )
+                    playerPositionX3 -= 1;
+            }
+
+            if ( theItem->Z > 200 && inPortal == false ) { //jumping
+                if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionX3 >= bluePortalX-3 && playerPositionX3 <= bluePortalX+3 && bluePortalDir == DIR_DOWN && (playerPositionY3 == bluePortalY+16 || playerPositionY3 == bluePortalY+15)) || (playerPositionX3 >= orangePortalX-3 && playerPositionX3 <= orangePortalX+3 && orangePortalDir == DIR_DOWN && (playerPositionY3 == orangePortalY+16 || playerPositionY3 == orangePortalY+15))) ) { //jump into portal
+                    theItem->Jump = 0;
+                    inPortal = true;
+                    inPortalJumpIn = true;
+                    inPortalInFrames = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3) == true ) ) {
+                    playerPositionY3 -= 1;
+                    theItem->Jump = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3-1) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3-1) == true ) ) {
+                    playerPositionY3 -= 2;
+                    theItem->Jump = 0;
+                }
+                //else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3-2) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3-2) == true ) ) {
+                //    playerPositionY3 -= 3;
+                //    theItem->Jump = 0;
+                //}
+                //else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3-3) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3-3) == true ) ) {
+                //    playerPositionY3 -= 4;
+                //    theItem->Jump = 0;
+                //}
+                else if ( Screen->isSolid(playerPositionX3+3, playerPositionY3+1) == false && Screen->isSolid(playerPositionX3+12, playerPositionY3+1) == false )
+                    playerPositionY3 -= theItem->Z - 200;
+                theItem->Z = 200;
+            }
+
+            if ( (Screen->isSolid(playerPositionX3+3, playerPositionY3+16) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+16) == true) ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+                checkGround = true;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3+16) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+16) == true || currentChamber == 16 ) && Link->PressUp == true && currentChamber != 4 && currentChamber != 7 && inPortal == false ) { //if on ground and press up then jump
+                if ( currentChamber == 2 )
+                    playerPositionY3 = 64;
+                if ( chamber10highJump == true )
+                    theItem->Jump = 4.5;
+                else if ( currentChamber != 16 )
+                    theItem->Jump = 3.2;
+                else
+                    theItem->Jump = 2;
+                jumpCount ++;
+                if ( currentChamber == 10 && chamber10highJump == false )
+                    chamber10highJump = true;
+                else if ( currentChamber == 10 && chamber10highJump == true )
+                    chamber10highJump = false;
+                if ( currentChamber == 14 ) {
+                    bool searchForCeiling = false;
+                    while(searchForCeiling == false){
+                        if ( Screen->isSolid(playerPositionX3+3, playerPositionY3+1) == false && Screen->isSolid(playerPositionX3+12, playerPositionY3+1) == false )
+                            playerPositionY3 --;
+                        else
+                            searchForCeiling = true;
+                    }
+                }
+            }
+
+            if ( theItem->Z < 200 && ((currentChamber != 4 && currentChamber != 7) || (Screen->ComboI[ComboAt(playerPositionX3+3, playerPositionY3+17)] != 98 && Screen->ComboI[ComboAt(playerPositionX3+12, playerPositionY3+17)] != 98)) && inPortal == false ) { //falling
+                if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3+17) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+17) == true ) && 200 - theItem->Z > 1 )
+                    playerPositionY3 += 1;
+                else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3+18) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+18) == true ) && 200 - theItem->Z > 2 )
+                    playerPositionY3 += 2;
+                else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3+19) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+19) == true ) && 200 - theItem->Z > 3 )
+                    playerPositionY3 += 3;
+                else if ( ( Screen->isSolid(playerPositionX3+3, playerPositionY3+20) == true || Screen->isSolid(playerPositionX3+12, playerPositionY3+20) == true ) && 200 - theItem->Z > 4 )
+                    playerPositionY3 += 4;
+                else
+                    playerPositionY3 += 200 - theItem->Z;
+                theItem->Z = 200;
+            }
+
+            if ( checkGround == true && checkMove == true ) { //walking animation
+                if ( walkingFrames == 6 ) {
+                    walkingAnimation ++;
+                    if ( walkingAnimation == 4 )
+                        walkingAnimation = 0;
+                    walkingFrames = 0;
+                }
+                else
+                    walkingFrames ++;
+            }
+
+            if ( playerDirection3 == 0 && deadFrames == -1 ) { //draw the player
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 660 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 660, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 700 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 760, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection3 == 1 && deadFrames == -1 ) {
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 680 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 680, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 720 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX3, playerPositionY3, 760, 2, OP_OPAQUE);
+            }
+
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Player4{
+    void run(){
+        Link->CollDetection = false;
+        playerPositionX4 = 64;
+        playerPositionY4 = 144;
+        playerDirection4 = 1;
+        deadX = -1;
+        deadY = -1;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        int walkingAnimation = 0;
+        int walkingFrames = 0;
+        bool checkMove = false;
+        bool checkGround = false;
+
+        int jumpCount = 0;
+        int controlsDisplay = 2000;
+        int controlsDisplayWait = 120;
+        int deadFrames = -1;
+        bool saving = false;
+        bool chamber3righthold = false;
+        int chamber3logic = 0;
+        bool chamber4fall = false;
+        int shooterTimer = 0;
+
+        int bluePortalX = -1;
+        int bluePortalY = -1;
+        int bluePortalDir = 0;
+        int orangePortalX = -1;
+        int orangePortalY = -1;
+        int orangePortalDir = 0;
+        int blueShotX = -1;
+        int blueShotY = -1;
+        int blueShotDir = 0;
+        int orangeShotX = -1;
+        int orangeShotY = -1;
+        int orangeShotDir = 0;
+        int shotDelay = 0;
+        int shotAnimationFrame = 0;
+
+        bool inPortal = false;
+        bool inPortalFallIn = false;
+        bool inPortalGoOutBlue = false;
+        bool inPortalGoOutOrange = false;
+        bool inPortalJumpIn = false;
+        bool inPortalLeftIn = false;
+        bool inPortalRightIn = false;
+        int inPortalInFrames = 0;
+        bool inPortalGoOutPositioner = false;
+
+        int chamber6buttons = 0;
+        int chamber9laserCount = 0;
+        bool chamber10highJump = false;
+        int chamber11downfall = 0;
+        int chamber11laterMusic = 0;
+        bool chamber11trick = false;
+        bool cake = false;
+        int cakeTimer = 0;
+        while(true){
+            checkMove = false;
+            checkGround = false;
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for right
+                playerDirection4 = 1;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX4+13, playerPositionY4+2) == false && Screen->isSolid(playerPositionX4+13, playerPositionY4+15) == false )
+                    playerPositionX4 += 1;
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for left
+                playerDirection4 = 0;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX4+2, playerPositionY4+2) == false && Screen->isSolid(playerPositionX4+2, playerPositionY4+15) == false )
+                    playerPositionX4 -= 1;
+            }
+
+            if ( theItem->Z > 200 && inPortal == false ) { //jumping
+                if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionX4 >= bluePortalX-3 && playerPositionX4 <= bluePortalX+3 && bluePortalDir == DIR_DOWN && (playerPositionY4 == bluePortalY+16 || playerPositionY4 == bluePortalY+15)) || (playerPositionX4 >= orangePortalX-3 && playerPositionX4 <= orangePortalX+3 && orangePortalDir == DIR_DOWN && (playerPositionY4 == orangePortalY+16 || playerPositionY4 == orangePortalY+15))) ) { //jump into portal
+                    theItem->Jump = 0;
+                    inPortal = true;
+                    inPortalJumpIn = true;
+                    inPortalInFrames = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4) == true ) ) {
+                    playerPositionY4 -= 1;
+                    theItem->Jump = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4-1) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4-1) == true ) ) {
+                    playerPositionY4 -= 2;
+                    theItem->Jump = 0;
+                }
+                //else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4-2) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4-2) == true ) ) {
+                //    playerPositionY4 -= 3;
+                //    theItem->Jump = 0;
+                //}
+                //else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4-3) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4-3) == true ) ) {
+                //    playerPositionY4 -= 4;
+                //    theItem->Jump = 0;
+                //}
+                else if ( Screen->isSolid(playerPositionX4+3, playerPositionY4+1) == false && Screen->isSolid(playerPositionX4+12, playerPositionY4+1) == false )
+                    playerPositionY4 -= theItem->Z - 200;
+                theItem->Z = 200;
+            }
+
+            if ( (Screen->isSolid(playerPositionX4+3, playerPositionY4+16) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+16) == true) ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+                checkGround = true;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4+16) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+16) == true || currentChamber == 16 ) && Link->PressUp == true && currentChamber != 4 && currentChamber != 7 && inPortal == false ) { //if on ground and press up then jump
+                if ( currentChamber == 2 )
+                    playerPositionY4 = 64;
+                if ( chamber10highJump == true )
+                    theItem->Jump = 4.5;
+                else if ( currentChamber != 16 )
+                    theItem->Jump = 3.2;
+                else
+                    theItem->Jump = 2;
+                jumpCount ++;
+                if ( currentChamber == 10 && chamber10highJump == false )
+                    chamber10highJump = true;
+                else if ( currentChamber == 10 && chamber10highJump == true )
+                    chamber10highJump = false;
+                if ( currentChamber == 14 ) {
+                    bool searchForCeiling = false;
+                    while(searchForCeiling == false){
+                        if ( Screen->isSolid(playerPositionX4+3, playerPositionY4+1) == false && Screen->isSolid(playerPositionX4+12, playerPositionY4+1) == false )
+                            playerPositionY4 --;
+                        else
+                            searchForCeiling = true;
+                    }
+                }
+            }
+
+            if ( theItem->Z < 200 && ((currentChamber != 4 && currentChamber != 7) || (Screen->ComboI[ComboAt(playerPositionX4+3, playerPositionY4+17)] != 98 && Screen->ComboI[ComboAt(playerPositionX4+12, playerPositionY4+17)] != 98)) && inPortal == false ) { //falling
+                if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4+17) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+17) == true ) && 200 - theItem->Z > 1 )
+                    playerPositionY4 += 1;
+                else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4+18) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+18) == true ) && 200 - theItem->Z > 2 )
+                    playerPositionY4 += 2;
+                else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4+19) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+19) == true ) && 200 - theItem->Z > 3 )
+                    playerPositionY4 += 3;
+                else if ( ( Screen->isSolid(playerPositionX4+3, playerPositionY4+20) == true || Screen->isSolid(playerPositionX4+12, playerPositionY4+20) == true ) && 200 - theItem->Z > 4 )
+                    playerPositionY4 += 4;
+                else
+                    playerPositionY4 += 200 - theItem->Z;
+                theItem->Z = 200;
+            }
+
+            if ( checkGround == true && checkMove == true ) { //walking animation
+                if ( walkingFrames == 6 ) {
+                    walkingAnimation ++;
+                    if ( walkingAnimation == 4 )
+                        walkingAnimation = 0;
+                    walkingFrames = 0;
+                }
+                else
+                    walkingFrames ++;
+            }
+
+            if ( playerDirection4 == 0 && deadFrames == -1 ) { //draw the player
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 660 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 660, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 700 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 760, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection4 == 1 && deadFrames == -1 ) {
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 680 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 680, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 720 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX4, playerPositionY4, 760, 2, OP_OPAQUE);
+            }
+
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script Player5{
+    void run(){
+        Link->CollDetection = false;
+        playerPositionX5 = 192;
+        playerPositionY5 = 80;
+        playerDirection5 = 0;
+        deadX = -1;
+        deadY = -1;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        int walkingAnimation = 0;
+        int walkingFrames = 0;
+        bool checkMove = false;
+        bool checkGround = false;
+
+        int jumpCount = 0;
+        int controlsDisplay = 2000;
+        int controlsDisplayWait = 120;
+        int deadFrames = -1;
+        bool saving = false;
+        bool chamber3righthold = false;
+        int chamber3logic = 0;
+        bool chamber4fall = false;
+        int shooterTimer = 0;
+
+        int bluePortalX = -1;
+        int bluePortalY = -1;
+        int bluePortalDir = 0;
+        int orangePortalX = -1;
+        int orangePortalY = -1;
+        int orangePortalDir = 0;
+        int blueShotX = -1;
+        int blueShotY = -1;
+        int blueShotDir = 0;
+        int orangeShotX = -1;
+        int orangeShotY = -1;
+        int orangeShotDir = 0;
+        int shotDelay = 0;
+        int shotAnimationFrame = 0;
+
+        bool inPortal = false;
+        bool inPortalFallIn = false;
+        bool inPortalGoOutBlue = false;
+        bool inPortalGoOutOrange = false;
+        bool inPortalJumpIn = false;
+        bool inPortalLeftIn = false;
+        bool inPortalRightIn = false;
+        int inPortalInFrames = 0;
+        bool inPortalGoOutPositioner = false;
+
+        int chamber6buttons = 0;
+        int chamber9laserCount = 0;
+        bool chamber10highJump = false;
+        int chamber11downfall = 0;
+        int chamber11laterMusic = 0;
+        bool chamber11trick = false;
+        bool cake = false;
+        int cakeTimer = 0;
+        while(true){
+            checkMove = false;
+            checkGround = false;
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for right
+                playerDirection5 = 1;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX5+13, playerPositionY5+2) == false && Screen->isSolid(playerPositionX5+13, playerPositionY5+15) == false )
+                    playerPositionX5 += 1;
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && chamber4fall == false && inPortal == false ) { //horizontal walkability for left
+                playerDirection5 = 0;
+                checkMove = true;
+                if ( Screen->isSolid(playerPositionX5+2, playerPositionY5+2) == false && Screen->isSolid(playerPositionX5+2, playerPositionY5+15) == false )
+                    playerPositionX5 -= 1;
+            }
+
+            if ( theItem->Z > 200 && inPortal == false ) { //jumping
+                if ( bluePortalX != -1 && orangePortalX != -1 && inPortal == false && ((playerPositionX5 >= bluePortalX-3 && playerPositionX5 <= bluePortalX+3 && bluePortalDir == DIR_DOWN && (playerPositionY5 == bluePortalY+16 || playerPositionY5 == bluePortalY+15)) || (playerPositionX5 >= orangePortalX-3 && playerPositionX5 <= orangePortalX+3 && orangePortalDir == DIR_DOWN && (playerPositionY5 == orangePortalY+16 || playerPositionY5 == orangePortalY+15))) ) { //jump into portal
+                    theItem->Jump = 0;
+                    inPortal = true;
+                    inPortalJumpIn = true;
+                    inPortalInFrames = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5) == true ) ) {
+                    playerPositionY5 -= 1;
+                    theItem->Jump = 0;
+                }
+                else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5-1) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5-1) == true ) ) {
+                    playerPositionY5 -= 2;
+                    theItem->Jump = 0;
+                }
+                //else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5-2) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5-2) == true ) ) {
+                //    playerPositionY5 -= 3;
+                //    theItem->Jump = 0;
+                //}
+                //else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5-3) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5-3) == true ) ) {
+                //    playerPositionY5 -= 4;
+                //    theItem->Jump = 0;
+                //}
+                else if ( Screen->isSolid(playerPositionX5+3, playerPositionY5+1) == false && Screen->isSolid(playerPositionX5+12, playerPositionY5+1) == false )
+                    playerPositionY5 -= theItem->Z - 200;
+                theItem->Z = 200;
+            }
+
+            if ( (Screen->isSolid(playerPositionX5+3, playerPositionY5+16) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+16) == true) ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+                checkGround = true;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5+16) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+16) == true || currentChamber == 16 ) && Link->PressUp == true && currentChamber != 4 && currentChamber != 7 && inPortal == false ) { //if on ground and press up then jump
+                if ( currentChamber == 2 )
+                    playerPositionY5 = 64;
+                if ( chamber10highJump == true )
+                    theItem->Jump = 4.5;
+                else if ( currentChamber != 16 )
+                    theItem->Jump = 3.2;
+                else
+                    theItem->Jump = 2;
+                jumpCount ++;
+                if ( currentChamber == 10 && chamber10highJump == false )
+                    chamber10highJump = true;
+                else if ( currentChamber == 10 && chamber10highJump == true )
+                    chamber10highJump = false;
+                if ( currentChamber == 14 ) {
+                    bool searchForCeiling = false;
+                    while(searchForCeiling == false){
+                        if ( Screen->isSolid(playerPositionX5+3, playerPositionY5+1) == false && Screen->isSolid(playerPositionX5+12, playerPositionY5+1) == false )
+                            playerPositionY5 --;
+                        else
+                            searchForCeiling = true;
+                    }
+                }
+            }
+
+            if ( theItem->Z < 200 && ((currentChamber != 4 && currentChamber != 7) || (Screen->ComboI[ComboAt(playerPositionX5+3, playerPositionY5+17)] != 98 && Screen->ComboI[ComboAt(playerPositionX5+12, playerPositionY5+17)] != 98)) && inPortal == false ) { //falling
+                if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5+17) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+17) == true ) && 200 - theItem->Z > 1 )
+                    playerPositionY5 += 1;
+                else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5+18) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+18) == true ) && 200 - theItem->Z > 2 )
+                    playerPositionY5 += 2;
+                else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5+19) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+19) == true ) && 200 - theItem->Z > 3 )
+                    playerPositionY5 += 3;
+                else if ( ( Screen->isSolid(playerPositionX5+3, playerPositionY5+20) == true || Screen->isSolid(playerPositionX5+12, playerPositionY5+20) == true ) && 200 - theItem->Z > 4 )
+                    playerPositionY5 += 4;
+                else
+                    playerPositionY5 += 200 - theItem->Z;
+                theItem->Z = 200;
+            }
+
+            if ( checkGround == true && checkMove == true ) { //walking animation
+                if ( walkingFrames == 6 ) {
+                    walkingAnimation ++;
+                    if ( walkingAnimation == 4 )
+                        walkingAnimation = 0;
+                    walkingFrames = 0;
+                }
+                else
+                    walkingFrames ++;
+            }
+
+            if ( playerDirection5 == 0 && deadFrames == -1 ) { //draw the player
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 660 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 660, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 700 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 760, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection5 == 1 && deadFrames == -1 ) {
+                if ( checkGround == true )
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 680 + walkingAnimation, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 680, 2, OP_OPAQUE);
+                if ( shotDelay >= 15 )
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 720 + shotAnimationFrame, 2, OP_OPAQUE);
+                else
+                    Screen->FastTile(1, playerPositionX5, playerPositionY5, 760, 2, OP_OPAQUE);
+            }
+
+            Link->X = 120;
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script DeadAnimation{
+    void run(){
+        while(true){
+            if ( deadX != -1 ) {
+                this->X = deadX;
+                this->Y = deadY;
+                this->Data = 184;
+                deadX = -1;
+                deadY = -1;
+            }
+            Waitframe();
+        }
+    }
+}

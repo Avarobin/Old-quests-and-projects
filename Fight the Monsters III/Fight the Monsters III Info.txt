@@ -1,0 +1,28 @@
+After playing the quest if you wanna give me feedback, you can use these questions as a guide.
+
+If you wanna actually play this demo with a specific seed, you'd have to ask me for a questfile.
+
+Feedback questions:
+- In general, do you like the quest?
+- Do you think the core idea is good? Was it done well?
+- How's the difficulty balance? Any enemies or items you felt were unbalanced?
+- Should I finish this project?
+
+Also, here's why this is a demo and what's missing compared to the potential full version:
+- Intro, titlescreen, and main menu.
+- More playable characters (around 7).
+- Events.
+- Randomized bosses (the demo only has 3 bosses).
+- More items and enemies.
+- Maybe make enemies stronger each floor in unique ways (in the demo, they gain 5 HP every new floor).
+- An unlockable true final boss and ending.
+
+Credits:
+- Aevin/Russ - Yuurand tileset
+- Lunaria - VD tileset and hosting the contest
+- Moosh/Saffith - Script libraries
+- Shane - Playtest and support
+- Shoshon - Support
+
+Contact:
+My (Avataro's) profile on PureZC https://www.purezc.net/forums/index.php?showuser=42890

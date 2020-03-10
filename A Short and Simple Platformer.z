@@ -1,0 +1,1283 @@
+import "std.zh"
+import "ffcscript.zh"
+
+int playerPositionX = 0;
+int playerPositionY = 0;
+int playerDirection = 0; //0 = left, 1 = right
+bool buttonLeft = false;
+bool buttonRight = false;
+int deadCounter = 0;
+int winCounter = 0;
+int coins = 0;
+int globalJump = 0;
+int fireLeft = 0;
+int fireRight = 0;
+bool fallingDown = false;
+int umbrellaState = 0;
+bool umbrellaBool = false;
+
+global script active{
+    void run(){
+        fireLeft = 0;
+        fireRight = 0;
+        fallingDown = false;
+        int counterForEverything = 0;
+        while(true){
+            if ( CountFFCsRunning(10) == 0 && Screen->ComboD[2] != 274 )
+                RunFFCScript(10, 0);
+            Link->InputStart = false;
+            Link->PressStart = false;
+            Link->InputMap = false;
+            Link->PressMap = false;
+            if ( Link->Item[123] )
+                Link->CollDetection = false;
+            counterForEverything = Game->Counter[CR_SCRIPT2];
+            Game->NumDeaths = counterForEverything;
+            Link->X = 120; //link is always in the center
+            Link->Y = 80;
+            Waitframe();
+        }
+    }
+}
+
+ffc script astartcircle{
+    void run(){
+        for(int radius=16; radius>0; radius--){
+            Screen->Circle(5, playerPositionX+8, playerPositionY+11, radius, 1, 1, playerPositionX+8, playerPositionY+11, 1, true, OP_OPAQUE);
+            Waitframe();
+        }
+        Link->Item[124] = false;
+        while(true){
+            Waitframe();
+        }
+    }
+}
+
+ffc script GlobalFFC{
+    void run(int thislevel){
+        Link->CollDetection = false;
+        Link->Invisible = true;
+        int counterForEverything = 0;
+
+        deadCounter = 0;
+        winCounter = 0;
+        coins = 0;
+        globalJump = 0;
+        fireLeft = 0;
+        fireRight = 0;
+        fallingDown = false;
+        umbrellaState = 0;
+        umbrellaBool = false;
+        int beepCounter = 0;
+        int portal1 = 0;
+        int portal2 = 0;
+        int warpState = 0;
+        bool inPortal = false;
+        Game->Counter[CR_SCRIPT1] = thislevel;
+
+        for(int i=0; i<=175; i++){
+            if ( Screen->ComboD[i] == 56 ) { //replace the start combo with the player (right)
+                Screen->ComboD[i] = 1;
+                playerPositionX = ComboX(i);
+                playerPositionY = ComboY(i);
+                playerDirection = 1;
+            }
+            if ( Screen->ComboD[i] == 57 ) { //replace the start combo with the player (left)
+                Screen->ComboD[i] = 1;
+                playerPositionX = ComboX(i);
+                playerPositionY = ComboY(i);
+                playerDirection = 0;
+            }
+            if ( Screen->ComboD[i] == 36 ) //coin
+                coins ++;
+            if ( GetLayerComboD(3, i) == 224 && portal1 == 0 )
+                portal1 = i;
+            else if ( GetLayerComboD(3, i) == 224 && portal2 == 0 )
+                portal2 = i;
+        }
+
+        bool allCoinsCollected = true;
+        if ( coins > 0 )
+            allCoinsCollected = false;
+
+        item theItem = Screen->CreateItem(123); //create "theItem"
+        theItem->X = 120; //center of the screen
+        theItem->Y = 80;
+        theItem->Z = 200;
+
+        Link->Item[124] = true;
+        int firstFrames = 0;
+
+        int horizontalPosition = 0;
+
+        while(true){
+            Game->Counter[CR_SCRIPT14] ++;
+            if ( Game->Counter[CR_SCRIPT14] == 60 ) {
+                Game->Counter[CR_SCRIPT13] ++;
+                Game->Counter[CR_SCRIPT14] = 0;
+            }
+            if ( Game->Counter[CR_SCRIPT13] == 60 ) {
+                Game->Counter[CR_SCRIPT12] ++;
+                Game->Counter[CR_SCRIPT13] = 0;
+            }
+            if ( Game->Counter[CR_SCRIPT12] == 60 ) {
+                Game->Counter[CR_SCRIPT11] ++;
+                Game->Counter[CR_SCRIPT12] = 0;
+            }
+            if ( Game->Counter[CR_SCRIPT11] > 9 ) {
+                Game->Counter[CR_SCRIPT11] = 9;
+            }
+
+            if ( buttonRight == false && Link->PressRight == true ) { //button presses
+                buttonRight = true;
+                buttonLeft = false;
+            }
+            if ( buttonLeft == false && Link->PressLeft == true ) {
+                buttonLeft = true;
+                buttonRight = false;
+            }
+
+            for ( int i = 1; i <= Screen->NumEWeapons(); i++ ){
+                eweapon weap = Screen->LoadEWeapon(i);
+                if ( RectCollision(playerPositionX+3, playerPositionY+12, playerPositionX+12, playerPositionY+15, weap->X+4, weap->Y+4, weap->X+11, weap->Y+11) == true && deadCounter == 0 && winCounter == 0 ){
+                    Game->PlaySound(64);
+                    deadCounter = 60;
+                }
+            }
+
+            if ( Link->InputRight == true && buttonRight == true && Link->InputLeft == false && deadCounter == 0 && winCounter == 0 && warpState == 0 && !Link->Item[124] ) { //horizontal walkability for right
+                playerDirection = 1;
+                if ( Screen->ComboD[ComboAt(playerPositionX+13, playerPositionY+9)] == 71 || Screen->ComboD[ComboAt(playerPositionX+13, playerPositionY+13)] == 71 ) { //spike right
+                    Game->PlaySound(64);
+                    deadCounter = 60;
+                    playerPositionX ++;
+                }
+                else if ( Screen->isSolid(playerPositionX+13, playerPositionY+7) == false && Screen->isSolid(playerPositionX+13, playerPositionY+15) == false && playerPositionX < 243 ) { //nothing right
+                    playerPositionX += 1;
+                }
+            }
+            else if ( Link->InputLeft == true && buttonLeft == true && Link->InputRight == false && deadCounter == 0 && winCounter == 0 && warpState == 0 && !Link->Item[124] ) { //horizontal walkability for left
+                playerDirection = 0;
+                if ( Screen->ComboD[ComboAt(playerPositionX+2, playerPositionY+9)] == 69 || Screen->ComboD[ComboAt(playerPositionX+2, playerPositionY+13)] == 69 ) { //spike left
+                    Game->PlaySound(64);
+                    deadCounter = 60;
+                    playerPositionX --;
+                }
+                else if ( Screen->isSolid(playerPositionX+2, playerPositionY+7) == false && Screen->isSolid(playerPositionX+2, playerPositionY+15) == false && playerPositionX > -3 ) { //nothing left
+                    playerPositionX -= 1;
+                }
+            }
+
+            if ( theItem->Z > 200 && deadCounter == 0 && winCounter == 0 ) { //jumping
+                if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+5) == true || Screen->isSolid(playerPositionX+12, playerPositionY+5) == true ) ) {
+                    playerPositionY -= 1;
+                    theItem->Jump = 0;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 70 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 70 ) { //jumped against spike
+                        Game->PlaySound(64);
+                        deadCounter = 60;
+                        playerPositionY --;
+                    }
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 176 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 176 ) { //jumped against changer
+                        Game->PlaySound(64);
+                        for(int i=0; i<=175; i++){ //changing
+                            Game->PlaySound(71);
+                            if ( Screen->ComboD[i] == 172 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 176 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 168 )
+                                Screen->ComboD[i] = 171;
+                            else if ( Screen->ComboD[i] == 171 )
+                                Screen->ComboD[i] = 168;
+                            else if ( Screen->ComboD[i] == 169 )
+                                Screen->ComboD[i] = 170;
+                            else if ( Screen->ComboD[i] == 170 )
+                                Screen->ComboD[i] = 169;
+                        }
+                    }
+                }
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+4) == true || Screen->isSolid(playerPositionX+12, playerPositionY+4) == true ) ) {
+                    playerPositionY -= 2;
+                    theItem->Jump = 0;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 70 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 70 ) { //jumped against spike
+                        Game->PlaySound(64);
+                        deadCounter = 60;
+                        playerPositionY --;
+                    }
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 176 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 176 ) { //jumped against changer
+                        Game->PlaySound(64);
+                        for(int i=0; i<=175; i++){ //changing
+                            Game->PlaySound(71);
+                            if ( Screen->ComboD[i] == 172 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 176 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 168 )
+                                Screen->ComboD[i] = 171;
+                            else if ( Screen->ComboD[i] == 171 )
+                                Screen->ComboD[i] = 168;
+                            else if ( Screen->ComboD[i] == 169 )
+                                Screen->ComboD[i] = 170;
+                            else if ( Screen->ComboD[i] == 170 )
+                                Screen->ComboD[i] = 169;
+                        }
+                    }
+                }
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+3) == true || Screen->isSolid(playerPositionX+12, playerPositionY+3) == true ) ) {
+                    playerPositionY -= 3;
+                    theItem->Jump = 0;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 70 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 70 ) { //jumped against spike
+                        Game->PlaySound(64);
+                        deadCounter = 60;
+                        playerPositionY --;
+                    }
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 176 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 176 ) { //jumped against changer
+                        Game->PlaySound(64);
+                        for(int i=0; i<=175; i++){ //changing
+                            Game->PlaySound(71);
+                            if ( Screen->ComboD[i] == 172 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 176 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 168 )
+                                Screen->ComboD[i] = 171;
+                            else if ( Screen->ComboD[i] == 171 )
+                                Screen->ComboD[i] = 168;
+                            else if ( Screen->ComboD[i] == 169 )
+                                Screen->ComboD[i] = 170;
+                            else if ( Screen->ComboD[i] == 170 )
+                                Screen->ComboD[i] = 169;
+                        }
+                    }
+                }
+                else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+2) == true || Screen->isSolid(playerPositionX+12, playerPositionY+2) == true ) ) {
+                    playerPositionY -= 4;
+                    theItem->Jump = 0;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 76 ) //jumped against crumble block
+                        Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] = 125;
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 70 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 70 ) { //jumped against spike
+                        Game->PlaySound(64);
+                        deadCounter = 60;
+                        playerPositionY --;
+                    }
+                    if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 172 || Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+6)] == 176 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+6)] == 176 ) { //jumped against changer
+                        Game->PlaySound(64);
+                        for(int i=0; i<=175; i++){ //changing
+                            Game->PlaySound(71);
+                            if ( Screen->ComboD[i] == 172 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 176 )
+                                Screen->ComboD[i] ++;
+                            else if ( Screen->ComboD[i] == 168 )
+                                Screen->ComboD[i] = 171;
+                            else if ( Screen->ComboD[i] == 171 )
+                                Screen->ComboD[i] = 168;
+                            else if ( Screen->ComboD[i] == 169 )
+                                Screen->ComboD[i] = 170;
+                            else if ( Screen->ComboD[i] == 170 )
+                                Screen->ComboD[i] = 169;
+                        }
+                    }
+                }
+                else if ( Screen->isSolid(playerPositionX+3, playerPositionY+6) == false && Screen->isSolid(playerPositionX+12, playerPositionY+6) == false )
+                    playerPositionY -= theItem->Z - 200;
+                theItem->Z = 200;
+                if ( playerPositionY <= -7 )
+                    theItem->Jump = 0;
+            }
+
+            if ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true ) { //if on ground then remove jump and z offset
+                theItem->Jump = 0;
+                theItem->Z = 200;
+            }
+
+            if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] == 76 && deadCounter == 0 && winCounter == 0 ) { //if on crumble
+                Game->PlaySound(69);
+                Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] ++;
+            }
+            if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] == 76 && deadCounter == 0 && winCounter == 0 ) { //if on crumble
+                Game->PlaySound(69);
+                Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] ++;
+            }
+
+            for(int i=0; i<=175; i++){
+                if ( Screen->ComboD[i] == 125 ) { //crumbleexplode
+                    Game->PlaySound(68);
+                    Screen->ComboD[i] ++;
+                }
+                if ( (beepCounter == 150 || beepCounter == 180 || beepCounter == 210) && (Screen->ComboD[i] == 204 || Screen->ComboD[i] == 208) ) {
+                    Game->PlaySound(75);
+                    Screen->ComboD[i] ++;
+                }
+                if ( beepCounter == 240 ) {
+                    counterForEverything = 0;
+                    if ( Screen->ComboD[i] == 204 ) {
+                        Screen->ComboD[i] = 208;
+                        counterForEverything = 1;
+                    }
+                    else if ( Screen->ComboD[i] == 208 ) {
+                        Screen->ComboD[i] = 204;
+                        counterForEverything = 1;
+                    }
+                    if ( counterForEverything == 1 )
+                        Game->PlaySound(76);
+                }
+            }
+
+            if ( beepCounter != 240 )
+                beepCounter ++;
+            else
+                beepCounter = 0;
+
+            if ( (Screen->ComboD[ComboAt(playerPositionX+3, playerPositionY+7)] == 204 || Screen->ComboD[ComboAt(playerPositionX+12, playerPositionY+7)] == 204 || Screen->ComboD[ComboAt(playerPositionX+3, playerPositionY+15)] == 204 || Screen->ComboD[ComboAt(playerPositionX+12, playerPositionY+15)] == 204) && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+3, playerPositionY+16)] == 68 || Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 68 ) && Screen->isSolid(playerPositionX+5, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on right edge of spikes
+                if ( Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 68 )
+                    playerPositionX += 2;
+                else
+                    playerPositionX ++;
+            }
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+12, playerPositionY+16)] == 68 || Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 68 ) && Screen->isSolid(playerPositionX+10, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on left edge of spikes
+                if ( Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 68 )
+                    playerPositionX -= 2;
+                else
+                    playerPositionX --;
+            }
+
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+3, playerPositionY+16)] == 76 || Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 76 ) && Screen->isSolid(playerPositionX+5, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on right edge of crumbles
+                if ( Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 76 )
+                    playerPositionX += 2;
+                else
+                    playerPositionX ++;
+            }
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+12, playerPositionY+16)] == 76 || Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 76 ) && Screen->isSolid(playerPositionX+10, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on left edge of crumbles
+                if ( Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 76 )
+                    playerPositionX -= 2;
+                else
+                    playerPositionX --;
+            }
+
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+3, playerPositionY+16)] == 60 || Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 60 ) && Screen->isSolid(playerPositionX+5, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on right edge of jumpblock
+                if ( Screen->ComboD[ComboAt(playerPositionX+4, playerPositionY+16)] == 60 )
+                    playerPositionX += 2;
+                else
+                    playerPositionX ++;
+            }
+            if ( ( ( Screen->ComboD[ComboAt(playerPositionX+12, playerPositionY+16)] == 60 || Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 60 ) && Screen->isSolid(playerPositionX+10, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on left edge of jumpblock
+                if ( Screen->ComboD[ComboAt(playerPositionX+11, playerPositionY+16)] == 60 )
+                    playerPositionX -= 2;
+                else
+                    playerPositionX --;
+            }
+
+            if ( ( ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+4, playerPositionY+16) == true ) && Screen->isSolid(playerPositionX+5, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on right edge of anything
+                if ( Screen->isSolid(playerPositionX+4, playerPositionY+16) == true )
+                    playerPositionX += 2;
+                else
+                    playerPositionX ++;
+            }
+            if ( ( ( Screen->isSolid(playerPositionX+12, playerPositionY+16) == true || Screen->isSolid(playerPositionX+11, playerPositionY+16) == true ) && Screen->isSolid(playerPositionX+10, playerPositionY+16) == false) && deadCounter == 0 && winCounter == 0 && horizontalPosition == playerPositionX ) { //if on left edge of anything
+                if ( Screen->isSolid(playerPositionX+11, playerPositionY+16) == true )
+                    playerPositionX -= 2;
+                else
+                    playerPositionX --;
+            }
+
+            if ( ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] == 68 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] == 68 ) && deadCounter == 0 && winCounter == 0 ) { //if on spikes
+                Game->PlaySound(64);
+                deadCounter = 60;
+                playerPositionY ++;
+            }
+            else if ( ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] == 60 || Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] == 60 ) && deadCounter == 0 && winCounter == 0 ) { //jumpblock
+                Game->PlaySound(62);
+                theItem->Jump = 4.5;
+                fallingDown = false;
+                if ( Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] == 60 )
+                    Screen->ComboD[ComboAt(playerPositionX+5, playerPositionY+16)] ++;
+                if ( Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] == 60 )
+                    Screen->ComboD[ComboAt(playerPositionX+10, playerPositionY+16)] ++;
+            }
+            else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true ) && Link->PressUp == true && deadCounter == 0 && winCounter == 0 && !Link->Item[124] ) { //if on ground and press up then jump
+                Game->PlaySound(61);
+                theItem->Jump = 3.2;
+                fallingDown = false;
+            }
+
+            if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true ) && Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] == 196 && deadCounter == 0 && winCounter == 0 ) { //collision with umbrella
+                Game->PlaySound(74);
+                Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] = 1;
+                umbrellaState = 1;
+            }
+
+            if ( Screen->isSolid(playerPositionX+3, playerPositionY+16) == true || Screen->isSolid(playerPositionX+12, playerPositionY+16) == true ) { //if on ground
+                if ( umbrellaState == 1 )
+                    umbrellaState = 2;
+                if ( umbrellaState == 3 )
+                    umbrellaState = 0;
+            }
+            else { //not on ground
+                if ( umbrellaState == 2 )
+                    umbrellaState = 3;
+            }
+
+            if ( globalJump == 2000 ) {
+                Game->PlaySound(70);
+                theItem->Jump = 3.2;
+                fallingDown = false;
+                globalJump = theItem->Jump;
+            }
+
+            if ( theItem->Z < 200 && deadCounter == 0 && winCounter == 0 ) { //falling
+                if ( umbrellaState != 0 ) {
+                    if ( umbrellaBool == true )
+                        playerPositionY += 1;
+                    if ( umbrellaBool == true )
+                        umbrellaBool = false;
+                    else if ( umbrellaBool == false )
+                        umbrellaBool = true;
+                }
+                else {
+                    if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+17) == true || Screen->isSolid(playerPositionX+12, playerPositionY+17) == true ) && 200 - theItem->Z > 1 )
+                        playerPositionY += 1;
+                    else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+18) == true || Screen->isSolid(playerPositionX+12, playerPositionY+18) == true ) && 200 - theItem->Z > 2 )
+                        playerPositionY += 2;
+                    else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+19) == true || Screen->isSolid(playerPositionX+12, playerPositionY+19) == true ) && 200 - theItem->Z > 3 )
+                        playerPositionY += 3;
+                    else if ( ( Screen->isSolid(playerPositionX+3, playerPositionY+20) == true || Screen->isSolid(playerPositionX+12, playerPositionY+20) == true ) && 200 - theItem->Z > 4 )
+                        playerPositionY += 4;
+                    else
+                        playerPositionY += 200 - theItem->Z;
+                }
+                theItem->Z = 200;
+                fallingDown = true;
+            }
+
+            if ( playerPositionY >= 168 && deadCounter == 0 && winCounter == 0 ) { //if falldown
+                Game->PlaySound(63);
+                deadCounter = 60;
+            }
+
+            if ( coins == 0 && allCoinsCollected == false ) { //open the door
+                Game->PlaySound(66);
+                allCoinsCollected = true;
+                for(int i=0; i<=175; i++){
+                    if ( Screen->ComboD[i] == 52 ) //door
+                        Screen->ComboD[i] ++;
+                }
+            }
+
+            if ( Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] == 36 && deadCounter == 0 && winCounter == 0 ) { //collision with coin
+                if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+5, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+4, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+10, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+11) == true ) {
+                    Game->PlaySound(65);
+                    coins --;
+                    Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] ++;
+                }
+            }
+
+            if ( Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] == 53 && deadCounter == 0 && winCounter == 0 ) { //collision with door
+                if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+2, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+14, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+13, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+15) == true ) {
+                    Game->PlaySound(67);
+                    winCounter = 60;
+                }
+            }
+            if ( Screen->ComboD[ComboAt(playerPositionX+8, playerPositionY+11)] == 265 && deadCounter == 0 && winCounter == 0 ) { //collision with golden door
+                if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+2, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+14, ComboX(ComboAt(playerPositionX+8, playerPositionY+11))+13, ComboY(ComboAt(playerPositionX+8, playerPositionY+11))+15) == true ) {
+                    Game->PlaySound(67);
+                    winCounter = 180;
+                }
+            }
+
+            if ( ComboAt(playerPositionX+8, playerPositionY+11) == portal1 && deadCounter == 0 && winCounter == 0 && warpState == 0 && inPortal == false ) { //collision with portal 1
+                Game->PlaySound(77);
+                inPortal = true;
+                warpState = 1;
+                playerPositionX = ComboX(portal1);
+                playerPositionY = ComboY(portal1) - 3;
+                if ( playerDirection == 0 )
+                    Screen->ComboD[portal1] = 238;
+                if ( playerDirection == 1 )
+                    Screen->ComboD[portal1] = 230;
+            }
+            if ( warpState == 1 && Screen->ComboD[portal1] == 1 ) {
+                warpState = 2;
+                playerPositionX = ComboX(portal2);
+                playerPositionY = ComboY(portal2) - 3;
+                if ( playerDirection == 0 )
+                    Screen->ComboD[portal2] = 240;
+                if ( playerDirection == 1 )
+                    Screen->ComboD[portal2] = 232;
+            }
+            if ( warpState == 2 && Screen->ComboD[portal2] == 1 ) {
+                warpState = 0;
+            }
+
+            if ( ComboAt(playerPositionX+8, playerPositionY+11) == portal2 && deadCounter == 0 && winCounter == 0 && warpState == 0 && inPortal == false ) { //collision with portal 2
+                Game->PlaySound(77);
+                inPortal = true;
+                warpState = -1;
+                playerPositionX = ComboX(portal2);
+                playerPositionY = ComboY(portal2) - 3;
+                if ( playerDirection == 0 )
+                    Screen->ComboD[portal2] = 238;
+                if ( playerDirection == 1 )
+                    Screen->ComboD[portal2] = 230;
+            }
+            if ( warpState == -1 && Screen->ComboD[portal2] == 1 ) {
+                warpState = -2;
+                playerPositionX = ComboX(portal1);
+                playerPositionY = ComboY(portal1) - 3;
+                if ( playerDirection == 0 )
+                    Screen->ComboD[portal1] = 240;
+                if ( playerDirection == 1 )
+                    Screen->ComboD[portal1] = 232;
+            }
+            if ( warpState == -2 && Screen->ComboD[portal1] == 1 ) {
+                warpState = 0;
+            }
+
+            if ( inPortal == true && ComboAt(playerPositionX+8, playerPositionY+11) != portal1 && ComboAt(playerPositionX+8, playerPositionY+11) != portal2 )
+                inPortal = false;
+
+            if ( (warpState == 1 || warpState == -2) && playerDirection == 0 && umbrellaState != 0 )
+                Screen->FastCombo(4, ComboX(portal1), ComboY(portal1) - 3, 245, 2, OP_OPAQUE);
+            if ( (warpState == 1 || warpState == -2) && playerDirection == 1 && umbrellaState != 0 )
+                Screen->FastCombo(4, ComboX(portal1), ComboY(portal1) - 3, 244, 2, OP_OPAQUE);
+
+            if ( (warpState == 2 || warpState == -1) && playerDirection == 0 && umbrellaState != 0 )
+                Screen->FastCombo(4, ComboX(portal2), ComboY(portal2) - 3, 245, 2, OP_OPAQUE);
+            if ( (warpState == 2 || warpState == -1) && playerDirection == 1 && umbrellaState != 0 )
+                Screen->FastCombo(4, ComboX(portal2), ComboY(portal2) - 3, 244, 2, OP_OPAQUE);
+
+            if ( warpState != 0 ) {
+                theItem->Jump = 0;
+                theItem->Z = 200;
+            }
+
+            if ( Link->PressL == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(73);
+                Game->Save();
+            }
+            if ( Link->PressR == true && deadCounter == 0 && winCounter == 0 && warpState == 0 ) {
+                Game->PlaySound(72);
+                deadCounter = 60;
+            }
+
+            if ( playerDirection == 0 && deadCounter == 0 && winCounter == 0 && warpState == 0 && firstFrames >= 4 ) { //draw the player on layer 4
+                if ( umbrellaState != 0 )
+                    Screen->FastCombo(4, playerPositionX, playerPositionY, 198, 2, OP_OPAQUE);
+                else
+                    Screen->FastCombo(4, playerPositionX, playerPositionY, 49, 2, OP_OPAQUE);
+            }
+            else if ( playerDirection == 1 && deadCounter == 0 && winCounter == 0 && warpState == 0 && firstFrames >= 4 ) {
+                if ( umbrellaState != 0 )
+                    Screen->FastCombo(4, playerPositionX, playerPositionY, 197, 2, OP_OPAQUE);
+                else
+                    Screen->FastCombo(4, playerPositionX, playerPositionY, 48, 2, OP_OPAQUE);
+            }
+            if ( deadCounter > 1 ) {
+                if ( deadCounter == 60 )
+                    Game->Counter[CR_SCRIPT2] ++;
+                if ( playerPositionY <= 160 && this->Data != 50 && deadCounter == 60 ) {
+                    this->Data = 50;
+                    this->X = playerPositionX;
+                    this->Y = playerPositionY;
+                }
+                deadCounter --;
+            }
+            else if ( deadCounter == 1 )
+                this->Data = 888;
+
+            if ( winCounter > 1 )
+                winCounter --;
+            else if ( winCounter == 1 )
+                this->Data = 889;
+
+            if ( winCounter == 120 )
+                Screen->ComboD[105] = 264;
+
+            Link->X = 120; //link is always in the center
+            Link->Y = 80;
+            globalJump = theItem->Jump;
+            if ( firstFrames <= 4 )
+                firstFrames ++;
+            horizontalPosition = playerPositionX;
+            Waitframe();
+        }
+    }
+}
+
+ffc script goomba{
+    void run(int initDir){
+        bool dead = false;
+        int direction = initDir; //0 = left, 1 = right, 2 = none
+        bool speedStop = true;
+        while(true){
+            if ( direction == 0 && speedStop == false )
+                this->X --;
+            if ( direction == 1 && speedStop == false )
+                this->X ++;
+
+            if ( speedStop == false )
+                speedStop = true;
+            else if ( speedStop == true )
+                speedStop = false;
+
+            if ( ( Screen->ComboT[ComboAt(this->X-1, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X-1, this->Y) == true ) && ( Screen->ComboT[ComboAt(this->X+16, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X+16, this->Y) == true ) )
+                direction = 2;
+            else if ( Screen->ComboT[ComboAt(this->X-1, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X-1, this->Y) == true )
+                direction = 1;
+            else if ( Screen->ComboT[ComboAt(this->X+16, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X+16, this->Y) == true )
+                direction = 0;
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+12, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+14, this->Y+2) == true && fallingDown == true && deadCounter == 0 && winCounter == 0 ) {
+                dead = true;
+                globalJump = 2000;
+            }
+            else if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+14, this->Y+14) == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+
+            if ( dead == true ) {
+                this->Data ++;
+                Waitframes(60);
+                this->Data = 1;
+                Waitframe();
+                Quit();
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script goombaGreen{
+    void run(){
+        Waitframe();
+        bool dead = false;
+        int direction = 2; //0 = left, 1 = right, 2 = none
+        bool speedStop = true;
+        while(true){
+            if ( direction == 0 && speedStop == false )
+                this->X --;
+            if ( direction == 1 && speedStop == false )
+                this->X ++;
+
+            if ( speedStop == false )
+                speedStop = true;
+            else if ( speedStop == true )
+                speedStop = false;
+
+            if ( playerPositionX < this->X )
+                direction = 0;
+            if ( playerPositionX > this->X )
+                direction = 1;
+            if ( playerPositionX == this-> X )
+                direction = 2;
+
+            if ( ( Screen->ComboT[ComboAt(this->X-1, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X-1, this->Y) == true ) && ( Screen->ComboT[ComboAt(this->X+16, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X+16, this->Y) == true ) )
+                direction = 2;
+            else if ( ( Screen->ComboT[ComboAt(this->X-1, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X-1, this->Y) == true ) && direction == 0 )
+                direction = 2;
+            else if ( ( Screen->ComboT[ComboAt(this->X+16, this->Y+16)] != CT_SCRIPT1 || Screen->isSolid(this->X+16, this->Y) == true ) && direction == 1 )
+                direction = 2;
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+12, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+14, this->Y+2) == true && fallingDown == true && deadCounter == 0 && winCounter == 0 ) {
+                dead = true;
+                globalJump = 2000;
+            }
+            else if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+14, this->Y+14) == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+
+            if ( dead == true ) {
+                this->Data ++;
+                Waitframes(60);
+                this->Data = 1;
+                Waitframe();
+                Quit();
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script trap{
+    void run(int initDir, int startwait){
+        WaitframesStartWait(startwait, this->X, this->Y);
+        int direction = initDir; //0 = up, 1 = right, 2 = down, 3 = left
+        if ( direction == 0 ) {
+            this->Vy = -1;
+            this->Ay = -0.05;
+        }
+        if ( direction == 1 ) {
+            this->Vx = 1;
+            this->Ax = 0.05;
+        }
+        if ( direction == 2 ) {
+            this->Vy = 1;
+            this->Ay = 0.05;
+        }
+        if ( direction == 3 ) {
+            this->Vx = -1;
+            this->Ax = -0.05;
+        }
+        int waitframes = 0;
+        while(true){
+            if ( Screen->isSolid(this->X, this->Y-1) == true && direction == 0 ) {
+                Game->PlaySound(57);
+                this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+                this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+                direction = 2;
+                waitframes = 60;
+                this->Vy = 0;
+                this->Ay = 0;
+            }
+            if ( Screen->isSolid(this->X+16, this->Y) == true && direction == 1 ) {
+                Game->PlaySound(57);
+                this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+                this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+                direction = 3;
+                waitframes = 60;
+                this->Vx = 0;
+                this->Ax = 0;
+            }
+            if ( Screen->isSolid(this->X, this->Y+16) == true && direction == 2 ) {
+                Game->PlaySound(57);
+                this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+                this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+                direction = 0;
+                waitframes = 60;
+                this->Vy = 0;
+                this->Ay = 0;
+            }
+            if ( Screen->isSolid(this->X-1, this->Y) == true && direction == 3 ) {
+                Game->PlaySound(57);
+                this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+                this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+                direction = 1;
+                waitframes = 60;
+                this->Vx = 0;
+                this->Ax = 0;
+            }
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+14, this->Y+14) == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+
+            if ( waitframes > 0 ) {
+                waitframes --;
+                if ( waitframes == 0 && direction == 0 ) {
+                    this->Vy = -1;
+                    this->Ay = -0.05;
+                }
+                if ( waitframes == 0 && direction == 1 ) {
+                    this->Vx = 1;
+                    this->Ax = 0.05;
+                }
+                if ( waitframes == 0 && direction == 2 ) {
+                    this->Vy = 1;
+                    this->Ay = 0.05;
+                }
+                if ( waitframes == 0 && direction == 3 ) {
+                    this->Vx = -1;
+                    this->Ax = -0.05;
+                }
+            }
+            Waitframe();
+        }
+    }
+}
+
+void WaitframesStartWait(int startwait, int thisx, int thisy){
+    int startWait = startwait;
+    while(startWait > 0){
+        if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, thisx+1, thisy+1, thisx+14, thisy+14) == true && deadCounter == 0 && winCounter == 0 ) {
+            Game->PlaySound(64);
+            deadCounter = 60;
+        }
+        startWait --;
+        Waitframe();
+    }
+}
+
+ffc script theFinalBoss{
+    void run(){
+        Game->PlayMIDI(2);
+        Waitframes(60);
+        this->X = 136;
+        this->Y = -32;
+        int counterForEverything = 0;
+        bool dead = false;
+        int direction = 2; //0 = right, 1 = left, 2 = none
+        bool speedStop = true;
+        int falldown = 2;
+        bool firstfalldown = true;
+        int hitframes = 0;
+        int bossHP = 40;
+        int upfly = 0;
+        int fireballAttackA = 0;
+        int fireballAttackB = 0;
+        int fireballAttackC = 0;
+        int fireballAttackD = 0;
+        fireLeft = 0;
+        fireRight = 0;
+        while(true){
+            if ( direction == 0 && speedStop == false )
+                this->X --;
+            if ( direction == 1 && speedStop == false )
+                this->X ++;
+
+            if ( speedStop == false )
+                speedStop = true;
+            else if ( speedStop == true )
+                speedStop = false;
+
+            if ( falldown == 2 ) {
+                Game->PlaySound(63);
+                falldown = 1;
+                if ( firstfalldown == false ) {
+                    firstfalldown = true;
+                    this->X = Rand(72, 160);
+                    this->Y = -32;
+                }
+                this->Vy = 0.5;
+                this->Ay = 0.025;
+            }
+            if ( falldown == 1 && this->Y >= 89 ) {
+                this->Y = 89;
+                this->Vy = 0;
+                this->Ay = 0;
+                Game->PlaySound(16);
+                falldown = 0;
+                direction = Choose(0, 1);
+                if ( bossHP <= 20 ) {
+                    fireLeft = this->X;
+                    fireRight = this->X;
+                }
+            }
+
+            if ( Screen->ComboT[ComboAt(this->X-1, this->Y+24)] != CT_SCRIPT1 && direction == 0 )
+                direction = 1;
+            else if ( Screen->ComboT[ComboAt(this->X+24, this->Y+24)] != CT_SCRIPT1 && direction == 1 )
+                direction = 0;
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+12, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+22, this->Y+2) == true && fallingDown == true && deadCounter == 0 && winCounter == 0 && (direction == 0 || direction == 1) && hitframes == 0 ) {
+                Game->PlaySound(15);
+                bossHP --;
+                if ( bossHP == 35 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 30 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 25 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 20 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 15 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 10 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 5 ) {
+                    hitframes = -1;
+                    direction = 2;
+                    upfly = 60;
+                }
+                else if ( bossHP == 0 ) {
+                    dead = true;
+                    direction = 2;
+                }
+                else
+                    hitframes = 20;
+                globalJump = 2000;
+            }
+            else if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+22, this->Y+22) == true && deadCounter == 0 && winCounter == 0 && hitframes == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+
+            if ( hitframes == 0 && this->Data == 185 )
+                this->Data = 184;
+            if ( hitframes > 0 && this->Data == 184 )
+                this->Data = 185;
+            if ( hitframes > 0 )
+                hitframes --;
+            if ( hitframes == -1 && this->Data != 185 )
+                this->Data = 185;
+
+            if ( hitframes == -1 && this->Y <= 32 ) {
+                this->Data = 184;
+                hitframes = 0;
+            }
+
+            if ( upfly > 2 )
+                upfly --;
+            if ( upfly == 2 ) {
+                upfly = 1;
+                this->Vy = -2.5;
+                this->Ay = 0.025;
+            }
+            if ( upfly == 1 && this->Y <= -30 ) {
+                upfly = 0;
+                this->Y = -32;
+                this->Vy = 0;
+                this->Ay = 0;
+                counterForEverything = Choose(1, 2, 3);
+                if ( bossHP == 5 )
+                    counterForEverything = 4;
+                if ( counterForEverything == 1 )
+                    fireballAttackA = 1;
+                else if ( counterForEverything == 2 )
+                    fireballAttackB = 1;
+                else if ( counterForEverything == 3 )
+                    fireballAttackC = 1;
+                else if ( counterForEverything == 4 )
+                    fireballAttackD = 1;
+            }
+
+            if ( fireballAttackA >= 1 && fireballAttackA < 60 )
+                fireballAttackA ++;
+            if ( fireballAttackA == 60 ) {
+                Game->PlaySound(40);
+                FireBall(150, 0, Rand(16, 128));
+                fireballAttackA = 61;
+            }
+            if ( fireballAttackA >= 61 && fireballAttackA < 90 )
+                fireballAttackA ++;
+            if ( fireballAttackA == 90 ) {
+                Game->PlaySound(40);
+                FireBall(150, 240, Rand(16, 128));
+                fireballAttackA = 91;
+            }
+            if ( fireballAttackA >= 91 && fireballAttackA < 120 )
+                fireballAttackA ++;
+            if ( fireballAttackA == 120 ) {
+                Game->PlaySound(40);
+                FireBall(150, 0, Rand(16, 128));
+                fireballAttackA = 121;
+            }
+            if ( fireballAttackA >= 121 && fireballAttackA < 150 )
+                fireballAttackA ++;
+            if ( fireballAttackA == 150 ) {
+                Game->PlaySound(40);
+                FireBall(150, 240, Rand(16, 128));
+                fireballAttackA = 151;
+            }
+            if ( fireballAttackA >= 151 )
+                fireballAttackA ++;
+            if ( fireballAttackA == 331 ) {
+                fireballAttackA = 0;
+                falldown = 2;
+            }
+
+            if ( fireballAttackB >= 1 && fireballAttackB < 60 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 60 ) {
+                Game->PlaySound(40);
+                FireBall(150, Rand(80, 112), 0);
+                FireBall(150, Rand(128, 160), 0);
+                fireballAttackB = 61;
+            }
+            if ( fireballAttackB >= 61 && fireballAttackB < 120 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 120 ) {
+                Game->PlaySound(40);
+                FireBall(150, Rand(80, 112), 0);
+                FireBall(150, Rand(128, 160), 0);
+                fireballAttackB = 121;
+            }
+            if ( fireballAttackB >= 121 && fireballAttackB < 180 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 180 ) {
+                Game->PlaySound(40);
+                FireBall(150, Rand(80, 112), 0);
+                FireBall(150, Rand(128, 160), 0);
+                fireballAttackB = 181;
+            }
+            if ( fireballAttackB >= 181 && fireballAttackB < 240 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 240 ) {
+                Game->PlaySound(40);
+                FireBall(150, Rand(80, 112), 0);
+                FireBall(150, Rand(128, 160), 0);
+                fireballAttackB = 241;
+            }
+            if ( fireballAttackB >= 241 && fireballAttackB < 300 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 300 ) {
+                Game->PlaySound(40);
+                FireBall(150, Rand(80, 112), 0);
+                FireBall(150, Rand(128, 160), 0);
+                fireballAttackB = 301;
+            }
+            if ( fireballAttackB >= 301 )
+                fireballAttackB ++;
+            if ( fireballAttackB == 481 ) {
+                fireballAttackB = 0;
+                falldown = 2;
+            }
+
+            if ( fireballAttackC >= 1 && fireballAttackC < 120 )
+                fireballAttackC ++;
+            if ( fireballAttackC == 120 ) {
+                Game->PlaySound(40);
+                FireBall(150, 0, 0);
+                FireBall(150, 240, 0);
+                FireBall(150, 0, 160);
+                FireBall(150, 240, 160);
+                fireballAttackC = 121;
+            }
+            if ( fireballAttackC >= 121 )
+                fireballAttackC ++;
+            if ( fireballAttackC == 241 ) {
+                fireballAttackC = 0;
+                falldown = 2;
+            }
+
+            if ( fireballAttackD >= 1 && fireballAttackD < 120 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 120 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 121;
+            }
+            if ( fireballAttackD >= 121 && fireballAttackD < 150 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 150 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 151;
+            }
+            if ( fireballAttackD >= 151 && fireballAttackD < 180 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 180 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 181;
+            }
+            if ( fireballAttackD >= 181 && fireballAttackD < 210 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 210 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 211;
+            }
+            if ( fireballAttackD >= 211 && fireballAttackD < 240 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 240 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 241;
+            }
+            if ( fireballAttackD >= 241 && fireballAttackD < 270 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 270 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 271;
+            }
+            if ( fireballAttackD >= 271 && fireballAttackD < 300 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 300 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 301;
+            }
+            if ( fireballAttackD >= 301 && fireballAttackD < 330 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 330 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 331;
+            }
+            if ( fireballAttackD >= 331 && fireballAttackD < 360 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 360 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 361;
+            }
+            if ( fireballAttackD >= 361 && fireballAttackD < 390 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 390 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 391;
+            }
+            if ( fireballAttackD >= 391 && fireballAttackD < 420 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 420 ) {
+                Game->PlaySound(40);
+                FireBall(160, Rand(64, 176), 0);
+                fireballAttackD = 421;
+            }
+            if ( fireballAttackD >= 421 )
+                fireballAttackD ++;
+            if ( fireballAttackD == 540 ) {
+                fireballAttackD = 0;
+                falldown = 2;
+            }
+
+            if ( dead == true ) {
+                Game->PlayMIDI(0);
+                this->Data = 186;
+                Waitframes(120);
+                this->X = -32;
+                this->Y = -32;
+                Waitframes(60);
+                for(int invradius=256; invradius>0; invradius-=8){
+                    InvertedCircle(0, 6, 144+8, 48+8, invradius, 1, 1);
+                    Waitframe();
+                }
+                for(int radius=256; radius>0; radius-=10){
+                    Screen->FastCombo(1, 144, 48, 264, 2, OP_OPAQUE);
+                    Screen->Circle(6, 144+8, 48+8, radius, 1, 1, 144+8, 48+8, 1, true, OP_OPAQUE);
+                    Waitframe();
+                }
+                for(int count=0; count<60; count++){
+                    Screen->FastCombo(1, 144, 48, 264, 2, OP_OPAQUE);
+                    Waitframe();
+                }
+                for(int ypos=48; ypos<96; ypos++){
+                    Screen->FastCombo(1, 144, ypos, 264, 2, OP_OPAQUE);
+                    Waitframe();
+                }
+                Screen->ComboD[105] = 264;
+                Waitframes(60);
+                Game->PlaySound(66);
+                Screen->ComboD[105] ++;
+                Waitframe();
+                Quit();
+            }
+            Waitframe();
+        }
+    }
+}
+
+void InvertedCircle(int bitmapID, int layer, int x, int y, int radius, int scale, int fillcolor){
+    Screen->SetRenderTarget(bitmapID);     //Set the render target to the bitmap.
+    Screen->Rectangle(layer, 0, 0, 256, 176, fillcolor, 1, 0, 0, 0, true, 128); //Cover the screen
+    Screen->Circle(layer, x, y, radius, 0, scale, 0, 0, 0, true, 128); //Draw a transparent circle.
+    Screen->SetRenderTarget(RT_SCREEN); //Set the render target back to the screen.
+    Screen->DrawBitmap(layer, bitmapID, 0, 0, 256, 176, 0, 56, 256, 176, 0, true); //Draw the bitmap
+}
+
+void FireBall(int speed, int posx, int posy) {
+                eweapon fireball = CreateEWeaponAt(EW_FIREBALL, posx, posy);
+                fireball->Damage = 4;
+                fireball->Angular = true;
+                fireball->Angle = DegtoRad(Angle(posx,posy,playerPositionX,playerPositionY));
+                fireball->Dir = RadianAngleDir8(WrapAngle(fireball->Angle));
+                fireball->Step = speed;
+}
+
+ffc script fireLeft{
+    void run(){
+        fireLeft = 0;
+        fireRight = 0;
+        while(true){
+            if ( fireLeft != 0 ) {
+                Game->PlaySound(13);
+                this->X = fireLeft;
+                this->Y = 97;
+                fireLeft = 0;
+                this->Vx = -1;
+            }
+            if ( this->X <= -32 )
+                this->Vx = 0;
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+1, this->Y+1, this->X+15, this->Y+14) == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script fireRight{
+    void run(){
+        fireLeft = 0;
+        fireRight = 0;
+        while(true){
+            if ( fireRight != 0 ) {
+                this->X = fireRight;
+                this->Y = 97;
+                fireRight = 0;
+                this->Vx = 1;
+            }
+            if ( this->X >= 272 )
+                this->Vx = 0;
+
+            if ( RectCollision(playerPositionX+3, playerPositionY+7, playerPositionX+12, playerPositionY+15, this->X+16, this->Y+1, this->X+30, this->Y+14) == true && deadCounter == 0 && winCounter == 0 ) {
+                Game->PlaySound(64);
+                deadCounter = 60;
+            }
+            Waitframe();
+        }
+    }
+}
+
+ffc script giveItem{
+    void run(int i){
+        Link->Item[i] = true;
+    }
+}
+
+ffc script goalisnear{
+    void run(){
+        Waitframes(240);
+        this->Data ++;
+        Waitframes(60);
+        this->Data ++;
+    }
+}
+
+ffc script save{
+    void run(){
+        while(true){
+            if ( Link->PressL == true ) {
+                Game->PlaySound(73);
+                Game->Save();
+                Waitframe();
+                Game->End();
+            }
+            Waitframe();
+        }
+    }
+}

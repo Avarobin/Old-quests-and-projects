@@ -1,0 +1,154 @@
+const int QUESTRULE_VERYFASTSCROLLING = 1; //Set this to 1 if the Very Fast Scrolling quest rule is enabled
+
+
+
+void ScrollingDraws_Init(){
+	GV[SD_SAVELASTSCREEN] = Game->GetCurScreen();
+	GV[SD_SCROLLTIMER] = -1; 
+	GV[SD_NSCX] = -1000;
+	GV[SD_NSCY] = -1000;
+	GV[SD_OSCX] = 0;
+	GV[SD_OSCY] = 0;
+}
+
+void ScrollingDraws_Update(){
+	if(Link->Action==LA_SCROLLING){
+		//Try to get the direction the screen is scrolling based on the position of the last screen visited
+		if(Game->GetCurScreen()==GV[SD_LASTSCREEN]-16)
+			GV[SD_SCROLLDIR] = DIR_UP;
+		else if(Game->GetCurScreen()==GV[SD_LASTSCREEN]+16)
+			GV[SD_SCROLLDIR] = DIR_DOWN;
+		else if(Game->GetCurScreen()==GV[SD_LASTSCREEN]-1)
+			GV[SD_SCROLLDIR] = DIR_LEFT;
+		else if(Game->GetCurScreen()==GV[SD_LASTSCREEN]+1)
+			GV[SD_SCROLLDIR] = DIR_RIGHT;	
+			
+		//If Link just started scrolling, reset the timer
+		if(GV[SD_SCROLLTIMER]==-1){
+			GV[SD_SCROLLTIMER] = 0;
+		}
+		
+		//Change max timer frames to account for Fast Scrolling
+		int framesX = 64;
+		int framesY = 44;
+		if(QUESTRULE_VERYFASTSCROLLING){
+			framesX = 16;
+			framesY = 11;
+		}
+		
+		//There's a few extra frames after the screen stops visibly scrolling. Clamp the timer to accommodate.
+		int i;
+		if(GV[SD_SCROLLDIR]==DIR_UP||GV[SD_SCROLLDIR]==DIR_DOWN)
+			i = Clamp(GV[SD_SCROLLTIMER], 0, framesY);
+		else
+			i = Clamp(GV[SD_SCROLLTIMER], 0, framesX);
+			
+		int newScreenX;
+		int newScreenY;
+		int oldScreenX;
+		int oldScreenY;
+		
+		int incrementX = 256/framesX;
+		int incrementY = 176/framesY;
+		
+		//Set screen positions based on the timer
+		if(GV[SD_SCROLLDIR]==DIR_UP){
+			newScreenX = 0;
+			newScreenY = -176+incrementY*i;
+			oldScreenX = 0;
+			oldScreenY = incrementY*i;
+		}
+		else if(GV[SD_SCROLLDIR]==DIR_DOWN){
+			newScreenX = 0;
+			newScreenY = 176-incrementY*i;
+			oldScreenX = 0;
+			oldScreenY = -incrementY*i;
+		}
+		else if(GV[SD_SCROLLDIR]==DIR_LEFT){
+			newScreenX = -256+incrementX*i;
+			newScreenY = 0;
+			oldScreenX = incrementX*i;
+			oldScreenY = 0;
+		}
+		else if(GV[SD_SCROLLDIR]==DIR_RIGHT){
+			newScreenX = 256-incrementX*i;
+			newScreenY = 0;
+			oldScreenX = -incrementX*i;
+			oldScreenY = 0;
+		}
+		
+		GV[SD_NSCX] = newScreenX;
+		GV[SD_NSCY] = newScreenY;
+		GV[SD_OSCX] = oldScreenX;
+		GV[SD_OSCY] = oldScreenY;
+		
+		if(GV[SD_SCROLLTIMER]>=0)
+			GV[SD_SCROLLTIMER]++;
+	}
+	else{ //Globals are reset when Link isn't scrolling
+		GV[SD_SAVELASTSCREEN] = Game->GetCurScreen();
+		GV[SD_SCROLLTIMER] = -1;
+		GV[SD_NSCX] = -1000;
+		GV[SD_NSCY] = -1000;
+		GV[SD_OSCX] = 0;
+		GV[SD_OSCY] = 0;
+	}
+	
+	GV[SD_LASTSCREEN] = Game->GetCurScreen();
+}
+
+//Returns the X position of the top left corner of the old screen when scrolling.
+//When not scrolling, returns 0.
+int ScrollingOldX(){
+	return GV[SD_OSCX];
+}
+//Returns the Y position of the top left corner of the old screen when scrolling.
+//When not scrolling, returns 0.
+int ScrollingOldY(){
+	return GV[SD_OSCY];
+}
+
+//Returns the X position of the top left corner of the new screen when scrolling.
+//When not scrolling, returns -1000.
+int ScrollingNewX(){
+	return GV[SD_NSCX];
+}
+//Returns the Y position of the top left corner of the new screen when scrolling.
+//When not scrolling, returns -1000.
+int ScrollingNewY(){
+	return GV[SD_NSCY];
+}
+//Returns Link's X position when scrolling.
+//When not scrolling, returns Link's X position on the screen.
+int ScrollingLinkX(){
+	if(Link->Action!=LA_SCROLLING)
+		return Link->X;
+	return GV[SD_NSCX]+Link->X;
+}
+//Returns Link's Y position when scrolling.
+//When not scrolling, returns Link's Y position on the screen.
+int ScrollingLinkY(){
+	if(Link->Action!=LA_SCROLLING)
+		return Link->Y;
+	return GV[SD_NSCY]+Link->Y;
+}
+
+global script ScrollingDraws_Slot2{
+	void run(){
+		ScrollingDraws_Init();
+		while(true){
+			ScrollingDraws_Update();
+			Waitdraw();
+			Waitframe();
+		}
+	}
+}
+
+//Function for testing the drawing positions
+void ScrollingDraws_TestFunction(){
+	if(Link->Action==LA_SCROLLING){
+		Screen->FastTile(6, ScrollingLinkX(), ScrollingLinkY(), Link->Tile, 8, 128);
+		Screen->FastTile(6, ScrollingOldX(), ScrollingOldY(), Link->Tile, 6, 128);
+		Screen->FastTile(6, ScrollingNewX(), ScrollingNewY(), Link->Tile, 7, 128);
+	}
+}
