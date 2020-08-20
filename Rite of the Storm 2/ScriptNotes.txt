@@ -1,0 +1,7 @@
+LW_SCRIPT1 = wind
+LW_SCRIPT2 = splitting wind
+
+CT_SCRIPT1 = torch
+
+Flag 98 on layer 2 = leaf pile
+Flag 99 on layer 2 = snow pile

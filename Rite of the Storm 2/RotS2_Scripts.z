@@ -1,0 +1,2480 @@
+import "std.zh"
+import "string.zh"
+import "Rite of the Storm 2/ffcscript.zh"
+//import "Rite of the Storm 2/scrollingDraws.zh"
+import "Rite of the Storm 2/LinkMovement.zh"
+import "Rite of the Storm 2/ghost.zh"
+import "Rite of the Storm 2/RotS2_Functions.zh"
+
+const int CMB_HardLava = 88;
+const int CMB_Water = 103;
+const int CMB_LeverOff = 162; //followed by on
+const int CMB_StepTriggerUp = 164; //followed by down
+const int CMB_SilverCrystalSwitch = 166; //followed by gold
+const int CMB_LockBlock = 168;
+const int CMB_LockBlockCopycat = 170;
+const int CMB_RectanglePillarUp = 186; //followed by down
+const int CMB_StairsA = 203;
+const int CMB_FireTorch = 204; //normal, followed by constant
+const int CMB_IceTorch = 206; //normal, followed by constant
+const int CMB_LightningTorch = 208; //normal, followed by constant
+const int CMB_JinxTorch = 210; //normal, followed by constant
+const int CMB_EmptyTorch = 212; //normal, followed by constant
+const int CMB_SilverFanOff = 220; //followed by on
+const int CMB_GoldFanOff = 222; //followed by on
+const int CMB_NormalFanOff = 224; //followed by on
+const int CMB_LeafStart = 288;
+const int CMB_SnowStart = 304;
+const int CMB_ShallowWaterMin = 99; //range to cover all shallow water combos
+const int CMB_ShallowWaterMax = 147;
+const int CMB_PoisonVineA = 411;
+const int CMB_PoisonVineB = 415;
+const int CMB_Snowball = 427;
+const int CMB_AWarpA = 516;
+const int CMB_AWarpB = 517;
+const int CMB_AWarpC = 518;
+const int CMB_AWarpD = 519;
+const int CMB_InteractionIcon = 520;
+const int CMB_FanBlockTopOff = 521;
+const int CMB_ScreenFreezeA = 565;
+const int CMB_ScreenFreezeB = 566;
+
+const int I_TornadoRod = 143;
+const int I_TornadoRod2 = 144;
+const int I_SplittingWind = 145;
+const int I_SplittingWind2 = 146;
+const int I_RedirectableWind = 147;
+const int I_RedirectableWind2 = 148;
+const int I_Flight = 149;
+const int I_Flight2 = 150;
+
+const int WindMisc_LinksWind = 0;
+const int WindMisc_Type = 1; //0 = normal, 1 = fire, 2 = ice, 3 = lightning, 4 = jinx
+const int WindMisc_OnWall = 2;
+const int WindMisc_LinkCarry = 3;
+const int WindMisc_IgnorePos = 4;
+const int WindMisc_Redirectable = 5;
+const int WindMisc_MirrorDelay = 6;
+const int WindMisc_Elemental = 7; //0 = none, 1 = fire, 2 = ice, 3 = lightning, 4 = jinx
+const int WindMisc_ElementalVar = 8;
+
+int MooshPit[16];
+const int MP_LASTX = 0;
+const int MP_LASTY = 1;
+const int MP_LASTDMAP = 2;
+const int MP_LASTSCREEN = 3;
+const int MP_ENTRYX = 4;
+const int MP_ENTRYY = 5;
+const int MP_ENTRYDMAP = 6;
+const int MP_ENTRYSCREEN = 7;
+const int MP_FALLX = 8;
+const int MP_FALLY = 9;
+const int MP_FALLTIMER = 10;
+const int MP_FALLSTATE = 11;
+const int MP_DAMAGETYPE = 12;
+const int MP_SLIDETIMER = 13;
+
+const int CT_HOLELAVA = 128; //Combo type for pits (No Ground Enemies by default)
+const int CF_LAVA = -1; //Combo flag marking pits as lava (Script 1 by default)
+
+const int SPR_FALLHOLE = 88; //Sprite for Link falling in a hole
+const int SPR_FALLLAVA = 99; //Sprite for Link falling in lava
+
+const int SFX_FALLHOLE = 61; //Sound for falling in a hole
+const int SFX_FALLLAVA = 0; //Sound for falling in lava
+
+const int DAMAGE_FALLHOLE = 8; //How much damage pits deal
+const int DAMAGE_FALLLAVA = 8; //How much damage lava deals
+
+const int FFC_MOOSHPIT_AUTOWARPA = 32; //FFC that turns into an auto side warp combo when you fall in a pit
+const int SF_MISC_MOOSHPITWARP = 2; //Number of the screen flag under the Misc. section that makes pits warp (Script 1 by default)
+									//All pit warps use Side Warp A
+
+const int MOOSHPIT_MIN_FALL_TIME = 60; //Minimum time for the pit's fall animation, to prevent repeated falling in pits
+const int MOOSHPIT_EXTRA_FALL_TIME = 0; //Extra frames at the end of the falling animation before Link respawns
+
+//Width and height of Link's hitbox for colliding with pits
+const int MOOSHPIT_LINKHITBOXWIDTH = 2;
+const int MOOSHPIT_LINKHITBOXHEIGHT = 2;
+
+//Width and height of Link's hitbox for colliding with pits/lava in sideview
+const int MOOSHPIT_SIDEVIEW_LINKHITBOXWIDTH = 2;
+const int MOOSHPIT_SIDEVIEW_LINKHITBOXHEIGHT = 2;
+
+const int MOOSHPIT_NO_GRID_SNAP = 0; //Set to 1 to prevent Link's falling sprite from snapping to the combo grid.
+
+const int MOOSHPIT_ENABLE_SLIDEYPITS = 0; //Set to 1 if Link should slide into pits he's partially on
+const int MOOSHPIT_SLIDEYPIT_FREQ = 3; //Link will be pushed into slideypits every 1/n frames
+const int MOOSHPIT_SLIDEYPIT_MAXTIME = 20; //Link will be pushed into slideypits more intensely after n frames
+const int MOOSHPIT_SLIDEYPIT_ACCELFREQ = 8; //How often Link accelerates when falling in the pit
+						
+const int MOOSHPIT_NO_MOVE_WHILE_FALLING = 1; //Set to 1 if you don't want Link able to move while falling
+
+int MapCrystalState[100];
+
+//global variables
+int GV[1000];
+const int LinkInWind = 0;
+const int RodStabFrames = 1; //-1 = hold, 1-2 = retreat, 3-9 = stab, 10-14 = nothing
+const int RodAttack = 2; //1-4 = ABLR
+const int RodCD = 3;
+const int StepTriggerActivate = 4;
+const int ScriptLinkHP = 5;
+const int LinkFrozen = 6;
+const int LinkOnShallow = 7;
+const int OnRaft = 8;
+const int RaftMove = 9;
+const int MinibossPlantsKilled = 10;
+const int LockBlockScreenState = 11;
+const int ItemAppearPoof = 12;
+const int WaitForEnemySpawn = 13;
+const int LeversOnScreen = 14;
+const int LinkSlowFrozen = 15;
+const int SlowFrozenTimer = 16;
+const int SlowFrozenX = 17;
+const int SlowFrozenY = 18;
+const int GamePaused = 19;
+const int HoldUpPause = 20;
+
+item script TearPickup{
+	void run(){
+		Game->Counter[CR_SCRIPT1] ++;
+	}
+}
+
+global script Active{
+	void run(){
+		//ScrollingDraws_Init();
+		StartGhostZH();
+		MooshPit_Init();
+		LinkMovement_Init();
+		
+		int LinksCurrDMap = -1;
+		int LinksCurrScreen = -1;
+		
+		Link->CollDetection = true;
+		Link->DrawXOffset = 0;
+		
+		GV[StepTriggerActivate] = -1;
+		GV[ScriptLinkHP] = -1;
+		GV[LinkFrozen] = 0;
+		GV[LinkSlowFrozen] = 0;
+		
+		ffc FFC32;
+		lweapon LinkCarriedSprite;
+		lweapon TornadoRodSprite;
+		
+		int DegreeSpeed4;
+		int StepTriggers[30]; //0 = how many onscreen, >0 = -1 or position
+		lweapon SplittingMiniWind[8];
+		
+		int LeafSnowStoredFlag[176];
+		
+		while(true){
+			//ScrollingDraws_Update();
+			UpdateGhostZH1();
+			MooshPit_Update();
+			
+			GV[RaftMove] = 0;
+			
+			if ( Link->Action != LA_SCROLLING
+			&& LinksCurrDMap == Game->GetCurDMap() && LinksCurrScreen == Game->GetCurDMapScreen() && GV[GamePaused] == 0 ) { //global screen scripts
+				if ( Link->Action == LA_HOLD2LAND ) {
+					NoActionFull();
+					GV[HoldUpPause] = 1;
+					GV[GamePaused] = 1;
+					ffc FFC31 = Screen->LoadFFC(31);
+					FFC31->Data = CMB_ScreenFreezeA;
+					FFC32->Data = CMB_ScreenFreezeB;
+					SuspendGhostZHScripts();
+				}
+				
+				DegreeSpeed4 += 4;
+				DegreeSpeed4 %= 360;
+				
+				GV[StepTriggerActivate] = -1;
+				
+				int SplittingWindOnScreen;
+				bool RedirectableWindOnScreen;
+				for (int i = Screen->NumLWeapons(); i > 0; i--) { //for all lweapons
+					lweapon wpn = Screen->LoadLWeapon(i);
+					int WpnPos = ComboAt(wpn->X+8, wpn->Y+8);
+					if ( wpn->ID == LW_SCRIPT1 ) {
+						if ( wpn->Misc[WindMisc_OnWall] > 0 ) { //initial OnWall from fans
+							if ( WpnPos != wpn->Misc[WindMisc_OnWall] )
+								wpn->Misc[WindMisc_OnWall] = 0;
+						}
+						
+						if ( WpnPos != wpn->Misc[WindMisc_IgnorePos] )
+							wpn->Misc[WindMisc_IgnorePos] = 0;
+						
+						//check solid objects
+						if ( wpn->Misc[WindMisc_OnWall] == 0 && wpn->Misc[WindMisc_Elemental] == 0 ) {
+							if ( WpnPos != wpn->Misc[WindMisc_IgnorePos] ) { //ignore the ignore pos
+								if ( Screen->isSolid(wpn->X+8, wpn->Y+8) ) { //on solid
+									if ( Screen->ComboT[WpnPos] == CT_SCRIPT1 ) { //torch
+										WindTorchInteraction(wpn);
+									}
+									else if ( Screen->ComboT[WpnPos] == CT_MIRRORBACKSLASH || Screen->ComboT[WpnPos] == CT_MIRRORSLASH ) { //mirror
+										wpn->Misc[WindMisc_MirrorDelay] = 4;
+										wpn->Misc[WindMisc_IgnorePos] = WpnPos;
+									}
+									else if ( Screen->ComboD[WpnPos] == CMB_Snowball && wpn->Misc[WindMisc_Type] == 1 ) {
+										Game->PlaySound(69);
+										Screen->ComboD[WpnPos] = 0;
+										lweapon puff = CreateLWeaponAt(LW_SPARKLE, ComboX(WpnPos), ComboY(WpnPos));
+										puff->UseSprite(97);
+										puff->DrawYOffset = 0;
+										wpn->DeadState = WDS_DEAD;
+									}
+									else
+										wpn->DeadState = WDS_DEAD;
+								}
+							}
+							
+							if ( Screen->MovingBlockX != -1 ) {
+								if ( PointWithinRect(wpn->X+8, wpn->Y+8, Screen->MovingBlockX, Screen->MovingBlockY, Screen->MovingBlockX+15, Screen->MovingBlockY+15) ) {
+									if ( wpn->Misc[WindMisc_OnWall] == 0 )
+										wpn->DeadState = WDS_DEAD;
+								}
+							}
+						}
+						
+						if ( wpn->Misc[WindMisc_MirrorDelay] > 0 ) { //mirror the wind
+							wpn->Misc[WindMisc_MirrorDelay] --;
+							if ( wpn->Misc[WindMisc_MirrorDelay] == 0 ) {
+								if ( Screen->ComboT[WpnPos] == CT_MIRRORBACKSLASH ) {
+									if ( wpn->Dir == DIR_UP )
+										wpn->Dir = DIR_LEFT;
+									else if ( wpn->Dir == DIR_DOWN )
+										wpn->Dir = DIR_RIGHT;
+									else if ( wpn->Dir == DIR_LEFT )
+										wpn->Dir = DIR_UP;
+									else if ( wpn->Dir == DIR_RIGHT )
+										wpn->Dir = DIR_DOWN;
+									wpn->X = ComboX(WpnPos);
+									wpn->Y = ComboY(WpnPos);
+									wpn->Misc[WindMisc_Redirectable] = 0;
+								}
+								if ( Screen->ComboT[WpnPos] == CT_MIRRORSLASH ) {
+									if ( wpn->Dir == DIR_UP )
+										wpn->Dir = DIR_RIGHT;
+									else if ( wpn->Dir == DIR_DOWN )
+										wpn->Dir = DIR_LEFT;
+									else if ( wpn->Dir == DIR_LEFT )
+										wpn->Dir = DIR_DOWN;
+									else if ( wpn->Dir == DIR_RIGHT )
+										wpn->Dir = DIR_UP;
+									wpn->X = ComboX(WpnPos);
+									wpn->Y = ComboY(WpnPos);
+									wpn->Misc[WindMisc_Redirectable] = 0;
+								}
+							}
+						}
+						
+						//catch link
+						if ( GV[LinkInWind] == 0 && wpn->Misc[WindMisc_LinksWind] == 0 && wpn->Misc[WindMisc_Type] == 0 ) {
+							if ( PointWithinRect(Link->X+8, Link->Y+8, wpn->X, wpn->Y, wpn->X+15, wpn->Y+15) ) {
+								if ( wpn->Misc[WindMisc_LinkCarry] == 0 && Link->Z == 0 && Link->Action != LA_DROWNING && MooshPit[MP_FALLSTATE] == 0
+								&& ((wpn->Dir == DIR_DOWN && CanWalkIgnoreMirror(Link->X, Link->Y, DIR_DOWN, 1, false))
+								|| (wpn->Dir == DIR_UP && CanWalkIgnoreMirror(Link->X, Link->Y, DIR_UP, 2, false))
+								|| (wpn->Dir == DIR_RIGHT && CanWalkIgnoreMirror(Link->X, Link->Y, DIR_RIGHT, 1, false))
+								|| (wpn->Dir == DIR_LEFT && CanWalkIgnoreMirror(Link->X, Link->Y, DIR_LEFT, 1, false))) ) {
+									GV[LinkInWind] = 1;
+									Link->CollDetection = false;
+									Link->DrawXOffset = -1000;
+									wpn->Misc[WindMisc_LinkCarry] = 1;
+									LinkCarriedSprite = CreateLWeaponAt(LW_SCRIPT10, Link->X, Link->Y);
+									LinkCarriedSprite->CollDetection = false;
+									LinkCarriedSprite->UseSprite(89);
+									LinkCarriedSprite->DrawXOffset = 0;
+									LinkCarriedSprite->DrawYOffset = 0;
+								}
+							}
+						}
+						//carry link
+						if ( wpn->Misc[WindMisc_LinkCarry] == 1 ) {
+							Link->X = wpn->X;
+							Link->Y = wpn->Y;
+							NoActionFull();
+							int carryxoffset;
+							int carryyoffset;
+							if ( wpn->Dir == DIR_UP )
+								carryyoffset --;
+							if ( wpn->Dir == DIR_RIGHT )
+								carryxoffset ++;
+							if ( wpn->Dir == DIR_DOWN )
+								carryyoffset ++;
+							if ( wpn->Dir == DIR_LEFT )
+								carryxoffset --;
+							LinkCarriedSprite->X = Link->X+carryxoffset;
+							LinkCarriedSprite->Y = Link->Y+carryyoffset;
+							//release link
+							if ( (wpn->Dir == DIR_DOWN && !CanWalkIgnoreMirror(Link->X, Link->Y, DIR_DOWN, 1, false) && Link->Y < 159)
+							|| (wpn->Dir == DIR_UP && !CanWalkIgnoreMirror(Link->X, Link->Y, DIR_UP, 1, false) && Link->Y > 1)
+							|| (wpn->Dir == DIR_RIGHT && !CanWalkIgnoreMirror(Link->X, Link->Y, DIR_RIGHT, 1, false) && Link->X < 239)
+							|| (wpn->Dir == DIR_LEFT && !CanWalkIgnoreMirror(Link->X, Link->Y, DIR_LEFT, 1, false) && Link->X > 1) ) {
+								GV[LinkInWind] = 0;
+								Link->CollDetection = true;
+								Link->DrawXOffset = 0;
+								wpn->Misc[WindMisc_LinkCarry] = -30;
+								LinkCarriedSprite->DeadState = WDS_DEAD;
+								if ( Screen->isSolid(Link->X+8, Link->Y) )
+									Link->Y ++;
+								if ( Screen->isSolid(Link->X+8, Link->Y+15) )
+									Link->Y --;
+								if ( Screen->isSolid(Link->X, Link->Y+8) )
+									Link->X ++;
+								if ( Screen->isSolid(Link->X+15, Link->Y+8) )
+									Link->X --;
+							}
+						}
+						if ( wpn->Misc[WindMisc_LinkCarry] < 0 )
+							wpn->Misc[WindMisc_LinkCarry] ++;
+						
+						if ( wpn->Misc[WindMisc_Redirectable] > 0 ) { //redirectable wind
+							if ( GV[RodStabFrames] == 0 )
+								wpn->Misc[WindMisc_Redirectable] = 0;
+							else
+								RedirectableWindOnScreen = true;
+						}
+						
+						if ( wpn->Misc[WindMisc_LinksWind] == 1 ) { //link's wind
+							if ( wpn->Step < 150 )
+								wpn->Step += 10;
+						}
+						
+						if ( wpn->Misc[WindMisc_Type] > 0 ) { //interaction with link
+							if ( Link->Z == 0 && Link->CollDetection && Link->Action != LA_GOTHURTLAND
+							&& Link->Action != LA_DROWNING && MooshPit[MP_FALLSTATE] == 0 ) {
+								if ( RectCollision(Link->X+2, Link->Y+2, Link->X+13, Link->Y+13, wpn->X+2, wpn->Y+2, wpn->X+13, wpn->Y+13) ) {
+									if ( wpn->Misc[WindMisc_Type] == 1 ) { //fire
+										eweapon dmg = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, 6, -1, -1, EWF_UNBLOCKABLE);
+										if ( wpn->Dir == Link->Dir || wpn->Dir == OppositeDir(Link->Dir) ) {
+											dmg->X = Clamp(Link->X+InFrontX(OppositeDir(wpn->Dir), 12), 2, 238);
+											dmg->Y = Clamp(Link->Y+InFrontY(OppositeDir(wpn->Dir), 12), 2, 158);
+											dmg->Dir = wpn->Dir;
+										}
+										else {
+											dmg->X = Clamp(Link->X+InFrontX(Link->Dir, 12), 2, 238);
+											dmg->Y = Clamp(Link->Y+InFrontY(Link->Dir, 12), 2, 158);
+											dmg->Dir = Link->Dir;
+										}
+										dmg->DrawXOffset = -1000;
+										SetEWeaponLifespan(dmg, EWL_TIMER, 1);
+										SetEWeaponDeathEffect(dmg, EWD_VANISH, 0);
+										wpn->DeadState = WDS_DEAD; //wind dies
+									}
+									if ( wpn->Misc[WindMisc_Type] == 2 ) { //ice
+										if ( GV[LinkFrozen] == 0 ) {
+											eweapon dmg = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, 4, -1, -1, EWF_UNBLOCKABLE);
+											if ( wpn->Dir == Link->Dir || wpn->Dir == OppositeDir(Link->Dir) ) {
+												dmg->X = Clamp(Link->X+InFrontX(OppositeDir(wpn->Dir), 12), 2, 238);
+												dmg->Y = Clamp(Link->Y+InFrontY(OppositeDir(wpn->Dir), 12), 2, 158);
+												dmg->Dir = wpn->Dir;
+											}
+											else {
+												dmg->X = Clamp(Link->X+InFrontX(Link->Dir, 12), 2, 238);
+												dmg->Y = Clamp(Link->Y+InFrontY(Link->Dir, 12), 2, 158);
+												dmg->Dir = Link->Dir;
+											}
+											dmg->DrawXOffset = -1000;
+											SetEWeaponLifespan(dmg, EWL_TIMER, 1);
+											SetEWeaponDeathEffect(dmg, EWD_VANISH, 0);
+											wpn->DeadState = WDS_DEAD; //wind dies
+											Game->PlaySound(44);
+											GV[LinkFrozen] = 20 + 120;
+										}
+									}
+									if ( wpn->Misc[WindMisc_Type] == 3 ) { //lightning
+										eweapon dmg = FireEWeapon(EW_SCRIPT10, 0, 0, 0, 0, 4, -1, -1, EWF_UNBLOCKABLE);
+										if ( wpn->Dir == Link->Dir || wpn->Dir == OppositeDir(Link->Dir) ) {
+											dmg->X = Clamp(Link->X+InFrontX(OppositeDir(wpn->Dir), 12), 2, 238);
+											dmg->Y = Clamp(Link->Y+InFrontY(OppositeDir(wpn->Dir), 12), 2, 158);
+											dmg->Dir = wpn->Dir;
+										}
+										else {
+											dmg->X = Clamp(Link->X+InFrontX(Link->Dir, 12), 2, 238);
+											dmg->Y = Clamp(Link->Y+InFrontY(Link->Dir, 12), 2, 158);
+											dmg->Dir = Link->Dir;
+										}
+										dmg->DrawXOffset = -1000;
+										SetEWeaponLifespan(dmg, EWL_TIMER, 1);
+										SetEWeaponDeathEffect(dmg, EWD_VANISH, 0);
+										wpn->DeadState = WDS_DEAD; //wind dies
+									}
+									if ( wpn->Misc[WindMisc_Type] == 4 ) { //jinx
+										wpn->DeadState = WDS_DEAD; //wind dies
+									}
+								}
+							}
+						}
+						
+						//leaf and snow piles
+						if ( IsLeafPile(WpnPos) ) {
+							Game->PlaySound(41);
+							SetLayerComboD(2, WpnPos, 0);
+							Screen->ComboF[WpnPos] = LeafSnowStoredFlag[WpnPos];
+							lweapon leafs = CreateLWeaponAt(LW_SPARKLE, ComboX(WpnPos), ComboY(WpnPos));
+							leafs->UseSprite(96);
+							leafs->DrawXOffset = -1000;
+							AutoTileLeafSnow();
+						}
+						if ( wpn->Misc[WindMisc_Type] == 1 ) {
+							if ( IsSnowPile(WpnPos) ) {
+								Game->PlaySound(69);
+								SetLayerComboD(2, WpnPos, 0);
+								Screen->ComboF[WpnPos] = LeafSnowStoredFlag[WpnPos];
+								lweapon puff = CreateLWeaponAt(LW_SPARKLE, ComboX(WpnPos), ComboY(WpnPos));
+								puff->UseSprite(97);
+								puff->DrawYOffset = 0;
+								AutoTileLeafSnow();
+							}
+						}
+						
+						//freeze water and lava
+						if ( wpn->Misc[WindMisc_Type] == 2 ) {
+							if ( Screen->ComboT[WpnPos] == CT_WATER ) {
+								if ( Screen->ComboD[WpnPos] > CMB_Water ) {
+									Game->PlaySound(69);
+									Screen->ComboD[WpnPos] = CMB_HardLava;
+								}
+							}
+						}
+						
+						//special elemental winds
+						if ( wpn->Misc[WindMisc_Elemental] > 0 ) {
+							if ( wpn->Misc[WindMisc_Elemental] == 1 ) { //fire
+								if ( Screen->ComboD[WpnPos] == CMB_Snowball ) {
+									Game->PlaySound(69);
+									Screen->ComboD[WpnPos] = 0;
+									lweapon puff = CreateLWeaponAt(LW_SPARKLE, ComboX(WpnPos), ComboY(WpnPos));
+									puff->UseSprite(97);
+									puff->DrawYOffset = 0;
+								}
+								if ( wpn->Misc[WindMisc_ElementalVar] == 20 ) {
+									wpn->Misc[WindMisc_ElementalVar] = 0;
+									Game->PlaySound(13);
+									eweapon fire = CreateEWeaponAt(EW_FIRE, wpn->X+4*Cos(DegreeSpeed4), wpn->Y+4*Sin(DegreeSpeed4)+1);
+									fire->Damage = 8;
+									fire->Step = 0;
+								}
+								else
+									wpn->Misc[WindMisc_ElementalVar] ++;
+							}
+							if ( wpn->Misc[WindMisc_Elemental] == 4 ) { //jinx
+								wpn->Angle -= DegtoRad(2);
+								if ( wpn->Misc[WindMisc_ElementalVar] >= 180 )
+									wpn->DeadState = WDS_DEAD;
+								wpn->Misc[WindMisc_ElementalVar] ++;
+							}
+						}
+						
+						if ( wpn->X > 256 || wpn->Y > 176 || wpn->X < -16 || wpn->Y < -16 ) {
+							if ( wpn->Misc[WindMisc_Elemental] != 4 )
+								wpn->DeadState = WDS_DEAD;
+						}
+					}
+					else if ( wpn->ID == LW_SCRIPT2 ) { //splitting wind
+						if ( Screen->isSolid(wpn->X+8, wpn->Y+8) ) {
+							if ( Screen->ComboT[WpnPos] != CT_SCRIPT1 )
+								wpn->DeadState = WDS_DEAD;
+						}
+						if ( WpnPos != wpn->Misc[WindMisc_IgnorePos] ) { //ignore the ignore pos
+							if ( Screen->ComboT[WpnPos] == CT_SCRIPT1 ) { //torch
+								WindTorchInteraction(wpn);
+							}
+						}
+						if ( wpn->Misc[0] == 1 ) {
+							SplittingWindOnScreen = 1;
+							for (int i = 0; i < 4; i++) { //create mini winds
+								if ( !SplittingMiniWind[i]->isValid() ) {
+									SplittingMiniWind[i] = Screen->CreateLWeapon(LW_SCRIPT10);
+									SplittingMiniWind[i]->UseSprite(95);
+									SplittingMiniWind[i]->CollDetection = false;
+									SplittingMiniWind[i]->DrawXOffset = 0;
+									SplittingMiniWind[i]->DrawYOffset = 0;
+								}
+								SplittingMiniWind[i]->X = wpn->X + 10 * Cos(DegreeSpeed4+360/4*i);
+								SplittingMiniWind[i]->Y = wpn->Y + 10 * Sin(DegreeSpeed4+360/4*i);
+								SplittingMiniWind[i]->DeadState = 2;
+							}
+						}
+						if ( wpn->Misc[0] == 2 ) {
+							SplittingWindOnScreen = 2;
+							for (int i = 0; i < 8; i++) { //create mini winds
+								if ( !SplittingMiniWind[i]->isValid() ) {
+									SplittingMiniWind[i] = Screen->CreateLWeapon(LW_SCRIPT10);
+									SplittingMiniWind[i]->UseSprite(95);
+									SplittingMiniWind[i]->CollDetection = false;
+									SplittingMiniWind[i]->DrawXOffset = 0;
+									SplittingMiniWind[i]->DrawYOffset = 0;
+								}
+								SplittingMiniWind[i]->X = wpn->X + 10 * Cos(DegreeSpeed4+360/8*i);
+								SplittingMiniWind[i]->Y = wpn->Y + 10 * Sin(DegreeSpeed4+360/8*i);
+								SplittingMiniWind[i]->DeadState = 2;
+							}
+						}
+					}
+					else if ( wpn->ID == LW_SPARKLE ) {
+						if ( wpn->OriginalTile == 2452 ) { //leaf animation (thx moosh)
+							int x = wpn->X-8; int y = wpn->Y; int frame = wpn->Frame;
+							int posX[32] = {16, 6,  20, 14, //Frame 1
+											16, 9,  17, 14, //Frame 2
+											17, 10, 14, 12, //Frame 3
+											17, 11, 15, 11, //Frame 4
+											19, 8,  18, 10, //Frame 5
+											20, 4,  19, 9,  //Frame 6
+											21, 3,  22, 8,  //Frame 7
+											14, 1,  16, 7}; //Frame 8
+							int posY[32] = {11, 8,  7,   1, //Frame 1 
+											14, 9,  8,  -1, //Frame 2
+											16, 10, 10, -2, //Frame 3
+											18, 10, 10, -3, //Frame 4
+											20, 10, 14, -4, //Frame 5
+											21, 10, 14, -6, //Frame 6
+											23, 9,  14, -9, //Frame 7
+											24, 7,  21, -11};//Frame 8
+							int flip[32] = {0,  0,  1,  0,  //Frame 1
+											0,  0,  1,  0,  //Frame 2
+											1,  0,  1,  0,  //Frame 3
+											0,  1,  0,  3,  //Frame 4
+											0,  1,  0,  0,  //Frame 5
+											0,  0,  0,  0,  //Frame 6
+											0,  0,  1,  0,  //Frame 7
+											1,  1,  0,  0}; //Frame 8
+							for(int i=0; i<4; i++){
+								Screen->DrawTile(4, x+posX[frame*4+i]-4, y+posY[frame*4+i]-4, 2452, 1, 1, 2, -1, -1, 0, 0, 0, flip[frame*4+i], true, OP_OPAQUE);
+							}
+						}
+					}
+				}
+				
+				for (int i = Screen->NumEWeapons(); i > 0; i--) { //for all eweapons
+					eweapon wpn = Screen->LoadEWeapon(i);
+					if ( wpn->OriginalTile == 3043 ) { //snowflake
+						if ( !wpn->CollDetection ) {
+							if ( PointWithinRect(wpn->X+16, wpn->Y+16, 16, 16, 240, 160) )
+								wpn->CollDetection = true;
+						}
+					}
+				}
+				
+				for (int i = 1; i <= Screen->NumItems(); i++) { //for all items
+					item itm = Screen->LoadItem(i);
+					if ( GV[ItemAppearPoof] == 1 ) {
+						if ( GetItemPickup(itm, IP_ST_ITEM) ) {
+							lweapon poof = CreateLWeaponAt(LW_SPARKLE, itm->X, itm->Y);
+							poof->UseSprite(22);
+							GV[ItemAppearPoof] = 0;
+						}
+					}
+				}
+				
+				if ( GV[LinkInWind] == 1 ) {
+					FFC32->X = Link->X;
+					FFC32->Y = Link->Y;
+				}
+				else {
+					FFC32->X = -16;
+					FFC32->Y = 0;
+				}
+				
+				if ( GV[LinkFrozen] > 20 ) {
+					NoAction();
+					Link->HitDir = -1;
+				}
+				if ( GV[LinkFrozen] > 0 )
+					GV[LinkFrozen] --;
+				
+				if ( GV[LinkSlowFrozen] > 0 ) {
+					LinkMovement_AddLinkSpeedBoost(-0.5);
+					GV[LinkSlowFrozen] --;
+				}
+				if ( GV[SlowFrozenTimer] > 0 ) {
+					if ( GV[SlowFrozenTimer] > 20 )
+						Screen->Rectangle(5, 0, 0, 256, 176, 0x82, 1, 0, 0, 0, true, OP_TRANS);
+					if ( GV[SlowFrozenTimer] % 3 == 0 ) {
+						lweapon star = CreateLWeaponAt(LW_SPARKLE, GV[SlowFrozenX]+Rand(-10, 10), GV[SlowFrozenY]+Rand(-10, 10));
+						star->UseSprite(101);
+					}
+					GV[SlowFrozenTimer] --;
+				}
+				
+				//get combo position in front of link
+				int InFrontOfLinkPos;
+				if ( Link->Dir == DIR_UP )
+					InFrontOfLinkPos = ComboAt(Link->X+8, Link->Y+7);
+				if ( Link->Dir == DIR_RIGHT )
+					InFrontOfLinkPos = ComboAt(Link->X+16, Link->Y+11);
+				if ( Link->Dir == DIR_DOWN )
+					InFrontOfLinkPos = ComboAt(Link->X+8, Link->Y+16);
+				if ( Link->Dir == DIR_LEFT )
+					InFrontOfLinkPos = ComboAt(Link->X-1, Link->Y+11);
+				
+				if ( GV[LinkInWind] == 0 && Link->Z == 0 ) {
+					//levers
+					if ( Screen->ComboD[InFrontOfLinkPos] == CMB_LeverOff ) {
+						if ( Link->PressA ) {
+							Link->PressA = false;
+							Link->InputA = false;
+							Screen->ComboD[InFrontOfLinkPos] ++;
+							GV[LeversOnScreen] --;
+							if ( GV[LeversOnScreen] == 0 ) {
+								Game->PlaySound(27);
+								Screen->TriggerSecrets();
+								Screen->State[ST_SECRET] = true;
+							}
+							else
+								Game->PlaySound(63);
+						}
+						else
+							Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+					}
+					//chests
+					if ( Screen->ComboT[InFrontOfLinkPos] == CT_CHEST2 ) {
+						if ( Link->PressA ) {
+							Link->PressA = false;
+							Link->InputA = false;
+							Screen->ComboD[InFrontOfLinkPos] ++;
+							Screen->State[ST_CHEST] = true;
+							item itm = Screen->CreateItem(Screen->RoomData);
+							SetItemPickup(itm, IP_HOLDUP, true);
+							itm->X = Link->X;
+							itm->Y = Link->Y;
+							NoActionFull();
+						}
+						else
+							Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+					}
+					//crystal switches
+					if ( Screen->ComboD[InFrontOfLinkPos] == CMB_SilverCrystalSwitch ) {
+						if ( Link->PressA ) {
+							Game->PlaySound(67);
+							Link->PressA = false;
+							Link->InputA = false;
+							Screen->ComboD[InFrontOfLinkPos] ++;
+							int map = Game->GetCurMap();
+							MapCrystalState[map] = 1;
+						}
+						else
+							Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+					}
+					else if ( Screen->ComboD[InFrontOfLinkPos] == CMB_SilverCrystalSwitch+1 ) {
+						if ( Link->PressA ) {
+							Game->PlaySound(67);
+							Link->PressA = false;
+							Link->InputA = false;
+							Screen->ComboD[InFrontOfLinkPos] --;
+							int map = Game->GetCurMap();
+							MapCrystalState[map] = 0;
+						}
+						else
+							Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+					}
+				}
+				
+				//step triggers
+				if ( Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] == CMB_StepTriggerUp ) { //check if link on up layer 0 trigger
+					if ( Link->Z == 0 && GV[LinkInWind] == 0 && GV[StepTriggerActivate] == -1 ) {
+						if ( !IsLeafPile(ComboAt(Link->X+8, Link->Y+12)) && !IsSnowPile(ComboAt(Link->X+8, Link->Y+12)) ) { //check for leaf/snow
+							Screen->ComboD[ComboAt(Link->X+8, Link->Y+12)] ++;
+							int f = Screen->ComboF[ComboAt(Link->X+8, Link->Y+12)];
+							ActivateStepTrigger(f);
+						}
+					}
+				}
+				if ( Screen->LayerMap(1) != -1 ) {
+					if ( GetLayerComboD(1, ComboAt(Link->X+8, Link->Y+12)) == CMB_StepTriggerUp ) { //check if link on up layer 1 trigger
+						if ( Link->Z == 0 && GV[LinkInWind] == 0 && GV[StepTriggerActivate] == -1 ) {
+							if ( !IsLeafPile(ComboAt(Link->X+8, Link->Y+12)) && !IsSnowPile(ComboAt(Link->X+8, Link->Y+12)) ) { //check for leaf/snow
+								SetLayerComboD(1, ComboAt(Link->X+8, Link->Y+12), CMB_StepTriggerUp+1);
+								int f = GetLayerComboF(1, ComboAt(Link->X+8, Link->Y+12));
+								ActivateStepTrigger(f);
+							}
+						}
+					}
+				}
+				for (int i = 1; i <= StepTriggers[0]; i++) {
+					if ( Screen->ComboD[StepTriggers[i]] == CMB_StepTriggerUp+1 ) { //check if no link on down layer 0 trigger
+						if ( ComboAt(Link->X+8, Link->Y+12) != StepTriggers[i] || Link->Z > 0 || GV[LinkInWind] == 1 ) {
+							Screen->ComboD[StepTriggers[i]] --;
+							int f = Screen->ComboF[StepTriggers[i]];
+							DeactivateStepTrigger(f);
+						}
+					}
+					if ( Screen->LayerMap(1) != -1 ) {
+						if ( GetLayerComboD(1, StepTriggers[i]) == CMB_StepTriggerUp ) { //check if block on up layer 1 trigger
+							if ( Screen->isSolid(ComboX(StepTriggers[i])+8, ComboY(StepTriggers[i])+8) && GV[StepTriggerActivate] == -1 ) {
+								SetLayerComboD(1, StepTriggers[i], CMB_StepTriggerUp+1);
+								int f = GetLayerComboF(1, StepTriggers[i]);
+								ActivateStepTrigger(f);
+							}
+						}
+						if ( GetLayerComboD(1, StepTriggers[i]) == CMB_StepTriggerUp+1 ) { //check if nothing on down layer 1 trigger
+							if ( !Screen->isSolid(ComboX(StepTriggers[i])+8, ComboY(StepTriggers[i])+8) ) {
+								if ( ComboAt(Link->X+8, Link->Y+12) != StepTriggers[i] || Link->Z > 0 || GV[LinkInWind] == 1 ) {
+									SetLayerComboD(1, StepTriggers[i], CMB_StepTriggerUp);
+									int f = GetLayerComboF(1, StepTriggers[i]);
+									DeactivateStepTrigger(f);
+								}
+							}
+						}
+					}
+				}
+				
+				if ( GV[WaitForEnemySpawn] == 1 ) {
+					for (int i = 0; i < 176; i++) {
+						if ( IsLeafPile(i) || IsSnowPile(i) ) {
+							LeafSnowStoredFlag[i] = Screen->ComboF[i];
+							Screen->ComboF[i] = 67; //no push blocks on leaf / snow
+						}
+					}
+					
+					if ( ScreenEFlag(2, 1) > 0 ) { //enemies->item
+						GV[ItemAppearPoof] = 1;
+						for (int i = 1; i <= Screen->NumItems(); i++) {
+							item itm = Screen->LoadItem(i);
+							if ( GetItemPickup(itm, IP_ST_ITEM) ) {
+								GV[ItemAppearPoof] = 0;
+							}
+						}
+					}
+				}
+				
+				//shallow water
+				if ( LinkOnShallowWater() ) {
+					if ( Game->GetCurMap() == 5 && GV[MinibossPlantsKilled] < 3 ) { //poison
+						if ( GV[LinkOnShallow] == 0 ) {
+							Link->Action = LA_GOTHURTLAND;
+							Link->HitDir = -1;
+							Link->HP -= 8;
+							if ( Link->HP < 0 )
+								Link->HP = 0;
+						}
+						if ( GV[LinkOnShallow] == 50 ) {
+							GV[LinkOnShallow] = 51;
+							NoAction();
+						}
+						LinkMovement_AddLinkSpeedBoost(GV[LinkOnShallow]/50*-1);
+						Link->HitDir = -1;
+					}
+					if ( GV[LinkOnShallow] < 50 )
+						GV[LinkOnShallow] ++;
+				}
+				else if ( GV[LinkInWind] == 0 )
+					GV[LinkOnShallow] = 0;
+				
+				//lock block poof
+				if ( Screen->State[ST_LOCKBLOCK] ) {
+					if ( GV[LockBlockScreenState] == 0 ) {
+						for (int i = 0; i < 176; i++) {
+							if ( Screen->ComboD[i] == CMB_LockBlock+1 || Screen->ComboD[i] == CMB_LockBlockCopycat+1 ) {
+								lweapon poof = CreateLWeaponAt(LW_SPARKLE, ComboX(i), ComboY(i));
+								poof->UseSprite(22);
+								poof->DrawYOffset = 0;
+							}
+						}
+						GV[LockBlockScreenState] = 1;
+					}
+				}
+				
+				if ( Link->PressA ) {
+					if ( Link->Item[I_TornadoRod] && GV[RodStabFrames] == 0 ) {
+						GV[RodStabFrames] = 14;
+						GV[RodAttack] = 1;
+					}
+				}
+				if ( Link->PressB ) {
+					if ( Link->Item[I_SplittingWind] && GV[RodStabFrames] == 0 ) {
+						GV[RodStabFrames] = 14;
+						GV[RodAttack] = 2;
+					}
+				}
+				if ( Link->PressL ) {
+					if ( Link->Item[I_RedirectableWind] && GV[RodStabFrames] == 0 ) {
+						GV[RodStabFrames] = 14;
+						GV[RodAttack] = 3;
+					}
+				}
+				
+				if ( GV[RodStabFrames] != 0 ) { //attacking
+					if ( Link->Action == LA_GOTHURTLAND || GV[LinkInWind] == 1 ) { //cancel attack
+						GV[RodStabFrames] = 0;
+						GV[RodAttack] = 0;
+					}
+					else {
+						if ( GV[RodStabFrames] < 0 || GV[RodStabFrames] > 2 ) {
+							Link->Action = LA_NONE;
+							Link->Action = LA_ATTACKING;
+						}
+						else
+							Link->Action = LA_NONE;
+						if ( TornadoRodSprite->isValid() ) {
+							if ( GV[RodStabFrames] > 9 )
+								TornadoRodSprite->DeadState = WDS_DEAD;
+						}
+						else {
+							if ( GV[RodStabFrames] < 10 ) { //create sprite when needed
+								TornadoRodSprite = Screen->CreateLWeapon(LW_SCRIPT10);
+								TornadoRodSprite->UseSprite(0);
+								TornadoRodSprite->CollDetection = false;
+								TornadoRodSprite->DrawXOffset = 0;
+								TornadoRodSprite->DrawYOffset = 0;
+							}
+						}
+						if ( GV[RodStabFrames] < 0 ) { //turn link
+							if ( GV[RodAttack] == 3 ) {
+								if ( Link->InputUp )
+									Link->Dir = DIR_UP;
+								if ( Link->InputRight )
+									Link->Dir = DIR_RIGHT;
+								if ( Link->InputDown )
+									Link->Dir = DIR_DOWN;
+								if ( Link->InputLeft )
+									Link->Dir = DIR_LEFT;
+							}
+						}
+						if ( GV[RodStabFrames] < 10 ) { //position sprite
+							int retreatoffset;
+							if ( GV[RodStabFrames] == 2 )
+								retreatoffset = 4;
+							if ( GV[RodStabFrames] == 1 )
+								retreatoffset = 8;
+							if ( Link->Dir == DIR_UP ) {
+								TornadoRodSprite->X = Link->X-1;
+								TornadoRodSprite->Y = Link->Y-12+retreatoffset;
+								TornadoRodSprite->Tile = 2440;
+								TornadoRodSprite->Flip = 0;
+							}
+							if ( Link->Dir == DIR_RIGHT ) {
+								TornadoRodSprite->X = Link->X+11-retreatoffset;
+								TornadoRodSprite->Y = Link->Y+1;
+								TornadoRodSprite->Tile = 2441;
+								TornadoRodSprite->Flip = 0;
+							}
+							if ( Link->Dir == DIR_DOWN ) {
+								TornadoRodSprite->X = Link->X+1;
+								TornadoRodSprite->Y = Link->Y+11-retreatoffset;
+								TornadoRodSprite->Tile = 2440;
+								TornadoRodSprite->Flip = 3;
+							}
+							if ( Link->Dir == DIR_LEFT ) {
+								TornadoRodSprite->X = Link->X-11+retreatoffset;
+								TornadoRodSprite->Y = Link->Y+1;
+								TornadoRodSprite->Tile = 2441;
+								TornadoRodSprite->Flip = 1;
+							}
+						}
+						if ( GV[RodStabFrames] == 9 ) { //attack script
+							if ( GV[RodAttack] == 1 && GV[RodCD] == 0 ) {
+								GV[RaftMove] = 1;
+								GV[RodCD] = 25;
+								Game->PlaySound(59);
+								lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+								if ( Link->Dir == DIR_UP ) {
+									wpn->X = Link->X;
+									wpn->Y = Link->Y-12;
+								}
+								if ( Link->Dir == DIR_RIGHT ) {
+									wpn->X = Link->X+16;
+									wpn->Y = Link->Y;
+								}
+								if ( Link->Dir == DIR_DOWN ) {
+									wpn->X = Link->X;
+									wpn->Y = Link->Y+16;
+								}
+								if ( Link->Dir == DIR_LEFT ) {
+									wpn->X = Link->X-16;
+									wpn->Y = Link->Y;
+								}
+								wpn->UseSprite(90);
+								wpn->DrawXOffset = 0;
+								wpn->DrawYOffset = 0;
+								wpn->Step = 150;
+								wpn->Dir = Link->Dir;
+								wpn->Damage = 2;
+								wpn->Misc[WindMisc_LinksWind] = 1;
+							}
+							if ( GV[RodAttack] == 2 ) {
+								if ( SplittingWindOnScreen == 0 && GV[RodCD] == 0 ) {
+									GV[RodCD] = 25;
+									Game->PlaySound(59);
+									lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT2);
+									if ( Link->Dir == DIR_UP ) {
+										wpn->X = Link->X;
+										wpn->Y = Link->Y-12;
+									}
+									if ( Link->Dir == DIR_RIGHT ) {
+										wpn->X = Link->X+16;
+										wpn->Y = Link->Y;
+									}
+									if ( Link->Dir == DIR_DOWN ) {
+										wpn->X = Link->X;
+										wpn->Y = Link->Y+16;
+									}
+									if ( Link->Dir == DIR_LEFT ) {
+										wpn->X = Link->X-16;
+										wpn->Y = Link->Y;
+									}
+									wpn->UseSprite(90);
+									wpn->CollDetection = false;
+									wpn->DrawXOffset = 0;
+									wpn->DrawYOffset = 0;
+									wpn->Dir = Link->Dir;
+									if ( !Link->Item[I_SplittingWind2] )
+										wpn->Misc[0] = 1;
+									else
+										wpn->Misc[0] = 2;
+								}
+								if ( SplittingWindOnScreen > 0 ) {
+									Game->PlaySound(68);
+									for (int i = Screen->NumLWeapons(); i > 0; i--) {
+										lweapon wpn0 = Screen->LoadLWeapon(i);
+										if ( wpn0->ID == LW_SCRIPT2 ) { //find the splitting wind
+											int dir = wpn0->Dir;
+											for (int i = 1; i <= 4; i++) {
+												lweapon wpn = CreateLWeaponAt(LW_SCRIPT1, wpn0->X, wpn0->Y);
+												wpn->UseSprite(90+wpn0->Misc[WindMisc_Type]);
+												wpn->Misc[WindMisc_Type] = wpn0->Misc[WindMisc_Type];
+												wpn->Misc[WindMisc_IgnorePos] = wpn0->Misc[WindMisc_IgnorePos];
+												wpn->DrawXOffset = 0;
+												wpn->DrawYOffset = 0;
+												wpn->Step = 150;
+												wpn->Dir = dir;
+												dir = RotateDir(dir);
+												wpn->Damage = 2;
+												wpn->Misc[WindMisc_LinksWind] = 1;
+											}
+											if ( SplittingWindOnScreen == 1 )
+												wpn0->DeadState = WDS_DEAD;
+											else {
+												wpn0->Misc[0] = 1;
+												wpn0->Misc[WindMisc_Type] = 0;
+												wpn0->UseSprite(90);
+											}
+										}
+									}
+								}
+							}
+							if ( GV[RodAttack] == 3 && GV[RodCD] == 0 && !RedirectableWindOnScreen ) {
+								GV[RaftMove] = 1;
+								GV[RodCD] = 25;
+								Game->PlaySound(59);
+								lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+								if ( Link->Dir == DIR_UP ) {
+									wpn->X = Link->X;
+									wpn->Y = Link->Y-12;
+								}
+								if ( Link->Dir == DIR_RIGHT ) {
+									wpn->X = Link->X+16;
+									wpn->Y = Link->Y;
+								}
+								if ( Link->Dir == DIR_DOWN ) {
+									wpn->X = Link->X;
+									wpn->Y = Link->Y+16;
+								}
+								if ( Link->Dir == DIR_LEFT ) {
+									wpn->X = Link->X-16;
+									wpn->Y = Link->Y;
+								}
+								wpn->UseSprite(90);
+								wpn->DrawXOffset = 0;
+								wpn->DrawYOffset = 0;
+								wpn->Step = 150;
+								wpn->Dir = Link->Dir;
+								wpn->Damage = 2;
+								if ( !Link->Item[I_RedirectableWind2] )
+									wpn->Misc[WindMisc_Redirectable] = 2;
+								else
+									wpn->Misc[WindMisc_Redirectable] = 3;
+								wpn->Misc[WindMisc_LinksWind] = 1;
+							}
+						}
+						if ( GV[RodStabFrames] == 3 ) { //being able to hold
+							if ( GV[RodAttack] == 3 && Link->InputL )
+								GV[RodStabFrames] = -1;
+						}
+						if ( GV[RodStabFrames] < 0 ) { //holding
+							if ( GV[RodAttack] == 3 ) {
+								if ( !Link->InputL )
+									GV[RodStabFrames] = 3; //retreat
+								else {
+									for (int i = Screen->NumLWeapons(); i > 0; i--) {
+										lweapon wpn = Screen->LoadLWeapon(i);
+										if ( wpn->ID == LW_SCRIPT1 && wpn->Misc[WindMisc_Redirectable] > 1 ) { //find the redirectable wind
+											if ( wpn->Dir != Link->Dir ) {
+												wpn->Step = 20;
+												wpn->Dir = Link->Dir;
+												wpn->Misc[WindMisc_Redirectable] --;
+											}
+										}
+									}
+								}
+							}
+						}
+						GV[RodStabFrames] --;
+					}
+					NoAction();
+				}
+				else if ( TornadoRodSprite->isValid() )
+					TornadoRodSprite->DeadState = WDS_DEAD;
+				
+				if ( Link->PressStart ) {
+					if ( Link->Action != LA_DROWNING && MooshPit[MP_FALLSTATE] == 0 ) {
+						Link->PressStart = false;
+						Link->InputStart = false;
+						GV[GamePaused] = 1;
+						ffc FFC31 = Screen->LoadFFC(31);
+						FFC31->Data = CMB_ScreenFreezeA;
+						FFC32->Data = CMB_ScreenFreezeB;
+						SuspendGhostZHScripts();
+					}
+				}
+				
+				if ( GV[RodCD] > 0 )
+					GV[RodCD] --;
+				if ( GV[WaitForEnemySpawn] > 0 )
+					GV[WaitForEnemySpawn] --;
+			}
+			
+			if ( GV[GamePaused] == 1 ) { //while paused
+				Screen->FastTile(6, 0, 0, 2698, 7, OP_OPAQUE);
+				if ( GV[HoldUpPause] > 0 ) {
+					NoActionFull();
+					if ( GV[HoldUpPause] >= 130 ) {
+						GV[HoldUpPause] = 0;
+						Link->Action = LA_NONE;
+						GV[HoldUpPause] = 0;
+						GV[GamePaused] = 0;
+						ffc FFC31 = Screen->LoadFFC(31);
+						FFC31->Data = 0;
+						FFC32->Data = 1;
+						ResumeGhostZHScripts();
+					}
+					GV[HoldUpPause] ++;
+				}
+				if ( Link->PressStart ) {
+					GV[GamePaused] = 0;
+					ffc FFC31 = Screen->LoadFFC(31);
+					FFC31->Data = 0;
+					FFC32->Data = 1;
+					ResumeGhostZHScripts();
+				}
+			}
+			
+			//update script hp
+			if ( GV[ScriptLinkHP] != Link->HP ) {
+				GV[ScriptLinkHP] = Link->HP;
+				Game->Counter[CR_SCRIPT2] = Link->HP / 16 * 100;
+				int barpixels = Round(64 / Link->MaxHP * Link->HP);
+				int tilepixels[4];
+				if ( barpixels >= 16 )
+					tilepixels[0] = 16;
+				else
+					tilepixels[0] = barpixels;
+				if ( barpixels >= 32 )
+					tilepixels[1] = 16;
+				else
+					tilepixels[1] = barpixels-16;
+				if ( barpixels >= 48 )
+					tilepixels[2] = 16;
+				else
+					tilepixels[2] = barpixels-32;
+				if ( barpixels == 64 )
+					tilepixels[3] = 16;
+				else
+					tilepixels[3] = barpixels-48;
+				for ( int i = 0; i < 4; i++ ){
+					if ( tilepixels[i] < 0 )
+						tilepixels[i] = 0;
+					CopyTile(2720+tilepixels[i], 2700+i);
+				}
+			}
+			
+			Raft();
+			Link->InputStart = false; Link->PressStart = false;
+			LinkMovement_Update1();
+			Waitdraw();
+			UpdateGhostZH2();
+			LinkMovement_Update2();
+			
+			if ( LinksCurrDMap != Game->GetCurDMap() || LinksCurrScreen != Game->GetCurDMapScreen() ) { //screen init
+				LinksCurrDMap = Game->GetCurDMap();
+				LinksCurrScreen = Game->GetCurDMapScreen();
+				
+				Link->CollDetection = true;
+				Link->DrawXOffset = 0;
+				
+				FFC32 = Screen->LoadFFC(32);
+				FFC32->Data = 1;
+				GV[LinkInWind] = 0;
+				
+				GV[GamePaused] = 0;
+				GV[HoldUpPause] = 0;
+				GV[RodStabFrames] = 0;
+				GV[RodAttack] = 0;
+				GV[RodCD] = 0;
+				GV[StepTriggerActivate] = -1;
+				GV[ItemAppearPoof] = 0;
+				GV[LinkFrozen] = 0;
+				GV[LinkSlowFrozen] = 0;
+				
+				GV[WaitForEnemySpawn] = 5;
+				
+				StepTriggers[0] = 0;
+				for ( int i = 1; i < 30; i++ ){
+					StepTriggers[i] = -1;
+				}
+				
+				GV[LeversOnScreen] = 0;
+				for ( int i = 0; i < 176; i++ ){
+					if ( Screen->ComboD[i] == CMB_LeverOff )
+						GV[LeversOnScreen] ++;
+					
+					if ( MapCrystalState[Game->GetCurMap()] == 1 ) {
+						if ( Screen->ComboD[i] == CMB_SilverCrystalSwitch )
+							Screen->ComboD[i] ++;
+					}
+					
+					if ( Screen->ComboD[i] == CMB_StepTriggerUp ) { //track step triggers
+						StepTriggers[0] ++;
+						StepTriggers[StepTriggers[0]] = i;
+					}
+					if ( Screen->LayerMap(1) != -1 ) {
+						if ( GetLayerComboD(1, i) == CMB_StepTriggerUp+1 )
+							SetLayerComboD(1, i, CMB_StepTriggerUp);
+						if ( GetLayerComboD(1, i) == CMB_StepTriggerUp ) { //track step triggers
+							StepTriggers[0] ++;
+							StepTriggers[StepTriggers[0]] = i;
+						}
+					}
+					
+					//reset leaf and snow piles
+					if ( Screen->LayerMap(2) != -1 ) {
+						if ( GetLayerComboF(2, i) == 98 )
+							SetLayerComboD(2, i, CMB_LeafStart);
+						if ( GetLayerComboF(2, i) == 99 )
+							SetLayerComboD(2, i, CMB_SnowStart);
+					}
+					//remember leaf and snow piles
+					if ( IsLeafPile(i) )
+						SetLayerComboF(2, i, 98);
+					if ( IsSnowPile(i) )
+						SetLayerComboF(2, i, 99);
+				}
+				
+				AutoTileLeafSnow();
+				
+				if ( Game->GetCurMap() == 5 ) {
+					if ( GV[MinibossPlantsKilled] == 3 )
+						ClearPoisonWater();
+				}
+				
+				if ( Screen->State[ST_LOCKBLOCK] )
+					GV[LockBlockScreenState] = 1;
+				else
+					GV[LockBlockScreenState] = 0;
+			}
+			
+			if ( GV[LinkOnShallow] > 0 && GV[LinkInWind] == 0 )
+				Screen->FastTile(4, Link->X, Link->Y, 2492, 7, OP_OPAQUE);
+			
+			if ( GV[LinkFrozen] > 20 )
+				Screen->FastTile(4, Link->X, Link->Y, 2464, 8, OP_OPAQUE);
+			if ( GV[LinkSlowFrozen] > 20 )
+				Screen->FastCombo(4, Link->X, Link->Y, 564, 8, OP_OPAQUE);
+			Waitframe();
+		}
+	}
+}
+
+void WindTorchInteraction(lweapon wpn){
+	int WpnPos = ComboAt(wpn->X+8, wpn->Y+8);
+	int TorchElement;
+	bool TorchConstant;
+	if ( Screen->ComboD[WpnPos] == CMB_FireTorch+1 ) {
+		TorchElement = 1;
+		TorchConstant = true;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_IceTorch+1 ) {
+		TorchElement = 2;
+		TorchConstant = true;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_LightningTorch+1 ) {
+		TorchElement = 3;
+		TorchConstant = true;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_JinxTorch+1 ) {
+		TorchElement = 4;
+		TorchConstant = true;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_FireTorch ) {
+		TorchElement = 1;
+		TorchConstant = false;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_IceTorch ) {
+		TorchElement = 2;
+		TorchConstant = false;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_LightningTorch ) {
+		TorchElement = 3;
+		TorchConstant = false;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_JinxTorch ) {
+		TorchElement = 4;
+		TorchConstant = false;
+	}
+	if ( Screen->ComboD[WpnPos] == CMB_EmptyTorch ) {
+		TorchElement = 0;
+		TorchConstant = false;
+	}
+	
+	if ( wpn->Misc[WindMisc_Type] == 0 && TorchElement > 0 ) {
+		wpn->Misc[WindMisc_Type] = TorchElement;
+		wpn->UseSprite(90+TorchElement);
+		if ( !TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_EmptyTorch;
+	}
+	else if ( wpn->Misc[WindMisc_Type] > 0 && wpn->Misc[WindMisc_Type] != TorchElement ) {
+		Game->PlaySound(13);
+		if ( wpn->Misc[WindMisc_Type] == 1 && !TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_FireTorch;
+		if ( wpn->Misc[WindMisc_Type] == 1 && TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_FireTorch+1;
+		if ( wpn->Misc[WindMisc_Type] == 2 && !TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_IceTorch;
+		if ( wpn->Misc[WindMisc_Type] == 2 && TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_IceTorch+1;
+		if ( wpn->Misc[WindMisc_Type] == 3 && !TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_LightningTorch;
+		if ( wpn->Misc[WindMisc_Type] == 3 && TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_LightningTorch+1;
+		if ( wpn->Misc[WindMisc_Type] == 4 && !TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_JinxTorch;
+		if ( wpn->Misc[WindMisc_Type] == 4 && TorchConstant )
+			Screen->ComboD[WpnPos] = CMB_JinxTorch+1;
+	}
+	
+	wpn->Misc[WindMisc_IgnorePos] = WpnPos;
+}
+
+void ActivateStepTrigger(int f){
+	Game->PlaySound(65);
+	if ( f > 0 ) {
+		for (int i = 0; i < 176; i++) {
+			if ( Screen->ComboF[i] == f ) { //same flag as trigger
+				if ( Screen->ComboD[i] == CMB_RectanglePillarUp )
+					Screen->ComboD[i] ++;
+				else if ( Screen->ComboD[i] == CMB_RectanglePillarUp+1 )
+					Screen->ComboD[i] --;
+			}
+		}
+	}
+	GV[StepTriggerActivate] = f;
+}
+void DeactivateStepTrigger(int f){
+	Game->PlaySound(66);
+	if ( f > 0 ) {
+		for (int i = 0; i < 176; i++) {
+			if ( Screen->ComboF[i] == f ) { //same flag as trigger
+				if ( Screen->ComboD[i] == CMB_RectanglePillarUp )
+					Screen->ComboD[i] ++;
+				else if ( Screen->ComboD[i] == CMB_RectanglePillarUp+1 )
+					Screen->ComboD[i] --;
+			}
+		}
+	}
+}
+
+bool IsLeafPile(int p){
+	if ( Screen->LayerMap(2) != -1 ) {
+		int c = GetLayerComboD(2, p);
+		if ( c >= CMB_LeafStart && c <= CMB_LeafStart + 15 )
+			return true;
+	}
+	return false;
+}
+bool IsSnowPile(int p){
+	if ( Screen->LayerMap(2) != -1 ) {
+		int c = GetLayerComboD(2, p);
+		if ( c >= CMB_SnowStart && c <= CMB_SnowStart + 15 )
+			return true;
+	}
+	return false;
+}
+
+//D0: 0 = light all torches, 1 = unlight all torches
+ffc script TorchPuzzle{
+	void run(int type){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		int TorchCount = 0;
+		int TorchPos[176];
+		for ( int i = 0; i < 176; i++ ){
+			TorchPos[i] = -1;
+			if ( Screen->ComboD[i] == CMB_FireTorch || Screen->ComboD[i] == CMB_IceTorch || Screen->ComboD[i] == CMB_LightningTorch
+			|| Screen->ComboD[i] == CMB_JinxTorch || Screen->ComboD[i] == CMB_EmptyTorch ) {
+				TorchPos[TorchCount] = i;
+				TorchCount ++;
+			}
+		}
+		while(true){
+			bool EmptyTorchOnScreen;
+			bool LitTorchOnScreen;
+			for ( int i = 0; i < TorchCount; i++ ){
+				if ( Screen->ComboD[TorchPos[i]] == CMB_EmptyTorch )
+					EmptyTorchOnScreen = true;
+				else
+					LitTorchOnScreen = true;
+			}
+			if ( (type == 0 && !EmptyTorchOnScreen) || (type == 1 && !LitTorchOnScreen) ) {
+				Game->PlaySound(27);
+				Screen->TriggerSecrets();
+				Screen->State[ST_SECRET] = true;
+				Quit();
+			}
+			Waitframe();
+		}
+	}
+}
+
+//D0: 1 = down, 2 = left, 3 = up, 4 = right
+//D1: delay between shots
+//D2: first shot delay (added to or subtracted from D1)
+//D3: 0 = standard, 1 = toggle on/off when secrets are triggered, >1 = shoot once when step trigger with this flag activates
+ffc script Fan{
+	void run(int dir, int delay, int initdelay, int type){
+		//check if its on or off
+		bool on = true;
+		if ( this->Data == CMB_SilverFanOff || this->Data == CMB_GoldFanOff || this->Data == CMB_NormalFanOff )
+			on = false;
+		//toggle when D3 is 1 and secrets are triggered
+		bool hasToggled;
+		if ( type == 1 && Screen->State[ST_SECRET] ) {
+			if ( on ) {
+				on = false;
+				this->Data --;
+				this->Vx = 0;
+				this->Vy = 0;
+				this->Ax = 0;
+				this->Ay = 0;
+			}
+			else {
+				on = true;
+				this->Data ++;
+			}
+			hasToggled = true;
+		}
+		//check if crystal colour fan
+		if ( this->Data == CMB_SilverFanOff+1 || this->Data == CMB_GoldFanOff+1 )
+			this->Data --;
+		bool silver;
+		bool gold;
+		if ( this->Data == CMB_SilverFanOff )
+			silver = true;
+		if ( this->Data == CMB_GoldFanOff )
+			gold = true;
+		//turn on silver and gold fans if right crystal state
+		if ( silver && MapCrystalState[Game->GetCurMap()] == 0 ) {
+			on = true;
+			this->Data ++;
+		}
+		if ( gold && MapCrystalState[Game->GetCurMap()] == 1 ) {
+			on = true;
+			this->Data ++;
+		}
+		//check if on pushblock
+		bool blockmoving;
+		bool fanblock;
+		if ( Screen->ComboF[ComboAt(this->X+8, this->Y+8)] == 61 ) {
+			fanblock = true;
+			Screen->ComboD[ComboAt(this->X+8, this->Y+8)] = 2;
+			this->Data = CMB_FanBlockTopOff;
+			if ( on )
+				this->Data ++;
+			this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+			this->Y = ComboY(ComboAt(this->X+8, this->Y+8))-16;
+			this->TileHeight = 2;
+			this->Flags[FFCF_ETHEREAL] = true;
+		}
+		//wait while scrolling
+		Waitframe();
+		//set timers
+		int timer;
+		if ( type <= 1 )
+			timer = delay + initdelay;
+		while(true){
+			//move with block
+			if ( fanblock ) {
+				blockmoving = false;
+				if ( Screen->MovingBlockX != -1 ) {
+					if ( PointWithinRect(this->X+8, this->Y+24, Screen->MovingBlockX, Screen->MovingBlockY, Screen->MovingBlockX+15, Screen->MovingBlockY+15) ) {
+						this->X = Screen->MovingBlockX;
+						this->Y = Screen->MovingBlockY-16;
+						blockmoving = true;
+					}
+				}
+				else {
+					this->X = ComboX(ComboAt(this->X+8, this->Y+24));
+					this->Y = ComboY(ComboAt(this->X+8, this->Y+24))-16;
+				}
+			}
+			//toggle when D3 is 1 and secrets are triggered
+			if ( type == 1 ) {
+				if ( !hasToggled && Screen->State[ST_SECRET] ) {
+					if ( on ) {
+						on = false;
+						this->Data --;
+						this->Vx = 0;
+						this->Vy = 0;
+						this->Ax = 0;
+						this->Ay = 0;
+					}
+					else {
+						on = true;
+						this->Data ++;
+					}
+					hasToggled = true;
+				}
+			}
+			//turn crystal colour fans on/off depending on crystal state
+			if ( silver ) {
+				if ( !on && MapCrystalState[Game->GetCurMap()] == 0 ) {
+					on = true;
+					this->Data ++;
+				}
+				if ( on && MapCrystalState[Game->GetCurMap()] == 1 ) {
+					on = false;
+					this->Data --;
+				}
+			}
+			if ( gold ) {
+				if ( !on && MapCrystalState[Game->GetCurMap()] == 1 ) {
+					on = true;
+					this->Data ++;
+				}
+				if ( on && MapCrystalState[Game->GetCurMap()] == 0 ) {
+					on = false;
+					this->Data --;
+				}
+			}
+			//shoot based on step trigger
+			if ( type > 1 ) {
+				if ( on && timer == 0 ) {
+					on = false;
+					this->Data --;
+				}
+				if ( !on && GV[StepTriggerActivate] == type ) {
+					on = true;
+					this->Data ++;
+					timer = 30;
+					WindShoot(this, dir, fanblock);
+				}
+				else if ( timer > 0 )
+					timer --;
+			}
+			//shoot based on timer
+			else if ( on && !blockmoving ) {
+				if ( timer == 0 ) {
+					timer = delay;
+					WindShoot(this, dir, fanblock);
+				}
+				else if ( timer > 0 )
+					timer --;
+			}
+			Waitframe();
+		}
+	}
+	void WindShoot(ffc this, int dir, bool fanblock){
+		Game->PlaySound(59);
+		lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+		wpn->X = this->X;
+		wpn->Y = this->Y;
+		if ( fanblock )
+			wpn->Y += 16;
+		wpn->UseSprite(90);
+		wpn->CollDetection = false;
+		wpn->DrawXOffset = 0;
+		wpn->DrawYOffset = 0;
+		wpn->Step = 150;
+		if ( dir == 1 ) wpn->Dir = DIR_DOWN;
+		if ( dir == 2 ) wpn->Dir = DIR_LEFT;
+		if ( dir == 3 ) wpn->Dir = DIR_UP;
+		if ( dir == 4 ) wpn->Dir = DIR_RIGHT;
+		wpn->Misc[WindMisc_OnWall] = ComboAt(wpn->X+8, wpn->Y+8);
+	}
+}
+
+//D0: message
+//D1: 0 = from south only, 1 = from any direction
+ffc script Signpost{
+	void run(int message, int anyDirection){
+		//Saves the width and height of the FFC for collision checks
+		int Width = 16;
+		int Height = 16;
+		if(this->EffectWidth!=16)
+			Width = this->EffectWidth;
+		else if(this->TileWidth>1)
+			Width = this->TileWidth*16;
+		if(this->EffectHeight!=16)
+			Height = this->EffectHeight;
+		else if(this->TileHeight>1)
+			Height = this->TileHeight*16;
+		bool talk = false;
+		while(true){
+			//Facing Up
+			if(Link->Z == 0 && GV[LinkInWind] == 0 && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_UP&&Link->Y>=this->Y&&Link->Y<=this->Y+Height-8&&Link->X>=this->X-8&&Link->X<=this->X+Width-8){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+			}
+			//Facing Down
+			else if(Link->Z == 0 && GV[LinkInWind] == 0 && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_DOWN&&Link->Y>=this->Y-16&&Link->Y<=this->Y+Height-16&&Link->X>=this->X-8&&Link->X<=this->X+Width-8
+			&& anyDirection == 1){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+			}
+			//Facing Left
+			else if(Link->Z == 0 && GV[LinkInWind] == 0 && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_LEFT&&Link->Y>=this->Y-8&&Link->Y<=this->Y+Height-9&&Link->X>=this->X&&Link->X<=this->X+Width
+			&& anyDirection == 1){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+			}
+			//Facing Right
+			else if(Link->Z == 0 && GV[LinkInWind] == 0 && Screen->isSolid(this->X+8, this->Y+8)&&Link->Dir==DIR_RIGHT&&Link->Y>=this->Y-8&&Link->Y<=this->Y+Height-9&&Link->X>=this->X-16&&Link->X<=this->X+Width-16
+			&& anyDirection == 1){
+				if(Link->PressA){
+					Link->InputA = false;
+					Link->PressA = false;
+					talk = true;
+				}
+				else
+					Screen->FastCombo(6, Link->X, Link->Y-16, CMB_InteractionIcon, 2, OP_OPAQUE);
+			}
+			if ( talk == true ) {
+				talk = false;
+				Screen->Message(message);
+				NoActionFull();
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script LeafSnowItem{
+	void run(int itemID, int screenD){
+		if ( Screen->D[screenD] == 1 )
+			Quit();
+		int pos = ComboAt(this->X+8, this->Y+8);
+		while(IsLeafPile(pos) || IsSnowPile(pos)){
+			Waitframe();
+		}
+		item itm = CreateItemAt(itemID, ComboX(pos), ComboY(pos));
+		SetItemPickup(itm, IP_HOLDUP, true);
+		while(itm->isValid()){
+			Waitframe();
+		}
+		Screen->D[screenD] = 1;
+	}
+}
+
+ffc script LeafSnowStairs{
+	void run(){
+		int pos = ComboAt(this->X+8, this->Y+8);
+		while(IsLeafPile(pos) || IsSnowPile(pos)){
+			Waitframe();
+		}
+		Screen->ComboD[pos] = CMB_StairsA;
+	}
+}
+
+ffc script StepTriggerSecret{
+	void run(int stepflag){
+		if ( Screen->State[ST_SECRET] || stepflag <= 1 )
+			Quit();
+		while(GV[StepTriggerActivate]!=stepflag){
+			Waitframe();
+		}
+		Game->PlaySound(27);
+		Screen->TriggerSecrets();
+		Screen->State[ST_SECRET] = true;
+	}
+}
+
+ffc script Enemy_Bee{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_8WAY);
+		Ghost_SetFlag(GHF_FLYING_ENEMY);
+		
+		int counter = -1;
+		while(true){
+			counter = Ghost_VariableWalk8(counter, ghost->Step, ghost->Rate, ghost->Homing, 0, 16);
+			
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_Spider{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_FULL_TILE_MOVEMENT);
+		Ghost_SetFlag(GHF_IGNORE_NO_ENEMY);
+		bool awake = false;
+		int initHP = Ghost_HP;
+		while(true){
+			if ( awake )
+				Ghost_MoveTowardLink(ghost->Step/100, 3);
+			else if ( Distance(Ghost_X, Ghost_Y, Link->X, Link->Y) < 48 || Ghost_HP < initHP ) {
+				awake = true;
+				Ghost_Transform(this, ghost, Ghost_Data+1, -1, -1, -1);
+			}
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_Pumpkin{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_4WAY);
+		Ghost_SetFlag(GHF_FULL_TILE_MOVEMENT);
+		Ghost_SetFlag(GHF_SET_OVERLAY);
+		Ghost_SetFlag(GHF_FAKE_Z);
+		int walkcounter = -1;
+		while(true){
+			Ghost_Waitframes(this, ghost, true, true, Choose(24, 32, 48));
+			int stepAngle = Angle(CenterX(ghost), CenterY(ghost), CenterLinkX(), CenterLinkY())+Rand(-40, 40);
+			Ghost_Jump = 2;
+			while(Ghost_Jump>0||Ghost_Z>0){
+				Ghost_Dir = AngleDir4(stepAngle);
+				Ghost_MoveAtAngle(stepAngle, ghost->Step/100, 0);
+				Ghost_Waitframe(this, ghost, true, true);
+			}
+		}
+	}
+}
+
+ffc script Enemy_Octoplant{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_8WAY);
+		
+		int counter = -1;
+		bool shot;
+		while(true){
+			counter = Ghost_HaltingWalk4(counter, ghost->Step, ghost->Rate, ghost->Homing, 0, ghost->Haltrate, 48);
+			
+			if ( counter == 16 ) {
+				if ( !shot ) {
+					int rng = Choose(1, 2);
+					if ( rng == 1 ) {
+						int shootangle;
+						if ( Ghost_Dir == DIR_UP )
+							shootangle = 3*PI/2;
+						if ( Ghost_Dir == DIR_RIGHT )
+							shootangle = 0;
+						if ( Ghost_Dir == DIR_DOWN )
+							shootangle = PI/2;
+						if ( Ghost_Dir == DIR_LEFT )
+							shootangle = PI;
+						FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, shootangle, 200, ghost->WeaponDamage, -1, -1, 0);
+						FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, shootangle+DegtoRad(20), 200, ghost->WeaponDamage, -1, -1, 0);
+						FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, shootangle-DegtoRad(20), 200, ghost->WeaponDamage, -1, -1, 0);
+					}
+					else {
+						int shootangle;
+						if ( Ghost_Dir == DIR_UP )
+							shootangle = 3*PI/2;
+						if ( Ghost_Dir == DIR_RIGHT )
+							shootangle = 0;
+						if ( Ghost_Dir == DIR_DOWN )
+							shootangle = PI/2;
+						if ( Ghost_Dir == DIR_LEFT )
+							shootangle = PI;
+						for (int i = 0; i < 5; i++) {
+							FireEWeapon(EW_ROCK, Ghost_X, Ghost_Y, shootangle, 200, ghost->WeaponDamage, -1, -1, 0);
+							for (int j = 0; j < 12; j++) {
+								Ghost_Waitframe(this, ghost, true, true);
+								counter = 16;
+							}
+						}
+					}
+					shot = true;
+				}
+			}
+			else
+				shot = false;
+			
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_Beehive{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		
+		Ghost_Waitframes(this, ghost, true, true, 210);
+		while(true){
+			while(Screen->NumNPCs() >= 14){
+				Ghost_Waitframes(this, ghost, true, true, 60);
+			}
+			CreateNPCAt(177, Ghost_X, Ghost_Y);
+			Ghost_Waitframes(this, ghost, true, true, 30);
+			if ( Screen->NumNPCs() <= 14 )
+				CreateNPCAt(177, Ghost_X, Ghost_Y);
+			Ghost_Waitframes(this, ghost, true, true, 450);
+		}
+	}
+}
+
+ffc script Enemy_MaceGuardian{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_FULL_TILE_MOVEMENT);
+
+		int ballDegree = Rand(360);
+
+		int walkcounter = -1;
+		while(true){
+			walkcounter = Ghost_VariableWalk8(walkcounter, ghost->Step, ghost->Rate, ghost->Homing, ghost->Hunger, 4);
+
+			ballDegree += 3;
+			if(ballDegree < -360)ballDegree+=360;
+			else if(ballDegree > 360)ballDegree-=360;
+			
+			eweapon dmg = FireEWeapon(EW_SCRIPT10, Ghost_X-5 + 48*Cos(ballDegree), Ghost_Y-8 + 48*Sin(ballDegree), 0, 0, ghost->WeaponDamage, -1, -1, EWF_UNBLOCKABLE);
+			dmg->Dir = Link->Dir;
+			dmg->DrawXOffset = -1000;
+			SetEWeaponLifespan(dmg, EWL_TIMER, 1);
+			SetEWeaponDeathEffect(dmg, EWD_VANISH, 0);
+
+			int drawlayer = 2;
+			if(ScreenFlag(1, 4)) //Layer -2
+				drawlayer = 1;
+			Screen->FastTile(drawlayer, Ghost_X-5 + 48*Cos(ballDegree), Ghost_Y-8 + 48*Sin(ballDegree), 3015, 7, OP_OPAQUE);
+			for (int i = 3; i <= 36; i+= 11) {
+				Screen->FastTile(4, Ghost_X-5 + i*Cos(ballDegree), Ghost_Y-8 + i*Sin(ballDegree), 3014, 7, OP_OPAQUE);
+			}
+
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script GladeSequencePuzzle{
+	void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		int sequence;
+		while(true){
+			if ( GV[StepTriggerActivate] > 1 ) {
+				if ( GV[StepTriggerActivate] == 98 && sequence == 0 )
+					sequence ++;
+				else if ( GV[StepTriggerActivate] == 99 && sequence == 1 )
+					sequence ++;
+				else if ( GV[StepTriggerActivate] == 100 && sequence == 2 )
+					sequence ++;
+				else if ( GV[StepTriggerActivate] == 101 && sequence == 3 ) {
+					Game->PlaySound(27);
+					Screen->TriggerSecrets();
+					Screen->State[ST_SECRET] = true;
+					Quit();
+				}
+				else {
+					sequence = 0;
+					if ( GV[StepTriggerActivate] == 98 )
+						sequence ++;
+				}
+			}
+			Waitframe();
+		}
+	}
+}
+
+ffc script Enemy_MinorPlant{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		
+		eweapon Spike[20];
+		Ghost_Waitframes(this, ghost, true, true, Rand(90, 150));
+		while(true){
+			for (int i = 0; i < 20; i++) {
+				Spike[i] = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(Rand(360)), Rand(35, 60), ghost->WeaponDamage, 98, -1, 0);
+				Spike[i]->HitWidth -= 4;
+				Spike[i]->HitHeight -= 4;
+				Spike[i]->HitXOffset += 2;
+				Spike[i]->HitYOffset += 2;
+				SetEWeaponMovement(Spike[i], EWM_THROW, 3.5, 0);
+				SetEWeaponLifespan(Spike[i], EWL_TIMER, 150);
+				SetEWeaponDeathEffect(Spike[i], EWD_VANISH, 0);
+				SpikingPlantWaitframes(this, ghost, Spike, 3);
+			}
+			SpikingPlantWaitframes(this, ghost, Spike, Rand(180, 270));
+		}
+	}
+	void SpikingPlantWaitframes(ffc this, npc ghost, eweapon Spike, int frames){
+		for (int j = 0; j < frames; j++) {
+			for (int i = 0; i < 20; i++) {
+				if ( Spike[i]->isValid() ) {
+					if ( Spike[i]->Step > 0 ) {
+						if ( Screen->isSolid(Spike[i]->X+8, Spike[i]->Y+8) )
+							Spike[i]->Step -= 20;
+					}
+				}
+			}
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_MinibossPlant{
+	void run(int enemyid){
+		npc ghost = Ghost_InitAutoGhost(this, enemyid);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		
+		eweapon Spike[12];
+		Ghost_Waitframes(this, ghost, true, true, Rand(90, 150));
+		while(true){
+			for (int i = 0; i < 12; i++) {
+				Spike[i] = FireEWeapon(EW_SCRIPT10, Ghost_X, Ghost_Y, DegtoRad(Rand(360)), Rand(40, 80), ghost->WeaponDamage, 98, -1, 0);
+				Spike[i]->HitWidth -= 4;
+				Spike[i]->HitHeight -= 4;
+				Spike[i]->HitXOffset += 2;
+				Spike[i]->HitYOffset += 2;
+				SetEWeaponMovement(Spike[i], EWM_THROW, 4, 0);
+				SetEWeaponLifespan(Spike[i], EWL_TIMER, 120);
+				SetEWeaponDeathEffect(Spike[i], EWD_EXPLODE, ghost->WeaponDamage);
+				SpikingPlantWaitframes(this, ghost, Spike, 20);
+			}
+			SpikingPlantWaitframes(this, ghost, Spike, Rand(180, 270));
+		}
+	}
+	void SpikingPlantWaitframes(ffc this, npc ghost, eweapon Spike, int frames){
+		for (int j = 0; j < frames; j++) {
+			for (int i = 0; i < 12; i++) {
+				if ( Spike[i]->isValid() ) {
+					if ( Spike[i]->Step > 0 ) {
+						if ( Screen->isSolid(Spike[i]->X+8, Spike[i]->Y+8) )
+							Spike[i]->Step -= 20;
+					}
+					if ( Spike[i]->Z > 0 )
+						DrawEWeaponShadow(Spike[i]);
+				}
+			}
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+void Raft(){
+	GV[OnRaft] = 0;
+	if(Link->Z == 0){
+		int buffer[] = "Raft";
+		for(int i = 1; i <= 32; i++){
+			ffc f = Screen->LoadFFC(i);
+			if(f->Script != Game->GetFFCScript(buffer)) continue;
+			if(Abs(Link->X + 8 - CenterX(f)) -2 >= f->TileWidth*8) continue;
+			if(Abs(Link->Y + 12 - CenterY(f)) -2 >= f->TileHeight*8) continue;
+			if(GV[LinkInWind] == 1) continue;
+			if(Link->Z!=0) continue;
+			GV[OnRaft] = FFCNum(f);
+			break;
+		}
+	}
+}
+
+ffc script Raft{
+	void run(){
+		float oldx = this->X;
+		float oldy = this->Y;
+		float linkx;
+		float linky;
+		while(true){
+			if ( (this->Ax > 0 && this->Vx >= -0.1) || (this->Ax < 0 && this->Vx <= 0.1) ) {
+				this->Vx = 0;
+				this->Ax = 0;
+			}
+			if ( (this->Ay > 0 && this->Vy >= -0.1) || (this->Ay < 0 && this->Vy <= 0.1) ) {
+				this->Vy = 0;
+				this->Ay = 0;
+			}
+
+			if(GV[OnRaft] == FFCNum(this)){
+				if ( GV[RaftMove] > 0 && Link->Dir == DIR_UP ) {
+					this->Vy += 1;
+					if ( GV[RaftMove] == 2 )
+						this->Vy += 0.5;
+					this->Ay = -0.017;
+				}
+				if ( GV[RaftMove] > 0 && Link->Dir == DIR_RIGHT ) {
+					this->Vx -= 1;
+					if ( GV[RaftMove] == 2 )
+						this->Vx -= 0.5;
+					this->Ax = 0.017;
+				}
+				if ( GV[RaftMove] > 0 && Link->Dir == DIR_DOWN ) {
+					this->Vy -= 1;
+					if ( GV[RaftMove] == 2 )
+						this->Vy -= 0.5;
+					this->Ay = 0.017;
+				}
+				if ( GV[RaftMove] > 0 && Link->Dir == DIR_LEFT ) {
+					this->Vx += 1;
+					if ( GV[RaftMove] == 2 )
+						this->Vx += 0.5;
+					this->Ax = -0.017;
+				}
+			}
+
+			if ( WaterCheck(this->X+8, this->Y+8) ) {
+				this->Vx = 0;
+				this->Vy = 0;
+				this->Ax = 0;
+				this->Ay = 0;
+			}
+
+			if ( this->Vx > 0 && (WaterCheck(this->X+16, this->Y) || WaterCheck(this->X+16, this->Y+15)) ) {
+				this->Vx = 0;
+				this->Ax = 0;
+				this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+			}
+			if ( this->Vx < 0 && (WaterCheck(this->X-1, this->Y) || WaterCheck(this->X-1, this->Y+15)) ) {
+				this->Vx = 0;
+				this->Ax = 0;
+				this->X = ComboX(ComboAt(this->X+8, this->Y+8));
+			}
+			if ( this->Vy > 0 && (WaterCheck(this->X, this->Y+16) || WaterCheck(this->X+15, this->Y+16)) ) {
+				this->Vy = 0;
+				this->Ay = 0;
+				this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+			}
+			if ( this->Vy < 0 && (WaterCheck(this->X, this->Y-1) || WaterCheck(this->X+15, this->Y-1)) ) {
+				this->Vy = 0;
+				this->Ay = 0;
+				this->Y = ComboY(ComboAt(this->X+8, this->Y+8));
+			}
+
+			if(GV[OnRaft] == FFCNum(this))
+			{
+				 linkx += this->X - oldx;
+				 linky += this->Y - oldy;
+				 if(linkx << 0 != 0)
+				 {
+					 Link->X += linkx << 0;
+					 linkx -= linkx << 0;
+				 }
+				 if(linky << 0 != 0)
+				 {
+					 Link->Y += linky << 0;
+					 linky -= linky << 0;
+				 }
+			}
+			else
+			{
+				 linkx = 0;
+				 linky = 0;
+			}
+			oldx = this->X;
+			oldy = this->Y;
+			Waitframe();
+		}
+	}
+	bool WaterCheck(int x, int y){
+		return Screen->ComboT[ComboAt(x, y)] != CT_SHALLOWWATER && Screen->ComboT[ComboAt(x, y)] != CT_WATER;
+	}
+}
+
+ffc script FireballShooter{
+	void run(){
+		int timer = Rand(120, 270);
+		while(true){
+			if ( timer == 0 ) {
+				int angle = DegtoRad(Angle(this->X, this->Y, Link->X, Link->Y));
+				eweapon fireball = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 180, 4, -1, -1, 0);
+				timer = Rand(120, 270);
+			}
+			else if ( timer > 0 )
+				timer --;
+			Waitframe();
+		}
+	}
+}
+
+ffc script EnemiesSecret{
+    void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		Waitframes(4);
+		while(true){
+			if ( !EnemiesAlive() ) {
+				Game->PlaySound(27);
+				Screen->TriggerSecrets();
+				Screen->State[ST_SECRET] = true;
+				Quit();
+			}
+			Waitframe();
+        }
+	}
+	bool EnemiesAlive(){
+		for(int i=Screen->NumNPCs(); i>=1; i--){
+			npc n = Screen->LoadNPC(i);
+			if(n->Type!=NPCT_PROJECTILE&&n->Type!=NPCT_FAIRY&&n->Type!=NPCT_TRAP&&n->Type!=NPCT_GUY){
+				if(!(n->MiscFlags&(1<<3)))
+					return true;
+			}
+		}
+		return false;
+	}
+}
+
+ffc script MinibossPlant{
+    void run(){
+		if ( Screen->D[0] == 1 )
+			Quit();
+		npc plant = CreateNPCAt(183, this->X, this->Y);
+		while(true){
+			if ( !plant->isValid() ) {
+				Game->PlaySound(27);
+				Screen->TriggerSecrets();
+				Screen->State[ST_SECRET] = true;
+				GV[MinibossPlantsKilled] ++;
+				Screen->D[0] = 1;
+				if ( GV[MinibossPlantsKilled] == 3 )
+					ClearPoisonWater();
+				Quit();
+			}
+			Waitframe();
+        }
+	}
+}
+
+void ClearPoisonWater(){
+	for (int i = 0; i < 176; i++) {
+		if ( Screen->ComboD[i] >= CMB_ShallowWaterMin && Screen->ComboD[i] <= CMB_ShallowWaterMax )
+			Screen->ComboC[i] = 2;
+		if ( Screen->ComboD[i] == CMB_PoisonVineA || Screen->ComboD[i] == CMB_PoisonVineB )
+			Screen->ComboD[i] += 8;
+		if ( GetLayerComboD(3, i) >= CMB_ShallowWaterMin && GetLayerComboD(3, i) <= CMB_ShallowWaterMax )
+			Game->SetComboCSet(Screen->LayerMap(3), Screen->LayerScreen(3), i, 2);
+	}
+}
+
+ffc script ChestSpawnPoof{
+    void run(){
+		if ( Screen->isSolid(this->X, this->Y) )
+			Quit();
+		while(true){
+			if ( Screen->isSolid(this->X, this->Y) ) { //check for solid object
+				lweapon poof = CreateLWeaponAt(LW_SPARKLE, this->X, this->Y);
+				poof->UseSprite(22);
+				poof->DrawYOffset = 0;
+				Quit();
+			}
+			Waitframe();
+        }
+	}
+}
+
+ffc script ImmuneJungleSpider{
+    void run(){
+		Waitframes(4);
+		if ( Screen->NumNPCs() < 1 )
+			Quit();
+		npc Spider = Screen->LoadNPC(1);
+		while(true){
+			if ( Spider->X < 112 && Spider->Y > 64 )
+				Spider->Defense[NPCD_SCRIPT] = NPCDT_IGNORE;
+			else
+				Spider->Defense[NPCD_SCRIPT] = NPCDT_NONE;
+			Waitframe();
+        }
+	}
+}
+
+ffc script Enemy_Snowmaster{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		Ghost_SetFlag(GHF_STUN);
+		int SnowflakeTimer = 90 + Rand(0, 90);
+		while(true){
+			if ( SnowflakeTimer == 0 ) {
+				Ghost_Transform(this, ghost, Ghost_Data + 1, -1, -1, -1);
+				Ghost_Waitframes(this, ghost, true, true, 10);
+				int shots = 1;
+				if ( ghost->Attributes[9] == 1 ) //red
+					shots = 3;
+				for (int i = 0; i < shots; i++) {
+					Game->PlaySound(70);
+					int snowspawnX = Ghost_X+8;
+					int snowspawnY = Ghost_Y+8;
+					int snowangle = Angle(Link->X, Link->Y, Ghost_X, Ghost_Y);
+					while(PointWithinRect(snowspawnX, snowspawnY, -16, -16, 272, 192)){
+						snowspawnX += VectorX(1, snowangle);
+						snowspawnY += VectorY(1, snowangle);
+					}
+					eweapon Snowflake = FireBigEWeapon(EW_SCRIPT10, snowspawnX-16, snowspawnY-16, DegtoRad(Angle(snowspawnX-8, snowspawnY-8, Link->X, Link->Y)), 150, ghost->WeaponDamage, 100, 0, EWF_NO_COLLISION, 2, 2);
+					Ghost_Waitframes(this, ghost, true, true, 30);
+				}
+				Ghost_Waitframes(this, ghost, true, true, 20);
+				Ghost_Transform(this, ghost, Ghost_Data - 1, -1, -1, -1);
+			}
+			if ( SnowflakeTimer > 0 )
+				SnowflakeTimer --;
+			else
+				SnowflakeTimer = 150 + Rand(0, 90);
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_FireBouncer{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SpawnAnimationPuff(this, ghost);
+		Ghost_SetFlag(GHF_NORMAL);
+		Ghost_SetFlag(GHF_FULL_TILE_MOVEMENT);
+		Ghost_SetFlag(GHF_IGNORE_WATER);
+		Ghost_SetFlag(GHF_FLYING_ENEMY);
+
+		int initData = Ghost_Data;
+
+		int angle;
+		float step;
+		float xStep;
+		float yStep;
+		// Get initial movement
+		angle=45+90*Rand(4);
+		step=ghost->Step/100;
+		
+		xStep=step*Cos(angle);
+		yStep=step*Sin(angle);
+		while(true){
+			int beforeX = Ghost_X;
+			// Bounce
+			if(xStep<0)
+			{
+				if(!Ghost_CanMove(DIR_LEFT, -xStep, 3))
+				   xStep*=-1;
+			}
+			else
+			{
+				if(!Ghost_CanMove(DIR_RIGHT, xStep, 3))
+				   xStep*=-1;
+			}
+			
+			if(yStep<0)
+			{
+				if(!Ghost_CanMove(DIR_UP, -yStep, 3))
+				   yStep*=-1;
+			}
+			else
+			{
+				if(!Ghost_CanMove(DIR_DOWN, yStep, 3))
+				   yStep*=-1;
+			}
+			// And move
+			Ghost_MoveXY(xStep, yStep, 3);
+
+			if ( Ghost_Data == initData && beforeX < Ghost_X )
+				Ghost_Transform(this, ghost, Ghost_Data+1, -1, -1, -1);
+			if ( Ghost_Data != initData && beforeX > Ghost_X )
+				Ghost_Transform(this, ghost, Ghost_Data-1, -1, -1, -1);
+
+			for (int i = Screen->NumLWeapons(); i > 0; i--) {
+				lweapon wpn = Screen->LoadLWeapon(i);
+				if ( wpn->ID == LW_SCRIPT1 ) {
+					if ( wpn->Misc[WindMisc_LinksWind] == 1 && wpn->Misc[WindMisc_Type] == 2 ) { //gales ice wind
+						if ( RectCollision(wpn->X+2, wpn->Y+2, wpn->X+13, wpn->Y+13, Ghost_X, Ghost_Y, Ghost_X+15, Ghost_Y+15) ) {
+							wpn->DeadState = WDS_DEAD;
+							Game->PlaySound(11);
+							Ghost_HP = 0;
+						}
+					}
+				}
+			}
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+	}
+}
+
+ffc script Enemy_Elemental{
+	void run(int enemyID){
+		npc ghost = Ghost_InitAutoGhost(this, enemyID);
+		Ghost_SetFlag(GHF_4WAY);
+		Ghost_SetFlag(GHF_STUN);
+		Ghost_SetFlag(GHF_IGNORE_WATER);
+		Ghost_SetFlag(GHF_FLYING_ENEMY);
+		ghost->DrawYOffset = -1000;
+		ghost->CollDetection = false;
+		while(true){
+			Ghost_Waitframes(this, ghost, true, true, 60);
+			WarpIn(this, ghost);
+			Ghost_Waitframes(this, ghost, true, true, 15);
+			if ( ghost->Attributes[9] == 0 )
+				WindAttack(this, ghost);
+			if ( ghost->Attributes[9] == 1 )
+				FireAttack(this, ghost);
+			if ( ghost->Attributes[9] == 2 )
+				IceAttack(this, ghost);
+			if ( ghost->Attributes[9] == 3 )
+				LightningAttack(this, ghost);
+			if ( ghost->Attributes[9] == 4 )
+				JinxAttack(this, ghost);
+			Ghost_Waitframes(this, ghost, true, true, 120);
+			WarpOut(this, ghost);
+			Ghost_Waitframes(this, ghost, true, true, 60);
+		}
+	}
+	void WarpIn(ffc this, npc ghost){
+		int pos = FindSpawnPoint(true, false, true, true);
+		Ghost_X = ComboX(pos);
+		Ghost_Y = ComboY(pos);
+		Ghost_Dir = AngleDir4(Angle(Ghost_X+8, Ghost_Y+8, Link->X+8, Link->Y+8));
+		ghost->CollDetection = true;
+		for(int i=0; i<16; i++){
+			if(i%2==0)
+				ghost->DrawYOffset = -1000;
+			else
+				ghost->DrawYOffset = -2;
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+		ghost->DrawYOffset = -2;
+	}
+	void WarpOut(ffc this, npc ghost){
+		for(int i=0; i<16; i++){
+			if(i%2==0)
+				ghost->DrawYOffset = -1000;
+			else
+				ghost->DrawYOffset = -2;
+			Ghost_Waitframe(this, ghost, true, true);
+		}
+		ghost->DrawYOffset = -1000;
+		ghost->CollDetection = false;
+	}
+	void WindAttack(ffc this, npc ghost){
+		Game->PlaySound(59);
+		lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+		wpn->X = Ghost_X;
+		wpn->Y = Ghost_Y-1;
+		wpn->UseSprite(90);
+		wpn->CollDetection = false;
+		wpn->DrawXOffset = 0;
+		wpn->DrawYOffset = 0;
+		wpn->Step = 150;
+		wpn->Dir = Ghost_Dir;
+	}
+	void FireAttack(ffc this, npc ghost){
+		Game->PlaySound(59);
+		lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+		wpn->X = Ghost_X;
+		wpn->Y = Ghost_Y;
+		wpn->UseSprite(91);
+		wpn->CollDetection = false;
+		wpn->DrawXOffset = 0;
+		wpn->DrawYOffset = 0;
+		wpn->Step = 100;
+		wpn->Angular = true;
+		wpn->Angle = DegtoRad(Angle(wpn->X, wpn->Y, Link->X, Link->Y));
+		wpn->Dir = Ghost_Dir;
+		wpn->Misc[WindMisc_Type] = 1;
+		wpn->Misc[WindMisc_Elemental] = 1;
+	}
+	void IceAttack(ffc this, npc ghost){
+		if ( GV[LinkSlowFrozen] == 0 ) {
+			Game->PlaySound(44);
+			GV[SlowFrozenTimer] = 30;
+			GV[SlowFrozenX] = Ghost_X;
+			GV[SlowFrozenY] = Ghost_Y;
+			GV[LinkSlowFrozen] = 300;
+		}
+		else {
+			Game->PlaySound(59);
+			lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+			wpn->X = Ghost_X;
+			wpn->Y = Ghost_Y-1;
+			wpn->UseSprite(92);
+			wpn->CollDetection = false;
+			wpn->DrawXOffset = 0;
+			wpn->DrawYOffset = 0;
+			wpn->Step = 150;
+			wpn->Dir = Ghost_Dir;
+			wpn->Misc[WindMisc_Type] = 2;
+		}
+	}
+	void LightningAttack(ffc this, npc ghost){
+		
+	}
+	void JinxAttack(ffc this, npc ghost){
+		Game->PlaySound(59);
+		int rangle = Rand(360);
+		for (int i = 0; i < 3; i++) {
+			lweapon wpn = Screen->CreateLWeapon(LW_SCRIPT1);
+			wpn->X = Ghost_X;
+			wpn->Y = Ghost_Y;
+			wpn->UseSprite(94);
+			wpn->CollDetection = false;
+			wpn->DrawXOffset = 0;
+			wpn->DrawYOffset = 0;
+			wpn->Step = 120;
+			wpn->Angular = true;
+			wpn->Angle = DegtoRad(Angle(wpn->X, wpn->Y, Link->X, Link->Y) + 360/3*i + rangle);
+			wpn->Dir = Ghost_Dir;
+			wpn->Misc[WindMisc_Type] = 4;
+			wpn->Misc[WindMisc_Elemental] = 4;
+		}
+	}
+}
+
+ffc script SnowTorchPatternPuzzle{
+    void run(){
+		if ( Screen->State[ST_SECRET] )
+			Quit();
+		int correctframes;
+		while(true){
+			if ( Screen->ComboD[55] == CMB_FireTorch && Screen->ComboD[57] == CMB_FireTorch && Screen->ComboD[59] == CMB_FireTorch
+			&& Screen->ComboD[87] == CMB_IceTorch && Screen->ComboD[89] == CMB_FireTorch && Screen->ComboD[91] == CMB_IceTorch
+			&& Screen->ComboD[119] == CMB_IceTorch && Screen->ComboD[121] == CMB_IceTorch && Screen->ComboD[123] == CMB_IceTorch ) {
+				if ( correctframes == 30 ) {
+					Game->PlaySound(27);
+					Screen->TriggerSecrets();
+					Screen->State[ST_SECRET] = true;
+					Quit();
+				}
+				correctframes ++;
+			}
+			else
+				correctframes = 0;
+			Waitframe();
+        }
+	}
+}
+
+ffc script WWEffect{
+    void run(){
+		int WindX[200];
+		int WindY[200];
+		int WindDegree[10];
+		int WindRadius[10];
+		for (int i = 0; i < 10; i++) {
+			WindRadius[i] = -1;
+		}
+		for (int i = 0; i < 200; i++) {
+			WindX[i] = -1000;
+			WindY[i] = -1000;
+		}
+		int TimerUntilNextWind;
+		while(true){
+			if ( TimerUntilNextWind == 0 ) {
+				for (int i = 0; i < 10; i++) {
+					if ( WindRadius[i] == -1 ) { //find inactive wind and initialize it
+						WindRadius[i] = 64;
+						WindDegree[i] = Rand(360);
+						i = 10;
+						TimerUntilNextWind = Rand(30, 45);
+					}
+				}
+			}
+			else
+				TimerUntilNextWind --;
+			
+			for (int i = 0; i < 10; i++) {
+				if ( WindRadius[i] != -1 ) { //if the wind exists
+					WindDegree[i] += 4;
+					if ( WindDegree[i] > 360 )
+						WindDegree[i] -= 360;
+					for (int j = 0; j < 12; j++) {
+						if ( WindRadius[i] > 5*j ) {
+							WindRadius[i] -= 0.1; //decrease radius faster, the further away it is from 0
+						}
+						else {
+							WindDegree[i] += 0.25; //spin degree faster, the closer the radius is to 0
+							if ( WindDegree[i] > 360 )
+								WindDegree[i] -= 360;
+						}
+					}
+					
+					//move leading point
+					if ( WindRadius[i] > 4 ) {
+						WindX[i*20] = this->X+8 + WindRadius[i] * Cos(WindDegree[i]);
+						WindY[i*20] = this->Y+8 + WindRadius[i] * Sin(WindDegree[i]);
+					}
+					else {
+						WindX[i*20] = -1000;
+						WindY[i*20] = -1000;
+					}
+					//point tracking
+					for (int j = 20; j > 0; j--) {
+						int point = j + i*20;
+						WindX[point] = WindX[point-1];
+						WindY[point] = WindY[point-1];
+					}
+					//if the first and last point of a wind dont exist, clear it
+					if ( WindX[i*20] == -1000 && WindX[19 + i*20] == -1000 ) {
+						WindRadius[i] = -1;
+					}
+					//drawing
+					for (int j = 1; j < 20; j++) {
+						int point = j + i*20;
+						if ( WindX[point] != -1000 && WindX[point-1] != -1000 ) //if last and current points exist, draw line from last point to current point
+							Screen->Line(6, WindX[point-1], WindY[point-1], WindX[point], WindY[point], 0x61, 1, 0, 0, 0, OP_OPAQUE);
+					}
+				}
+			}
+			Waitframe();
+        }
+	}
+}
+
+ffc script Smog{
+    void run(){
+		int timer = init*20;
+		while(true){
+			if ( timer == 0 ) {
+				eweapon Smog = CreateEWeaponAt(EW_SCRIPT10, this->X, this->Y);
+				Smog->UseSprite(102);
+				Smog->DrawYOffset = 0;
+				Smog->DeadState = 60;
+				while(Smog->isValid()){
+					Waitframe();
+				}
+				timer = t*20;
+			}
+			else
+				timer --;
+			Waitframe();
+        }
+	}
+}
