@@ -1483,7 +1483,7 @@ ffc script Words{
 		int Words7[] = "Link took damage.";
 		int Words8[] = "Welcome!";
 		int Words9[] = "Careful!";
-		int Words10[] = "hi eddy";
+		int Words10[] = "im gay";
 		int Words11[] = "Link got 4 bombs!";
 		int Words12[] = "Link got 10 rupees!";
 		int Words13[] = "Link got 10 arrows!";
